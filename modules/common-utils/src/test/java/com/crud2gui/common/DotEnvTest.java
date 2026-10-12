@@ -34,8 +34,8 @@ class DotEnvTest {
 
     @Test
     void loadMultipleFilesWithOverride(@TempDir Path tempDir) throws IOException {
-        Path publicFile = tempDir.resolve("env.public");
-        Path privateFile = tempDir.resolve("env.private");
+        Path publicFile = tempDir.resolve(".env.public");
+        Path privateFile = tempDir.resolve(".env.private");
 
         Files.writeString(publicFile, "SHARED_KEY=public_value\nPUBLIC_ONLY=only_public");
         Files.writeString(privateFile, "SHARED_KEY=private_override\nPRIVATE_ONLY=only_private");
@@ -50,7 +50,7 @@ class DotEnvTest {
 
     @Test
     void loadDefaultsInWithMissingPrivate(@TempDir Path tempDir) throws IOException {
-        Path publicFile = tempDir.resolve("env.public");
+        Path publicFile = tempDir.resolve(".env.public");
         Files.writeString(publicFile, "API_KEY=public_key_value");
 
         // No creamos env.private para probar que es opcional

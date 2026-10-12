@@ -1,0 +1,675 @@
+Universidad Nacional de Educación a Distancia
+Departamento de Lenguajes y Sistemas Informáticos
+FUNDAMENTOS DE INFORMÁTICA
+Práctica Obligatoria
+Curso 2025/2026
+Índice general
+1. Introducción 2
+1.1. Descripción general de la práctica . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
+1.2. Diseño de la práctica: Diagrama de clases . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+2. ETAPA 1: Clase, objetos, atributos y métodos 4
+2.1. ETAPA 1.1:Diseño . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+2.2. ETAPA 1.2 Implementación . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+2.3. ETAPA 1.3: Ejecución y pruebas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+3. ETAPA 2: Agrupando Objetos 8
+3.1. ETAPA 2.1: Diseño. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+3.2. ETAPA 2.2: Implementación . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+3.3. ETAPA 2.3: Ejecución y pruebas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+4. ETAPA 3: Herencia 12
+4.1. ETAPA 3.1: Diseño . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+4.2. Etapa 3.2: Implementación. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+4.3. Etapa 3.3: Ejecución y pruebas. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+5. ETAPA 4: Opcional 15
+6. Fechas y normas de entrega 16
+6.1. Fechas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+6.2. Normas de entrega . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+6.3. Fechas de entrega . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+6.4. Evaluación de la práctica . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+6.5. Preguntas al equipo docente . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+1
+Introducción
+La práctica se realizará utilizando Java como lenguaje de Programación Orientado a Objetos. El primer concepto que
+se debe conocer es el de objeto, el ladrillo con el que se construye un programa bajo este paradigma de programación. Los
+objetos tienen vida cuando nuestro programa está en ejecución y pueden relacionarse entre sı́ de diversas maneras, propor-
+cionando al programador las funcionalidades necesarias para resolver una amplia gama de problemas.
+La definición de un objeto viene dada por lo que se conoce como clase, siendo esta la entidad que en realidad diseñaremos
+y programaremos en términos de sus campos o atributos y métodos. Estos campos y métodos nos permiten definir las ca-
+racterı́sticas y funcionalidades de la clase. Una vez definida, a partir de la clase podremos crear objetos, que son los que
+realmente llevarán a cabo la funcionalidad de nuestro programa en tiempo de ejecución.
+Por tanto, podemos ver los objetos como los componentes que nos servirán para diseñar nuestro programa, y las clases como
+las definiciones de dichos objetos. Una misma clase puede, por tanto, dar lugar a muchos objetos diferentes cada uno con
+caracterı́sticas diferentes que vendrán dadas por los valores de sus campos.
+1.1. Descripción general de la práctica
+Esta práctica consistirá en crear un sistema informático simplificado para gestionar una red social, donde los usuarios
+podrán darse de alta, postear mensajes e introducir comentarios a los mensajes. Para ello, el programa realizará tres tipos de
+funcionalidades: el alta de usuarios, la publicación de posts en su perfil, comentarios en los posts de otros perfiles y gestión
+de “amistades” para mantener la privacidad en el caso de los perfiles privados.
+Este proyecto busca familiarizar al estudiante con la creación de aplicaciones informáticas, llevando a la práctica los principios
+de programación en Java.
+En general, el proceso que se quiere informatizar es el siguiente:
+1. Un usuario puede darse de alta en la aplicación y actualizar su información, que básicamente será su nombre y biografı́a.
+La biografı́a incluye información sobre su fecha de nacimiento, aficiones, profesión y objetivos vitales. El sistema le
+asigna a cada perfil automáticamente un identificador, que consistirá en la palabra user concatenado con el primer
+número libre para ese nombre. Además, el sistema le asigna una URL que tendrá el formato:
+https://www.miRed.com/<identificador>.
+2. El usuario puede introducir un post, que tendrá un texto. El sistema le asignará una URL con el formato:
+https://www.miRed.com/post/identificador_de_usuario.numero
+donde el número dependerá del número de posts que el usuario haya publicado.
+3. El usuario puede visualizar los perfiles existentes. En concreto, verá la lista de nombres e identificadores, o bien toda
+la información relativa a uno de ellos, es decir, acceder a su perfil.
+Este ejercicio de programación se centrará únicamente en el back-end, es decir, en la parte del desarrollo encargada de la
+lógica necesaria para que el sistema funcione, omitiendo la interacción real con una interfaz de usuario y las comunicaciones
+de red; todo ello será obviado en esta práctica. En concreto, se deberá implementar un sistema capaz de realizar acciones
+básicas como añadir un perfil, hacer un login, visualizar en pantalla los perfiles, añadir un comentario a un post de un perfil,
+2
+Diseño de la práctica: Diagrama de clases
+etc. La parte relativa al interfaz, como los formularios donde introducir los datos o el menú donde se eligen perfiles para
+su visualización no forma parte de la práctica. El sistema deberá funcionar correctamente ante una serie de invocaciones a
+constructores y otros métodos que vendrán dados en el enunciado. Además, el material de la práctica incluye un software de
+interfaz que permite realizar las acciones no cubiertas por el back-end. Este software deberá poder interactuar correctamente
+con las clases implementadas por el alumno. De este modo, el objetivo es completar la programación de la lógica que subyace
+al sistema planteado, poniendo a prueba la capacidad del estudiante para estructurar y organizar el código de una manera que
+facilite el crecimiento iterativo y la adición de nuevas funcionalidades en futuras versiones.
+Para la realización de esta práctica se seguirá un enfoque iterativo, de forma que el desarrollo se dividirá en etapas. En cada
+etapa se partirá del diseño y desarrollo de la etapa inmediatamente anterior, añadiéndole nuevas funcionalidades y llevando a
+la práctica los conceptos del temario que se van estudiando progresivamente.
+Además, el enunciado de la práctica se acompaña de distintos fragmentos de código, que servirán para validar cada una de
+las etapas del enunciado, lo que permitirá comprobar si la solución que se está dando en cada momento es correcta o no. Ese
+código de comprobación estará encapsulado en distintas clases, una por cada etapa, planteando un conjunto de pruebas que
+permitirán validar la solución propuesta hasta ese momento. Las pruebas consistirán en llamadas a métodos de los objetos
+creados en cada etapa, por lo que será muy importante respetar y seguir los identificadores que se proponen para los
+distintos elementos; deberán respetarse el nombre de las clases, atributos, métodos, tipos de datos, etc.
+RECOMENDACIONES: La práctica se realiza a lo largo del cuatrimestre y forma parte del estudio de la asignatura.
+Es conveniente hacer una primera lectura completa de este documento para tener una visión global de lo que se pide,
+pudiéndose organizar ası́ apropiadamente el estudio de la asignatura. Recomendamos también, especialmente en el caso
+de no tener experiencia previa en programación, la realización de las actividades que aparecen enlazadas como “material
+interactivo sobre nociones básicas” en la pestaña de “contenidos” en el curso virtual.
+1.2. Diseño de la práctica: Diagrama de clases
+Cuando afrontamos el desarrollo de una aplicación informática es indispensable y necesario realizar una fase previa
+donde se analicen los requisitos y se diseñen las entidades; en nuestro caso, las clases necesarias para llevar a cabo las
+funcionalidades requeridas y la relación entre las mismas. Para ello, antes de implementar cada etapa en las que se ha dividido
+la práctica, se deberá realizar una lectura completa de la etapa a abordar, realizando un diagrama donde se representen
+las clases necesarias con sus atributos y métodos, ası́ como las relaciones entre las mismas, para posteriormente comenzar la
+fase de implementación. Ası́, se deberá realizar un diagrama de clases desde la primera etapa, que luego posteriormente se irá
+refinando y/o modificando en cada una de las siguientes etapas, siempre como requisito previo a comenzar a implementar el
+código de cada etapa.
+El diagrama de clases obtenido en la última etapa debe ser entregado junto al código de la práctica.
+3
+ETAPA 1: Clase, objetos, atributos y métodos
+En esta primera etapa de la práctica se van a afianzar los conceptos básicos de la programación orientada a objetos: clase,
+objeto, atributos y métodos (constructores, métodos que ayudan a la encapsulación de la clase y métodos de visualización).
+El objetivo es afianzar la idea de que en programación orientada a objetos ha de modelarse conceptos del problema como
+clases, y encapsular dentro de cada clase solo la información y procedimientos que atañen a dicho concepto.
+Para ello en esta etapa, analizaremos cómo modelar una entidad básica que represente el perfil del usuario en la red social.
+Siguiendo el principio de modularización y abstracción descrito en el libro base, el problema debe descomponerse en sub-
+problemas, abordando cada uno de forma independiente. La clase Perfil encapsulará la información relativa a cada usuario.
+Esto permitirá mantener esta información aislada, facilitando la gestión de la red social y garantizando la coherencia del siste-
+ma. En otras palabras, cada perfil registrado en el sistema se modelará como un objeto de la clase Perfil, con caracterı́sticas
+comunes (atributos o campos). Sin embargo, los valores de estos atributos podrán ser especı́ficos para cada perfil, permitiendo
+representar y gestionar de manera eficiente cada perfil dentro del sistema.
+En el tema 6 de la asignatura (requisito previo para la realización de esta etapa de la práctica) se describen los conceptos de
+tipos primitivos y tipos de objeto. Es decir, a parte de tipos primitivos como int o boolean, se puede definir como atributo de
+una clase otra clase (ver secciones 3.5 a 2.8 del libro base). Esta relación entre objetos es lo que se denomina composición.
+Esta relación permite la modularización del problema.
+En nuestro escenario, por ejemplo, la biografı́a de un perfil contiene a su vez sus propios campos, como fecha de nacimiento,
+aficiones etc. Por tanto, siguiendo la metodologı́a de orientación a objetos, debemos encapsular la biografı́a como una clase
+independiente y relacionarlo con el perfil mediante composición. De esta forma, trabajamos las nociones de abstracción y
+modularización descritas en el tema 6 de la asignatura (Interacción entre objetos) y más concretamente en la sección 3.2 del
+libro base.
+Además, en esta etapa deberán ponerse en práctica los principios de encapsulación de la programación orientada a objetos tal
+y como se describe en el libro base de la asignatura. Esto implica que los campos de las clases deben estar definidos como
+privados, siendo los métodos de la propia clase los únicos que tienen acceso a dichos campos.
+Para la realización de esta primera etapa se requiere haber estudiado los temas 4, 5 y 6 del temario detallado de la asignatura,
+correspondientes a los capı́tulos 1, 2 y 3, ası́ como los apéndices A, B, C, D y F del libro de referencia de la Unidad Didáctica
+II. Para la realización de la etapa 1.2, deben consultarse capı́tulos 6.15 y 6.16 del libro de texto, sobre métodos de clase.
+Además, en el apéndice E puede encontrar más información sobre el método main(), en concreto en el apartado E1. Puede
+consultar también el capı́tulo 3.10 “Objetos que crean objetos” si necesita más información acerca de la creación de objetos
+desde el código.
+2.1. ETAPA 1.1:Diseño
+Uno de los elementos principales del sistema es la noción de perfil, que será modelada como una clase a partir de la cual
+se podrán crear instancias u objetos de la misma. En esta fase del desarrollo de la práctica, cada perfil se describe por la
+siguiente información, que modelaremos como atributos de la clase Perfil:
+nombre, que representa el nombre y apellidos real del usuario.
+idUsuario, que representa el identificador dado por el sistema, que tendrá el formato nombre_del_usuarioX, donde
+X es un número.
+password, que representa la clave de seguridad para poder hacer un login.
+4
+ETAPA 1.2 Implementación
+URL, que representa la dirección URL asignada por el sistema al perfil, que tendrá el formato:
+https://www.miRed.com/identificador.
+Además, cada perfil dispone de información sobre la biografı́a del usuario. Esto incluye fecha de nacimiento, y tres textos
+correspondientes a aficiones, profesión y objetivos vitales.
+El sistema debe permitir instanciar objetos de la clase Perfil y Biografia, ası́ como actualizar la biografı́a del perfil
+mediante el método set correspondiente. Además, la clase Perfil dispondrá de un método que imprima en pantalla toda su
+información, incluyendo nombre, URL, biografı́a, etc. Se muestra a continuación un ejemplo de formato que deberı́a tener la
+salida en pantalla de este método.
+Identificador de usuario: user1
+Nombre: Pedro González
+URL: https://www.miRed.com/user1
+BIO:
+Fecha de nacimiento: Sun Nov 17 00:00:00 CET 1974
+Aficiones: Andar por el campo
+Profesión: Informático
+Objetivos vitales: Salvar animales
+Siguiendo la metodologı́a de programación orientada a objetos, es importante tener en cuenta que cada clase debe incluir los
+métodos que gestionan sus propios atributos. Esto quiere decir que la impresión de los atributos del perfil y de la biografı́a
+debe realizarse en métodos de su clase correspondiente. Téngase en cuenta que el método que imprime la información del
+perfil puede invocar a su vez al método que imprime la información de la biografı́a.
+La tarea en esta etapa consistirá en realizar un diseño con las clases Perfil y Biografı́a relacionadas mediante composición.
+El diseño debe incluir los atributos y métodos de cada una de las clases. Por cada atributo debe haber dos métodos, uno para
+consultar su valor y otro para modificarlo. Por ejemplo, para el campo nombre tendremos los métodos getNombre() y
+setNombre() para consultar su valor y modificarlo, respectivamente.
+2.2. ETAPA 1.2 Implementación
+La tarea correspondiente a esta etapa consiste en programar el diseño realizado en la etapa anterior. Para comprobar su
+funcionamiento se puede usar el entorno BlueJ.
+NOTA SOBRE BLUEJ: Es importante comprender que Java y BlueJ son cosas diferentes. Java es un lenguaje de
+programación, mientras que BlueJ es un entorno de programación que nos permite programar en Java. BlueJ está pensado
+para el aprendizaje de Java y proporciona distintas herramientas que permiten inspeccionar las partes de un programa,
+tanto en la parte de diseño (cuando estamos escribiendo el código) como en la de ejecución (cuando el código se ejecuta,
+se crean los objetos en memoria, etc.).
+Una de las herramientas de BlueJ que pueden resultar más útiles es el banco de objetos u object bench (capı́tulo 1 del
+libro), junto con otras herramientas como el inspector de objetos, resulta muy interesante para “jugar” con los objetos en
+tiempo de ejecución de forma interactiva. Podemos ver un ejemplo de los mismos en la figura 2.1, en el ejemplo, uno
+de ellos está siendo inspeccionado, lo que nos permite visualizar los valores de sus atributos. La clase Pelı́cula no está
+incluida en la práctica; es solo un ejemplo para mostrar el funcionamiento de BlueJ.
+BlueJ nos permite ejecutar nuestras aplicaciones mediante la invocación de los métodos de sus objetos, pero no es esta la
+única manera de hacerlo. Java, más allá de BlueJ, nos permite ejecutar los programas que creamos de forma independiente.
+A estas alturas sabemos que cada clase tiene unos métodos y campos propios de los objetos creados a partir de dicha
+clase, que para poderlos usar necesitamos crear primero un objeto. Por ejemplo, la clase Perfil que hemos creado tiene
+un método para consultar su identificador, que sólo podrı́a ser invocado una vez tengamos creado algún objeto de esta
+clase.
+Al final de este apartado se deberı́a entender la diferencia entre ejecutar un programa en BlueJ y hacerlo de forma inde-
+pendiente, esto es, por ejemplo, ejecutarlo desde la lı́nea de comandos (sı́mbolo de sistema en Windows/Linux/MacOS).
+Para la fase de implementación damos las siguientes guı́as sobre el uso de clases predefinidas. En cuanto a la fecha de
+nacimiento, podemos usar el tipo Date. En este sentido establecemos una relación de composición sobre una clase que no
+tendremos que programar, sino que podremos importarla directamente incorporando una librerı́a. Para ello debemos añadir
+en nuestro código la instrucción import java.util.Date;. Más adelante en este curso, veremos más detalles sobre el uso
+de librerı́as en la sección 5.1 del libro base. Por lo pronto, basta considerar que definir un atributo como de tipo Date implica
+5
+Fundamentos de Informática. Práctica Obligatoria. ETAPA 1: Clase, objetos, atributos y métodos
+Figura 2.1: BlueJ con varias pelı́culas creadas en el banco de objetos. La clase Pelı́cula no está incluida en la práctica. Es solo un
+ejemplo.
+establecer una relación entre la clase Biografia y la clase Date importada desde una librerı́a.
+Para los otros atributos de la clase biografı́a, ası́ como los de la clase que representa el perfil, se puede usar el tipo String.
+Esto quiere decir que, al igual que en el caso de la fecha de nacimiento, también se trata de una relación de composición
+entre objetos. La diferencia es que en este caso la clase “viene implementada por defecto”, o lo que es lo mismo, pertenece al
+paquete java.lang que se importa automáticamente sin necesidad de especificarlo en el código.
+En la etapa 2 (siguiente etapa) implementaremos los métodos que asignan automáticamente identificadores y URL a los
+perfiles. Para mantener la encapsulación, estas acciones serán llevadas a cabo por otras clases que tienen acceso a todos los
+perfiles. Es decir, en programación orientada a objetos es muy importante que cada clase realice solo aquellas acciones que
+pueden ser llevadas a cabo accediendo a la información que encapsulan.
+2.3. ETAPA 1.3: Ejecución y pruebas
+Tener una clase implementada no es suficiente para que un programa se ejecute porque una clase, en realidad, no es un
+programa en sı́, sino una definición abstracta de cómo deben ser ciertos objetos y qué comportamiento pueden tener. La clase
+establece atributos, métodos y relaciones, pero no indica cuándo debe comenzar la ejecución ni qué acciones concretas deben
+realizarse primero. Por ejemplo, en nuestro caso, la clase que hemos programado define las caracterı́sticas de un perfil, qué
+información incluye y qué acciones (métodos) se pueden realizar sobre dicha información.
+Los métodos definidos en una clase no se ejecutan automáticamente; pertenecen a instancias concretas de esa clase. Por eso
+es necesario crear objetos, es decir, instanciar la clase, lo que implica reservar memoria y dar lugar a un elemento concreto
+con estado propio. Solo una vez creada la instancia es posible utilizar sus métodos y acceder a sus atributos. En ausencia
+de un punto de entrada, de instancias y de llamadas explı́citas a los métodos, el código queda limitado a ser una colección
+de definiciones estáticas, correctas desde el punto de vista sintáctico, pero incapaces de producir ninguna acción o resultado
+durante la ejecución.
+Para ello, se debe implementar una clase con un método estático (ejecutable) que en JAVA se denomina main(). A partir de
+el método main(), se crean estas instancias y se realizan las invocaciones necesarias para que el sistema se pueda ejecutar
+realizando acciones en un orden determinado.
+En esta práctica comprobaremos de dos maneras el correcto funcionamiento de las clases que implementemos. Por un lado,
+ejecutando una clase con un método main que contiene código donde se instancias las clases y se llaman a métodos que apor-
+tamos directamente en el enunciado. Estas clases ejecutables se llamaran EjemploEtapaX, donde X representa la etapa en la
+que nos encontremos dentro del desarrollo de la práctica. Por otro lado, simulando un escenario más realista, se aporta junto
+con el material de esta práctica una serie de clases denominadas InterfazEtapaX en donde se ha programado un interfaz
+6
+ETAPA 1.3: Ejecución y pruebas
+que hace uso de las clases que implementemos a lo largo de la práctica.
+El objetivo de esta etapa es ejecutar estas clases para comprobar que la clase Perfil se haya implementado correctamente.
+Para ejecutar nuestro programa de manera independiente de BlueJ y crear el flujo principal del sistema, crearemos una clase
+llamada EjemploEtapa1, donde implementaremos el método main(). Esta clase contendrá el código en el que se crean las
+instancias de objetos necesarias y las llamadas para poder comprobar el funcionamiento del sistema.
+El ejercicio a realizar en este punto consiste en crear dicha clase EjemploEtapa1, que contenga un método main() e imple-
+mentar en este método el siguiente código1:
+public class EjemploEtapa1 {
+public static void main (String [ ] args) {
+Perfil p=new Perfil();
+p.setIdUsuario(‘‘user1’’);
+p.setNombre(‘‘Pedro González’’);
+p.setURL(‘‘https://www.miRed.com/user1’’);
+p.setPassword(‘‘migatoluis0’’);
+Biografia b=new Biografia();
+Date fecha = new Date(74, 10, 17);
+b.setFechaDeNacimiento(fecha);
+b.setAficiones(‘‘Los gatos’’);
+b.setProfesion(‘‘Informático’’);
+b.setObjetivosVitales(‘‘Salvar animales’’);
+p.setBiografia(b);
+p.imprimeInformacion();
+}
+}
+Este código deberı́a crear una instancia de la clase Perfil y otra de la clase Biografia y fijar sus atributos. Posteriormente,
+el código imprime por pantalla la información siguiente:
+Identificador de usuario: user1
+Nombre: Pedro González
+URL: https://www.miRed.com/user1
+BIO:
+Fecha de nacimiento: Sun Nov 17 00:00:00 CET 1974
+Aficiones: Los gatos
+Profesión: Informático
+Objetivos vitales: Salvar animales
+Además, deberá poder ejecutarse correctamente la clase InterfazEtapa1 que se proporciona junto a este enunciado. Al eje-
+cutar este programa, se pide por linea de comandos el identificador del usuario, su nombre, biografı́a y URL. Luego se piden
+los datos de su biografı́a. El programa crea los objetos correspondientes, e imprime la información. Este programa realiza
+estas operaciones mediante llamadas a constructores y métodos de la práctica implementada. Es importante que la práctica
+siga las especificaciones y cubra los ejemplos de instanciación y llamadas a métodos.
+NOTA IMPORTANTE: La presente práctica debe poderse ejecutar independientemente de BlueJ de cara a su
+entrega y corrección.
+1En el curso virtual, junto con el enunciado de la práctica puede descargar el código fuente de esta clase EjemploEtapa1
+7
+ETAPA 2: Agrupando Objetos
+Esta etapa se corresponde con los temas 7, 8 y 9 de la asignatura. Además de implementar nuevas clases y relaciones
+de composición, se abordará el problema de la agrupación de objetos en estructuras y la implementación de bucles para el
+procesamiento de dichas estructuras.
+En esta etapa deberán también ponerse en práctica los principios de encapsulación de la programación orientada a objetos tal
+y como se describe en el libro base de la asignatura (sección 5.11 del libro base). Esto implica que los campos de las clases
+deben estar definidos como privados, siendo los métodos de la propia clase los únicos que tienen acceso a dichos campos.
+Finalmente, es una buena práctica de programación documentar todo el código que se va realizando, no sólo con el objetivo
+de que terceras personas puedan comprender nuestro programa, sino también para que nosotros mismos podamos entender
+nuestro código de cara a futuras extensiones, mejoras o modificaciones. Para la generación de documentación, Java nos ofrece
+la herramienta Javadoc (sección 5.10 del libro base), que por medio de determinado tipo de comentarios añadidos en nuestro
+código fuente, nos permite la generación posterior de toda la documentación de las distintas clases.
+Para la realización de esta etapa se deben estudiar los temas 7, 8 y 9 del temario detallado de la asignatura. Encontrará
+información más detallada sobre el mecanismo de composición y la generación de documentación en el libro de texto de la
+asignatura en lo capı́tulos 4, 5 y 6. La lectura de las secciones de 8.3 a 8.6 (ambas inclusive) sobre buenas prácticas en el
+diseño de aplicaciones es también recomendable.
+3.1. ETAPA 2.1: Diseño.
+En esta etapa ampliaremos el diseño incorporando la noción de post, incorporando una nueva clase a la que llamaremos
+Post. Siguiendo las especificaciones indicadas al comienzo de este enunciado, un post se caracteriza por un texto (contenido
+del post) y una URL con el formato https://www.miRed.com/post/identificador_de_usuario.numero
+En la etapa anterior abordamos la relación de composición, estableciendo una relación uno a uno entre perfiles y biografı́as.
+De este modo, encapsulábamos la información relativa a las biografı́as en una clase independiente. Sin embargo, la mayorı́a
+de las relaciones entre clases son de uno a muchos. Por ejemplo, un perfil tiene asociado un conjunto de posts. Se trata de
+relaciones de composición dado que los posts forman parte del perfil como uno de sus atributos.
+Para capturar relaciones de uno a muchos es necesario introducir una estructura intermedia que agrupe todos los posts como
+un único atributo del perfil. Para ello utilizaremos la clase ArrayList. En la sección 4.4 del libro base se explican con más
+detalle sus caracterı́sticas y funcionamiento. Esta clase permite almacenar y gestionar listas de elementos de forma sencilla
+y flexible, ya que posibilita añadir y eliminar elementos sin necesidad de fijar el tamaño de la colección desde el inicio. Los
+elementos se almacenan en un orden determinado y pueden accederse mediante una posición numérica, de manera similar a
+un array, comenzando por la posición cero. Por estas razones, ArrayList es una estructura muy utilizada cuando se trabaja
+con colecciones de datos de tamaño variable de forma cómoda y eficiente. De esta forma, la clase Perfil tendrá como
+atributo un ArrayList que a su vez contiene objetos del tipo Post.
+En este nuevo diseño la impresión en pantalla de la información de un perfil debe incluir la información de todos sus posts.
+Además el diseño debe permitir añadir un nuevo post al perfil. En el momento que se añade un post, automáticamente se le
+asigna una URL formato:
+https://www.miRed.com/post/identificador_de_usuario.numero
+Es importante tener en cuenta que es la clase Perfil la que debe asignar este identificador cuando se añada un nuevo post al
+8
+ETAPA 2.2: Implementación
+perfil, dado que es ésta clase la que tiene control sobre los post del perfil.
+En esta etapa diseñaremos también la clase MiRed que va a modelar nuestra red social y que gestiona todos los perfiles,
+ademas de ofrecer funcionalidades mediante una serie de métodos que describiremos a continuación:
+Dar de alta un perfil en el sistema. Para ello debe disponer de un método añadirPerfil que reciba como entrada un
+objeto de tipo Perfil. El sistema le asignará un identificador de usuario que consistirá en la palabra user y el primer
+número libre. Además, le asignará una URL con el formato:
+https://www.miRed.com/<identificador_de_usuario>
+Un método comprobarPassword que, dado un identificador de usuario y una password, compruebe que ésta es correcta.
+En caso de que no exista el identificador de usuario o no se corresponda la password, el método deberá indicarlo
+imprimiendo en pantalla el resultado y devolviendo el valor false. En el caso de que la password sea correcta, deberá
+indicarlo en pantalla y devolver el valor true. Es decir, en este caso el método comprobarPassword deberá devolver
+un tipo booleano.
+Visualizar los nombres e identificadores de usuarios dados de alta en el sistema mediante un método al que llamaremos
+visualizarRed. Este método deberá imprimir en pantalla sucesivamente los identificadores de usuario y su nombre
+para todos los perfiles dados de alta en el sistema.
+Un método visualizarPerfil que dado un identificador de usuario, muestre toda la información de su perfil. Para
+ello, el método tendrá que comprobar que existe el usuario, y en caso contrario indicarlo en pantalla.
+Un método anadirPost, que reciba como entrada el identificador de usuario y el texto del post. El sistema deberá
+comprobar que el usuario existe antes de añadir el post a su perfil. En caso de que no exista, deberá escribir un mensaje
+en pantalla indicando que el usuario no existe.
+En este punto es importante recordar los conceptos de acoplamiento y cohesión descritos en el capı́tulo 6 del libro base. Los
+métodos comprobarPassword, visualizarPerfil y anadirPost deben comprobar que existe el usuario. La forma correcta
+de diseñar una solución para esto serı́a añadir un método auxiliar buscarUsuario que devuelva null en el caso de que el
+usuario no exista o el objeto del tipo Perfil correspondiente en el caso de que sı́ exista. Esto permitirı́a que si por algún
+motivo queremos optimizar esta comprobación, por ejemplo mediante algún algoritmo de búsqueda más eficiente, podamos
+hacerlo una sola vez y que no sea necesario programar lo mismo en varias partes del código.
+También es necesario recordar el concepto de reutilización de código en programación orientada a objetos. Al igual que
+nosotros hemos reutilizado el código de clases como ArrayList o Date que tienen sus propios métodos, los desarrolladores
+de la aplicación final de la red social usarán nuestro código sobre el que implementarán un sistema que incluya otros aspectos
+como el interfaz de usuario, almacenamiento de información, login, seguridad, etc. Estos desarrolladores necesitaran de otras
+funcionalidades que tenemos que implementar. Por ejemplo, el método comprobarPassword será usado por el sistema global
+para permitir que los usuarios accedan a la aplicación.
+La tarea a realizar en esta etapa consiste en hacer el diseño de clases cubriendo las especificaciones anteriores.
+3.2. ETAPA 2.2: Implementación
+En esta etapa implementaremos el diseño desarrollado en la etapa anterior. Para ello damos las siguientes directrices que
+pueden ayudar en el proceso de implementación.
+Hay que recordar que la clase ArrayList requiere importar una librerı́a: import java.util.ArrayList; Es decir, al
+definir el atributo posts como una colección del tipo ArrayList con objetos de la clase Post, esto nos permite hacer uso de
+métodos ya implementados en otras librerı́as. En otras palabras, estamos reutilizando código. Lo mismo para el problema de
+composición entre MiRed y Perfil. En la sección 4.4 del libro base se dan detalles sobre el uso de esta clase.
+Al añadir un post a un perfil, según las especificaciones es necesario asignarle una URL que termina con el identificador de
+usuario y un número. Para que cada post tenga su propia URL, este número debe de corresponderse con la cantidad de post
+que haya en ese momento en el perfil. Para ello puede hacerse uso del método size() de la clase ArrayList. Lo mismo
+ocurrirá al asignarle un identificador de usuario a un nuevo perfil, por ejemplo user12, donde el número representa la cantidad
+de perfiles en el momento de añadir el nuevo perfil.
+En este proceso de implementación, tendremos que modificar el método imprimeInformacion() de la clase Perfil, de
+forma que, siempre que existan, se imprimian en pantalla los posts y sus comentarios. Para comprobar que existen comentarios
+o posts se puede comprobar la condición posts != null, donde posts es un ArrayList. Lo que estarı́amos haciendo es
+9
+Fundamentos de Informática. Práctica Obligatoria. ETAPA 2: Agrupando Objetos
+comprobar que el atributo posts no ha sido inicializado con ningún post.
+Según las especificaciones, los métodos comprobarPassword, visualizarPerfil y añadirPost deben comprobar que
+existe el usuario. Para ello tendrán que recorrer la lista de perfiles dados de alta en el sistema, encontrar aquel que coincida
+en el identificador. Podemos reutilizar el método equals de la clase String que comprueba si dos string son iguales.
+3.3. ETAPA 2.3: Ejecución y pruebas
+Una vez implementada la clase MiRed, deberı́a poder ejecutarse el siguiente código en el método main(), que puede
+encontrarse en el fichero EjemploEtapa2. A continuación, desglosamos por pasos el contenido de este fichero y la respuesta
+que deberı́a de aparecer en pantalla.
+public class EjemploEtapa2 {
+public static void main (String [ ] args) {
+Perfil p1=new Perfil(‘‘Pedro González’’,‘‘migatoluis0’’);
+Biografia b=new Biografia();
+Date fecha = new Date(74, 10, 17);
+b.setFechaDeNacimiento(fecha);
+b.setAficiones(‘‘Los gatos’’);
+b.setProfesion(‘‘Informático’’);
+b.setObjetivosVitales(‘‘Salvar animales’’);
+p1.setBiografia(b);
+Perfil p2=new Perfil(‘‘Juan Pérez’’,‘‘lalalala’’);
+Biografia b2=new Biografia();
+Date fecha2 = new Date(94, 2, 1);
+b2.setFechaDeNacimiento(fecha2);
+b2.setAficiones(‘‘Música’’);
+b2.setProfesion(‘‘Albañil’’);
+b2.setObjetivosVitales(‘‘Recorrer el mundo’’);
+p2.setBiografia(b2);
+MiRed r=new MiRed();
+r.anadirPerfil(p1);
+r.anadirPerfil(p2);
+r.visualizarRed();
+...
+Hasta este punto, el código de EjemploEtapa2 deberı́a crear dos instancias de Perfil con toda su información menos la URL
+y el identificador de usuario. Entonces, al realizar las llamadas a añadirPerfil el sistema deberı́a asignar los identificadores
+de usuario y las URL. Tras esto, al visualizar la red, deberı́a verse en pantalla la lista con los dos identificadores de usuario y
+sus nombres.
+Usuarios en la red:
+user1: Pedro González
+user2: Juan Pérez
+A continuación, mediante el método visualizarPerfil deberı́a desplegarse la información de cada uno de los perfiles. Es
+decir, lo siguiente en el código de ejemploEtapa22 será:
+...
+r.visualizarPerfil(‘‘user56’’);
+r.visualizarPerfil(‘‘user1’’);
+...
+En el primer caso el sistema deberá indicar que no existe el usuario. Ante la siguiente instrucción el sistema deberá mostrar
+la información del usuario:
+No existe el usuario user56
+Identificador de usuario: user1
+Nombre: Pedro González
+10
+ETAPA 2.3: Ejecución y pruebas
+URL: https://www.miRed.com/user1
+BIO:
+Fecha de nacimiento: Sun Nov 17 00:00:00 CET 1974
+Aficiones: Los gatos
+Profesión: Informático
+Objetivos vitales: Salvar animales
+A continuación, ejemploEtapa22 hace uso del método comprobarPassword:
+...
+boolean comprobacion1 = r.comprobarPassword(‘‘user56’’,‘‘migato’’);
+boolean comprobacion2 = r.comprobarPassword(‘‘user1’’,‘‘migato’’);
+boolean comprobacion3 = r.comprobarPassword(‘‘user1’’,‘‘migatoluis0’’);
+... Entonces, el sistema deberı́a de imprimir en pantalla los mensajes correspondientes a cada llamada:
+No existe el usuario user56
+La password es incorrecta
+Password correcta
+A continuación, el código de ejemploEtapa22 hace uso del método añadirPost. Pero emplea un identificador de usuario
+inexistente. El sistema debe de informar de ello. Tras esto llama a añadirPost, y visualiza el perfil.
+...
+r.anadirPost(‘‘user56’’,‘‘Hoy me siento bien’’);
+r.anadirPost(‘‘user1’’,‘‘Hoy me siento bien’’);
+r.anadirPost(‘‘user1’’,‘‘Hoy me siento mal’’);
+r.visualizarPerfil(‘‘user1’’);
+...
+A esta parte de código, el sistema deberı́a de responder:
+No existe el identificador de usuario user56
+Identificador de usuario: user1
+Nombre: Pedro González
+URL: https://www.miRed.com/user1
+BIO:
+Fecha de nacimiento: Sun Nov 17 00:00:00 CET 1974
+Aficiones: Los gatos
+Profesión: Informático
+Objetivos vitales: Salvar animales
+POSTS:
+https://www.miRed.com/post/user1.1 Hoy me siento bien
+https://www.miRed.com/post/user1.2 Hoy me siento mal
+Además, deberá poder ejecutarse correctamente la clase InterfazEtapa2 que se proporciona junto a este enunciado. Al
+ejecutar este programa, se pide por linea de comandos el nombre de dos usuarios y sus datos. El interfaz crea los perfiles
+correspondientes y los añade al sistema. Tras esto, el interfaz ofrece tres opciones: visualizar perfil, añadir post o salir. En el
+primer caso, muestra en pantalla los identificadores de usuario y sus nombres. Luego pregunta por un identificador de usuario
+y muestra la información de su perfil. En el segundo caso también muestra en pantalla los identificadores de usuario y sus
+nombres. Luego pregunta por un identificador de usuario, la password y el texto del post a añadir. Si el usuario existe y la
+password es correcta, añade el post e imprime en pantalla la información del perfil.
+11
+ETAPA 3: Herencia
+Esta etapa aborda los contenidos de los temas 10, 11 y 12 del temario detallado de la asignatura, correspondientes a
+los Capı́tulos 10 y 11, secciones 12.3 y 12.4 y el capı́tulo 14 y 7 del libro base para la Unidad Didáctica II. Vamos a
+analizar un aspecto fundamental de la programación orientada a objetos, la herencia. A lo largo del ciclo de vida de un
+sistema informático pueden surgir nuevos requisitos, es decir, la necesidad de cubrir nuevas funcionalidades. Antes de que se
+popularizara este paradigma de programación, era necesario replantear el sistema y revisar el código ya implementado. Sin
+embargo, la programación orientada a objetos ofrece mecanismos de herencia, de forma que, a partir del código ya existente,
+pueden definirse nuevas clases que heredan las propiedades de las clases ya existentes pero incorporando nuevos atributos o
+métodos.
+4.1. ETAPA 3.1: Diseño
+En esta parte de la práctica vamos a simular la situación en la que se quiere extender el sistema para que se contemplen
+perfiles profesionales. La particularidad de los perfiles profesionales es que contienen, además del nombre, URL y bio-
+grafı́a, un currı́culum en formato texto y un campo con la descripción del empleo actual. Además, al imprimirse en pantalla
+su información, ésta también incluye una etiqueta que indica “Perfil profesional”.
+En cuanto a diseño, es importante tener en cuenta algunos aspectos. El uso de la herencia deberı́a permitir extender el sistema
+sin modificar la arquitectura previa ya implementada. Deberı́a bastar con crear una clase hija a partir de las existentes. En
+el diseño, se debe indicar los nuevos atributos o campos de la clase hija, ası́ como los métodos que es necesario reescribir.
+Recordemos que la reescritura de métodos en la herencia consiste en que si en la clase hija aparece un método con la misma
+cabecera (nombre y parámetros) que un método de la clase padre, entonces cuando se invoque al objeto no se ejecutará el
+método de la clase padre, sino el nuevo método implementado en la clase hija.
+La tarea a realizar en esta etapa consiste en hacer el diseño de clases cubriendo las especificaciones anteriores.
+4.2. Etapa 3.2: Implementación.
+Para la implementación en esta etapa debemos de tener en cuenta algunos aspectos. Para que se pueda validar la práctica
+sobre las llamadas descritas en la sección 4.3, tendremos que llamar a la nueva clase hija PerfilProfesional. Al igual que
+su clase padre, esta clase tendrá dos parámetros en el constructor. Por otro lado, tendrá que poderse actualizar el currı́culum
+y la ocupación actual con dos métodos que se denominen setCurriculum y setOcupacion y que reciban como entrada un
+objeto tipo String con el contenido de cada uno de los campos.
+También a nivel de implementación, es importante tener en cuenta que la clase MiRed deberı́a de poder gestionar objetos
+de tipo Perfil o PerfilProfesional indistintamente. Es lo que se denomina polimorfismo. Si es necesario, por ejemplo
+asignarle una URL o identificador, MiRed deberı́a de poder hacer las mismas llamadas a métodos independientemente de
+que se trate de una instancia de la clase Perfil o PerfilProfesional. Muchos de los métodos que se ejecutarán al llamar
+a PerfilProfesional serán en realidad los ya implementados en Perfil dado que estos se heredan. Pero sin embargo,
+si necesitamos modificar un método como el responsable de imprimir la información, entonces la cabecera del método en
+la clase hija tendrá que ser la misma que usamos en la clase padre. Automáticamente se ejecutará el método original o el
+re-escrito dependiendo de que se trate de un objeto de la clase Perfil o PerfilProfesional.
+Otro detalle a considerar es que en la clase MiRed los objetos de la clase Perfil que gestiona están definidos como
+Perfil. Sin embargo, los objetos pueden pertenecer a la clase Perfil o PerfilProfesional. Esto no supone ningún
+problema. Un objeto de la clase hija puede estar definido como un objeto de la clase padre. Hay que tener en cuenta que
+12
+Etapa 3.3: Ejecución y pruebas.
+esto solo sucede en el caso de la relación de herencia. Por ejemplo, no podemos asignar a una variable un objeto del tipo
+PerfilProfesional si esta variable está definida como del tipo MiRed o Biografı́a dado que mantienen relaciones de
+composición. Sin embargo, sı́ que podemos asignar a una variable un objeto del tipo PerfilProfesional si esta variable
+está definida como del tipo Perfil.
+4.3. Etapa 3.3: Ejecución y pruebas.
+Una vez implementada la clase PerfilProfesional, deberı́a poder ejecutarse el siguiente código en el método main(),
+que puede encontrarse en el fichero EjemploEtapa3. A continuación desglosamos por pasos el contenido de este fichero y la
+respuesta que deberı́a de aparecer en pantalla.
+public class EjemploEtapa3 {
+public static void main (String [ ] args) {
+Perfil p1=new Perfil(‘‘Pedro González’’,‘‘migatoluis0’’);
+Biografia b=new Biografia();
+Date fecha = new Date(74, 11, 17);
+b.setFechaDeNacimiento(fecha);
+b.setAficiones(‘‘los gatos’’);
+b.setProfesion(‘‘Informático’’);
+b.setObjetivosVitales(‘‘Salvar animales’’);
+p1.setBiografia(b);
+PerfilProfesional p2=new PerfilProfesional(‘‘Juan Pérez’’,‘‘lalalala’’);
+Biografia b2=new Biografia();
+Date fecha2 = new Date(94, 2, 1);
+b2.setFechaDeNacimiento(fecha2);
+b2.setAficiones(‘‘Música’’);
+b2.setProfesion(‘‘Albañil’’);
+b2.setObjetivosVitales(‘‘Recorrer el mundo’’);
+p2.setBiografia(b2);
+p2.setCurriculum(‘‘Experiencia en múltiples empresas’’);
+p2.setOcupacion(‘‘Encargado de hormigonera en Construcciones S.L.’’);
+MiRed r=new MiRed();
+r.anadirPerfil(p1);
+r.anadirPerfil(p2);
+r.visualizarRed();
+...
+Hasta este punto, el código de EjemploEtapa3 deberı́a crear dos instancias de Perfil y PerfilProfesional con toda
+su información menos la URL y el identificador de usuario. Entonces, al realizar las llamadas a añadirPerfil el sistema
+deberı́a asignar los identificadores de usuario y URL. Tras esto, al visualizar la red, deberı́a verse en pantalla la lista con los
+dos identificadores de usuario y sus nombres.
+Usuarios en la red:
+user1: Pedro González
+user2: Juan Pérez
+A continuación, mediante el método visualizarPerfil deberı́a desplegarse la información de cada uno de los perfiles. Es
+decir, lo siguiente en el código de ejemploEtapa3 será:
+...
+r.visualizarPerfil(‘‘user2’’);
+...
+En el primer caso el sistema deberá indicar que no existe el usuario. Ante la siguiente instrucción el sistema deberá mostrar
+la información del usuario:
+Identificador de usuario: user2
+Nombre: Juan Pérez
+13
+Fundamentos de Informática. Práctica Obligatoria. ETAPA 3: Herencia
+URL: https://www.miRed.com/user2
+BIO:
+Fecha de nacimiento: Tue Mar 01 00:00:00 CET 1994
+Aficiones: Música
+Profesión: Albañil
+Objetivos vitales: Recorrer el mundo
+Currı́culum: Experiencia en múltiples empresas
+Ocupación actual: Encargado de hormigonera en Construcciones S.L.
+A continuación ejemploEtapa3 hace uso del método comprobarPassword: ...
+boolean comprobacion1 = r.comprobarPassword(‘‘user56’’,‘‘migato’’);
+boolean comprobacion2 = r.comprobarPassword(‘‘user2’’,‘‘lala’’);
+boolean comprobacion3 = r.comprobarPassword(‘‘user2’’,‘‘lalalala’’);
+... Entonces, el sistema deberı́a de imprimir en pantalla los mensajes correspondientes a cada llamada:
+No existe el usuario user56
+La password es incorrecta
+Password correcta
+A continuación, el código de ejemploEtapa3 hace uso del método añadirPost. Pero emplea un identificador de usuario
+inexistente. El sistema debe de informar de ello. Tras esto llama a añadirPost, y visualiza el perfil.
+...
+r.anadirPost(üser2","Hoy me siento bien");
+r.anadirPost(üser2","Hoy me siento mal");
+r.visualizarPerfil(üser2");
+...
+A esta parte de código, el sistema deberı́a de responder:
+Identificador de usuario: user2
+Nombre: Juan Pérez
+URL: https://www.miRed.com/user2
+BIO:
+Fecha de nacimiento: Tue Mar 01 00:00:00 CET 1994
+Aficiones: Música
+Profesión: Albañil
+Objetivos vitales: Recorrer el mundo
+POSTS:
+https://www.miRed.com/post/user2.1 Hoy me siento bien
+https://www.miRed.com/post/user2.2 Hoy me siento mal
+Currı́culum: Experiencia en múltiples empresas
+Ocupación actual: Encargado de hormigonera en Construcciones S.L.
+Además, deberá poder ejecutarse correctamente la clase InterfazEtapa3 que se proporciona junto a este enunciado. Al
+ejecutar este programa, se dan tres opciones, “añadir perfil”, “añadir post” y “visualizar perfil”. En el primer caso se pide
+toda la información del perfil: nombre, año, mes y dı́a de nacimiento, profesión, objetivos vitales. Luego se pregunta si es un
+usuario profesional. Si lo es, se pide el currı́culum y la ocupación actual.
+En el caso de elegir “Añadir post”, se muestra en pantalla los identificadores de usuario y sus nombres. Luego pregunta por
+un identificador de usuario, la password y el texto del post a añadir. Si el usuario existe y la password es correcta, añade el
+post e imprime en pantalla la información del perfil.
+En el caso de la tercera opción, se muestra en pantalla los identificadores de usuario y sus nombres. Luego pregunta por un
+identificador de usuario y muestra la información de su perfil.
+14
+ETAPA 4: Opcional
+En esta cuarta etapa opcional se debe ampliar las funcionalidades del sistema siguiendo los mismos tres pasos que en las
+etapas anteriores, es decir, una fase de diseño donde se presente la arquitectura del sistema mediante un diagrama de clases,
+la implementación del sistema cubriendo las nuevas funcionalidades, y codigos de ejemplo y respuestas obtenidas (ejecución
+y pruebas).
+En este caso el código de pruebas dede de ser generado directamente por el alumno. Es importante describir qué hace el
+código y la respuesta que se obtiene, además de justificar las modificaciones en el diseño e implentación.
+Realizando esta parte opcional se podrá obtener un sobresaliente.
+Las nuevas funcionalidades a cubrir serán:
+1. Eliminación de perfiles. La clase MiRed debe incluir un método que dado un identificador de usuario, compruebe
+que existe y lo elimine. Esta funcionalidad presenta complicaciones dado que hasta ahora bastaba con asignar como
+identificador de cada perfil un número que se corresponde con el tamaño de la lista de perfiles existentes. Esto ya no
+es ası́. Por tanto, a la hora de asignar identificadores, deberá no solo considerarse el número de perfiles actuales sino el
+primer número que quede libre.
+2. Eliminacion de post. La clase MiRed debe incluir un método que dado un identificador de usuario y una URL de post,
+elimine de el post correspondiente. En este caso, sucederá lo mismo que en el caso anterior, dado que la asignación de
+las URL ahora tendrá que tener en cuenta no el número de post del perfil, sino el primer numero entero liberado.
+15
+Fechas y normas de entrega
+6.1. Fechas
+La realización de la práctica se llevará a cabo en los Centros Asociados, siendo las sesiones organizadas y supervisadas por
+el tutor de la asignatura. Habrá como mı́nimo tres sesiones presenciales de obligatoria asistencia. Los estudiantes deberán
+ponerse en contacto con su centro asociado para informarse acerca de cuándo tendrán que asistir a las sesiones.
+Las fechas orientativas para la realización de cada una de las etapas serán:
+Finales de marzo. Realización de la primera etapa.
+Mediados de abril. Realización de la segunda etapa.
+Principios de mayo. Realización de la tercera etapa.
+6.2. Normas de entrega
+La práctica se entregará a través de una tarea definida en el entorno virtual de la asignatura. Cada estudiante creará
+y comprimirá una carpeta nombrada con su DNI y primer apellido separados por un guion (”8345385X-gonzalez”). Esta
+carpeta contendrá:
+Una memoria de no más de 7 páginas. Por cada etapa una página dedicada a la descripción del diseño (diagrama) y
+otra página dedicada a la descripción de las pruebas realizadas y resultados obtenidos, más una página extra en caso de
+que se realice la parte voluntaria.
+Los ficheros .java, sin caracteres especiales; por ejemplo “ñ” o tildes finales, es decir, únicamente los de la última etapa.
+NOTA IMPORTANTE: Los nombres de los ficheros y carpetas/paquetes que compongan la práctica entregada deben con-
+tener SÓLO caracteres correspondientes a las letras de la A a la Z, tanto mayúsculas como minúsculas, números del 0 al 9 y
+los caracteres especiales ’-’ y ’ ’. No deben utilizarse otros, tales como tildes o sı́mbolos.
+NOTA IMPORTANTE: Los tutores tienen que cumplir una serie de requisitos ante los estudiantes debido a que la prácti-
+ca cuenta para la calificación de la asignatura. Por tanto, antes de entregar las calificaciones definitivas al equipo docente
+deberán:
+1. Informar de la nota de las prácticas a los estudiantes.
+2. Establecer un dı́a de revisión de prácticas (previo al perı́odo de entrega de las calificaciones al equipo docente), dado
+que éstas forman parte de la evaluación del estudiante.
+Es importante que se mantengan todos los identificadores definidos en el enunciado, es decir, el nombre de las clases, atributos
+y métodos deben ser tal y como se definen en este enunciado.
+6.3. Fechas de entrega
+Para la convocatoria ordinaria (junio) todos los estudiantes deberán entregar su práctica en el entorno virtual antes del
+martes 12 de mayo, todas las fechas inclusive.
+Los tutores deberán evaluar las prácticas y subir las notas al entorno virtual antes del martes 19 de mayo. La fecha corres-
+pondientes a la convocatoria extraordinaria (septiembre) es el 15 de julio para estudiantes.
+16
+Evaluación de la práctica
+6.4. Evaluación de la práctica
+Los tutores tienen a su disposición dos tareas en el espacio Ágora donde introducirán la nota del alumno y el número de
+sesiones a las que ha asistido respectivamente.
+Las prácticas tienen carácter INDIVIDUAL, para evitar posibles copias todas las prácticas pasarán por un software
+detector de ejemplares similares. La detección de prácticas copiadas implicará un SUSPENSO en TODO el curso, es
+decir, convocatorias de junio y septiembre, para todos los implicados. Se incluirá la salida de prácticas realizada por
+IA en el sistema de detección de copias.
+Para obtener la máxima nota en la práctica es necesario realizar la parte opcional.
+Es requisito indispensable para aprobar el examen la asistencia a las 3 sesiones obligatorias de la práctica, ası́ como
+superar la propia práctica.
+Las prácticas NO se guardan de un curso para otro.
+6.5. Preguntas al equipo docente
+Las preguntas relativas a la instalación del entorno de desarrollo, puesta en funcionamiento y errores de compilación
+deben ser remitidas a los tutores de los centros asociados.
+El equipo docente atenderá preguntas de carácter metodológico y de diseño, preferentemente a través de los foros del
+curso virtual de la asignatura y del siguiente correo electrónico:
+fund inf@lsi.uned.es
+Los datos de contacto de cada uno de los miembros del equipo docente son:
+Roberto Centeno Sánchez, Profesor Titular de Universidad
+Tutorı́as: Jueves de 11:00 a 13:00h. y de 15:00 a 17:00 h.
+Teléfono: 91 398 96 96
+Mail: rcenteno@lsi.uned.es
+Vı́ctor Fresno Fernández, Profesor Titular de Universidad
+Tutorı́as: Martes y Miércoles de 11:30 a 13:30
+Teléfono: 91 398 82 17
+Mail: vfresno@lsi.uned.es
+Enrique Amigó Cabrera, Profesor Titular de Universidad
+Tutorı́as: Jueves de 15:00 a 19:00
+Teléfono: 91 398 86 51
+Mail: enrique@lsi.uned.es
+Alberto Pérez Garcı́a Plaza, Profesor Permanente Laboral
+Tutorı́as: Jueves de 15:00 a 19:00
+Teléfono: 91398-8412
+Mail: alberto.perez@lsi.uned.es
+17
