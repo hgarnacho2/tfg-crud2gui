@@ -4,7 +4,7 @@ Convierte el PDF de un enunciado de práctica en **texto plano** y lo **filtra**
 
 ```
 enunciado.pdf ──▶ enunciado.txt ──▶ enunciado-filtrado.txt ──▶ (análisis con LLM)
-       PdfToTxtConverter          StatementFilter
+       StatementExtractor           StatementFilter
 ```
 
 ## Requisitos
@@ -19,12 +19,13 @@ Dependencias del módulo (se descargan solas la primera vez, hace falta internet
 
 * [Apache PDFBox](https://pdfbox.apache.org/) 3.0.3: extracción de texto.
 * JUnit Jupiter 5.10.2: tests.
+* `common-utils`: librería transversal para la gestión centralizada de configuración.
 
 ---
 
 ## ⚙️ Configuración y Entorno (`DotEnv`)
 
-El módulo incorpora un gestor de configuración jerárquico a través de la clase `DotEnv`. Busca automáticamente los ficheros de entorno (**`.env.public`** y **`.env.private`**) subiendo de forma inteligente por los directorios padres hasta la **raíz del proyecto**, garantizando que funcione independientemente de la ruta desde donde se ejecute.
+El módulo incorpora un gestor de configuración jerárquico a través de la clase `DotEnv` (provista por `common-utils`). Busca automáticamente los ficheros de entorno (**`.env.public`** y **`.env.private`**) subiendo de forma inteligente por los directorios padres hasta la **raíz del proyecto**, garantizando que funcione independientemente de la ruta desde donde se ejecute.
 
 ### Variables de configuración disponibles (en `.env.public`):
 * **`FILTER_STATEMENT_TEXT`** (`true` / `false`): Activa o desactiva el filtrado automático de texto innecesario durante la extracción del enunciado.
@@ -43,8 +44,8 @@ statement-extractor/
 └── src/
     ├── main/
     │   ├── java/com/crud2gui/statement/
-    │   │   ├── extractor/          # punto de entrada y lógica de extracción
-    │   │   ├── filter/             # limpieza del enunciado
+    │   │   ├── extractor/          # contiene StatementExtractor
+    │   │   ├── filter/             # contiene StatementFilter
     │   │   └── package-info.java
     │   └── resources/
     └── test/
@@ -61,7 +62,6 @@ Desde `modules/statement-extractor/` (o ejecutando el script desde la ruta corre
 ```
 
 Genera en `output/enunciado_practica_23/`:
-
 * `enunciado_practica_23.txt`: texto completo extraído del PDF.
 * `enunciado_practica_23-filtrado.txt`: texto del enunciado ya filtrado (según la configuración de `.env.public`).
 
@@ -73,14 +73,6 @@ Procesa **un único PDF por ejecución**.
 ./script/run.sh <pdf>
 ```
 
-`<pdf>` puede ser:
-
-| Argumento | Dónde se busca |
-|---|---|
-| Solo el nombre (`enunciado_practica_23` o `enunciado_practica_23.pdf`) | Tal cual en el directorio actual y, si no existe, en `src/test/resources` |
-| Una ruta relativa o absoluta (`../x/enunciado.pdf`, `/c/Users/.../x.pdf`) | Exactamente esa ruta |
-| Una ruta de Windows (`"C:/Users/.../x.pdf"`) | Se convierte automáticamente con `cygpath` |
-
 Notas:
 * Las rutas con espacios o con `\` van **entre comillas**.
 * Para actualizar cambios entre módulos en Maven debes ejecutar siempre un `mvn clean install` desde la raíz del proyecto.
@@ -89,14 +81,8 @@ Notas:
 
 ## Clases principales
 
-### `PdfToTxtConverter`
-Extrae el texto de un PDF local con PDFBox (`PDFTextStripper`, ordenando por posición) y lo guarda como UTF-8.
-
-```java
-String texto = PdfToTxtConverter.extractText(Path.of("enunciado.pdf"));           // solo el String
-PdfToTxtConverter.convert(Path.of("enunciado.pdf"));                            // -> enunciado.txt (junto al PDF)
-PdfToTxtConverter.convert(Path.of("enunciado.pdf"), Path.of("out/enunciado.txt"));
-```
+### `StatementExtractor`
+Clase principal de entrada encargada de coordinar la lectura del PDF local utilizando PDFBox y de orquestar el proceso de guardado en texto plano.
 
 ### `StatementFilter`
 Limpia el texto de un enunciado descartando portadas, índices, requisitos previos e introduciendo límites por secciones, normalizando caracteres especiales a Unicode NFC.
