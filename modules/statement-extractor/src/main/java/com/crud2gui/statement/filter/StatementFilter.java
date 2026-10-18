@@ -9,35 +9,37 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
- * Limpia el texto de un enunciado de práctica para quedarse solo con lo útil
- * al analizarlo (por ejemplo, con un LLM): elimina portada e índice, números
- * de página, cabeceras repetidas, la sección "Requisitos previos" y todo lo
- * posterior a "FECHAS Y NORMAS DE ENTREGA". Además, colapsa las líneas en
- * blanco consecutivas (como máximo {@value #MAX_CONSECUTIVE_BLANK_LINES}) y
- * elimina las que sobran al final.
+ * Filtra el texto extraído de un enunciado mediante reglas configurables para
+ * reconocer y tratar sus secciones. La configuración predeterminada se adapta
+ * a los enunciados UNED de ejemplo del proyecto.
  *
- * Los marcadores de inicio ("Introducción") y fin ("Fechas y normas de entrega")
- * se reconocen sin distinguir mayúsculas ni tildes.
+ * <p>Los títulos se comparan sin distinguir mayúsculas, tildes ni numeración
+ * inicial. El filtro conserva las secciones no configuradas por defecto,
+ * elimina números de página si así se indica y limita las líneas en blanco
+ * consecutivas.</p>
  *
- * Si no reconoce la estructura del enunciado, devuelve el texto original.
+ * <p>Para considerar reconocida la estructura, el texto debe contener una regla
+ * {@link StatementFilterConfig.SectionAction#START START} seguida de una regla
+ * {@link StatementFilterConfig.SectionAction#STOP STOP}. Si falta cualquiera,
+ * devuelve el texto original con {@code structureRecognized = false}.</p>
  *
- * Uso desde línea de comandos:
- *   java com.crud2gui.pdfstatenment.StatementFilter enunciado.txt [salida-filtrada.txt]
+ * @see StatementFilterConfig
+ * @see StatementFilterConfigJson
  */
 public class StatementFilter {
 
-    /** Resultado del filtrado. */
+    /**
+     * Resultado del filtrado.
+     *
+     * @param text texto filtrado, o el original si no se reconoció la estructura
+     * @param structureRecognized {@code true} si se encontraron los límites configurados
+     */
     public record Result(String text, boolean structureRecognized) {
     }
-
-    // Marcadores: se comparan sin distinguir mayúsculas, tildes ni espacios repetidos
-    // ("INTRODUCCIÓN", "Introducción" e "introduccion" valen igual).
-    private static final String START_MARKER = "introduccion";
-    private static final String END_MARKER = "fechas y normas de entrega";
-    private static final String SKIPPED_SECTION = "requisitos previos";
 
     /** Máximo de líneas en blanco seguidas que se conservan. */
     public static final int MAX_CONSECUTIVE_BLANK_LINES = 2;
@@ -50,77 +52,136 @@ public class StatementFilter {
             Pattern.compile("^[0-9]+([.][0-9]+)*[.]?\\s*", FLAGS);
     private static final Pattern DIACRITICS = Pattern.compile("\\p{M}+");
     private static final Pattern MULTI_SPACE = Pattern.compile("\\s+", FLAGS);
-    private static final Pattern NUMBERED_HEADING =
-            Pattern.compile("^[0-9]+([.][0-9]+)*[.]?\\s+", FLAGS);
 
     private StatementFilter() {
     }
 
-    /**
-     * Filtra el texto del enunciado. Si no se encuentra el inicio del cuerpo
-     * o el resultado queda vacío, devuelve el texto original con
-     * {@code structureRecognized = false}.
-     */
+    /** Filtra el texto usando {@link StatementFilterConfig#defaults()}. */
     public static Result filter(String rawText) {
+        return filter(rawText, StatementFilterConfig.defaults());
+    }
+
+    /**
+     * Filtra el texto usando las reglas y opciones indicadas.
+     *
+     * <p>Si no se encuentran las reglas de inicio y fin, se devuelve el texto
+     * original y el resultado indica que la estructura no fue reconocida.</p>
+     *
+     * @param rawText texto extraído del enunciado
+     * @param config reglas y opciones del filtrado
+     * @return texto filtrado y estado de reconocimiento de estructura
+     * @throws NullPointerException si {@code rawText} o {@code config} es {@code null}
+     */
+    public static Result filter(String rawText, StatementFilterConfig config) {
+        Objects.requireNonNull(config, "config");
         // Los PDF generados con LaTeX suelen dar "ı" + acento combinado en lugar de "í".
         String text = Normalizer.normalize(
                 rawText.replace("\u0131\u0301", "\u00ED"), Normalizer.Form.NFC);
         List<String> kept = new ArrayList<>();
 
         boolean inBody = false;
-        boolean skipSection = false;
+        boolean endRecognized = false;
+        boolean includeSection = false;
 
         for (String line : text.split("\\R", -1)) {
             String trimmed = line.strip();
+            StatementFilterConfig.SectionRule rule = findRule(trimmed, config.sectionRules());
 
             if (!inBody) {
-                if (key(trimmed).equals(START_MARKER)) {
+                if (rule != null && rule.action() == StatementFilterConfig.SectionAction.START) {
                     inBody = true;
+                    includeSection = true;
                     kept.add(line);
                 }
                 continue;
             }
 
-            if (key(removeNumbering(trimmed)).equals(END_MARKER)) {
-                break;
+            if (rule != null) {
+                switch (rule.action()) {
+                    case START, INCLUDE -> {
+                        includeSection = true;
+                        kept.add(line);
+                        continue;
+                    }
+                    case IGNORE -> {
+                        includeSection = false;
+                        continue;
+                    }
+                    case STOP -> {
+                        endRecognized = true;
+                        break;
+                    }
+                }
+                if (endRecognized) {
+                    break;
+                }
             }
-            if (PAGE_NUMBER.matcher(trimmed).matches()) {
+
+            // Una sección numerada sin regla propia vuelve al comportamiento seguro de incluirla.
+            if (isNumberedHeading(trimmed)) {
+                includeSection = true;
+            }
+            if (!includeSection) {
+                continue;
+            }
+            if (config.removePageNumbers() && PAGE_NUMBER.matcher(trimmed).matches()) {
                 continue;
             }
             if (PAGE_HEADER.matcher(trimmed).find()) {
                 continue;
             }
-            if (key(removeNumbering(trimmed)).equals(SKIPPED_SECTION)) {
-                skipSection = true;
-                continue;
-            }
-            if (skipSection && NUMBERED_HEADING.matcher(trimmed).find()) {
-                skipSection = false;
-            }
-            if (skipSection) {
-                continue;
-            }
             kept.add(line);
         }
 
-        String result = String.join("\n", collapseBlankLines(kept));
-        if (!inBody || result.isBlank()) {
+        String result = String.join("\n", collapseBlankLines(kept, config.maxConsecutiveBlankLines()));
+        if (!inBody || !endRecognized || result.isBlank()) {
             return new Result(rawText, false);
         }
         return new Result(result + "\n", true);
     }
 
+    private static StatementFilterConfig.SectionRule findRule(
+            String line, List<StatementFilterConfig.SectionRule> rules) {
+        String heading = key(removeNumbering(line));
+        return rules.stream()
+                .filter(rule -> key(rule.heading()).equals(heading))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static boolean isNumberedHeading(String line) {
+        return SECTION_NUMBER.matcher(line).find();
+    }
+
     /**
-     * Filtra un fichero TXT y escribe el resultado en {@code output}.
-     * Devuelve el resultado del filtrado (con el aviso de si se reconoció
-     * la estructura).
+     * Filtra un fichero TXT con la configuración predeterminada y escribe el
+     * resultado en {@code output}.
+     *
+     * @param input fichero de texto de entrada en UTF-8
+     * @param output ruta donde se escribirá el resultado
+     * @return resultado del filtrado
+     * @throws IOException si no se puede leer la entrada o escribir la salida
      */
     public static Result filterFile(Path input, Path output) throws IOException {
+        return filterFile(input, output, StatementFilterConfig.defaults());
+    }
+
+    /**
+     * Filtra un fichero TXT con una configuración explícita.
+     *
+     * @param input fichero de texto de entrada en UTF-8
+     * @param output ruta donde se escribirá el resultado
+     * @param config reglas y opciones del filtrado
+     * @return resultado del filtrado
+     * @throws IOException si la entrada no existe o no se puede leer o escribir
+     * @throws NullPointerException si {@code config} es {@code null}
+     */
+    public static Result filterFile(Path input, Path output, StatementFilterConfig config) throws IOException {
         if (!Files.isRegularFile(input)) {
             throw new IOException("No existe el fichero TXT: " + input);
         }
         String raw = Files.readString(input, StandardCharsets.UTF_8);
-        Result result = filter(raw);
+        Result result = filter(raw, config);
 
         if (output.toAbsolutePath().getParent() != null) {
             Files.createDirectories(output.toAbsolutePath().getParent());
@@ -129,12 +190,33 @@ public class StatementFilter {
         return result;
     }
 
-    /** Igual que {@link #filterFile(Path, Path)}, con salida {@code <nombre>-filtrado.txt}. */
+    /**
+     * Filtra un fichero TXT con la configuración predeterminada y escribe el
+     * resultado junto a la entrada con el sufijo {@code -filtrado}.
+     *
+     * @param input fichero de texto de entrada en UTF-8
+     * @return resultado del filtrado
+     * @throws IOException si la entrada no existe o no se puede leer o escribir
+     */
     public static Result filterFile(Path input) throws IOException {
+        return filterFile(input, StatementFilterConfig.defaults());
+    }
+
+    /**
+     * Filtra un fichero TXT con una configuración explícita y escribe el
+     * resultado junto a la entrada con el sufijo {@code -filtrado}.
+     *
+     * @param input fichero de texto de entrada en UTF-8
+     * @param config reglas y opciones del filtrado
+     * @return resultado del filtrado
+     * @throws IOException si la entrada no existe o no se puede leer o escribir
+     * @throws NullPointerException si {@code config} es {@code null}
+     */
+    public static Result filterFile(Path input, StatementFilterConfig config) throws IOException {
         String name = input.getFileName().toString();
         int dot = name.lastIndexOf('.');
         String base = (dot > 0) ? name.substring(0, dot) : name;
-        return filterFile(input, input.resolveSibling(base + "-filtrado.txt"));
+        return filterFile(input, input.resolveSibling(base + "-filtrado.txt"), config);
     }
 
     /**
@@ -142,13 +224,13 @@ public class StatementFilter {
      * seguidas (las líneas con solo espacios se normalizan a vacías) y quita
      * las líneas en blanco del final.
      */
-    private static List<String> collapseBlankLines(List<String> lines) {
+    private static List<String> collapseBlankLines(List<String> lines, int maxConsecutiveBlankLines) {
         List<String> out = new ArrayList<>();
         int blankRun = 0;
         for (String line : lines) {
             if (isBlank(line)) {
                 blankRun++;
-                if (blankRun <= MAX_CONSECUTIVE_BLANK_LINES) {
+                if (blankRun <= maxConsecutiveBlankLines) {
                     out.add("");
                 }
             } else {
@@ -179,6 +261,11 @@ public class StatementFilter {
         return MULTI_SPACE.matcher(noAccents.strip().toLowerCase(Locale.ROOT)).replaceAll(" ");
     }
 
+    /**
+     * Filtra un fichero TXT desde la línea de comandos.
+     *
+     * @param args ruta de entrada y, opcionalmente, ruta de salida
+     */
     public static void main(String[] args) {
         if (args.length < 1 || args.length > 2) {
             System.err.println("Uso: java com.crud2gui.pdf.StatementFilter <enunciado.txt> [salida-filtrada.txt]");

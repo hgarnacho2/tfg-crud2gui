@@ -1,5 +1,6 @@
 com\crud2gui\statement\extractor\Main.class
+com\crud2gui\statement\filter\StatementFilter$Result.class
 com\crud2gui\statement\filter\StatementFilter.class
 com\crud2gui\statement\extractor\StatementExtractor.class
-com\crud2gui\statement\filter\StatementFilter$Result.class
+com\crud2gui\statement\filter\StatementFilter$1.class
 com\crud2gui\statement\package-info.class

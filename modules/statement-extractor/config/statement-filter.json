@@ -1,0 +1,18 @@
+{
+  "sectionRules": [
+    {
+      "heading": "Introducción",
+      "action": "START"
+    },
+    {
+      "heading": "Requisitos previos",
+      "action": "IGNORE"
+    },
+    {
+      "heading": "Fechas y normas de entrega",
+      "action": "STOP"
+    }
+  ],
+  "maxConsecutiveBlankLines": 2,
+  "removePageNumbers": true
+}

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,6 +60,58 @@ class StatementFilterTest {
     }
 
     @Test
+    void returnsOriginalWhenEndSectionIsMissing() {
+        String text = "Introducción\nContenido sin marcador de fin";
+
+        StatementFilter.Result result = StatementFilter.filter(text);
+
+        assertFalse(result.structureRecognized());
+        assertEquals(text, result.text());
+    }
+
+    @Test
+    void appliesConfiguredSectionActions() {
+        StatementFilterConfig config = new StatementFilterConfig(List.of(
+                new StatementFilterConfig.SectionRule("Resumen", StatementFilterConfig.SectionAction.START),
+                new StatementFilterConfig.SectionRule("Notas internas", StatementFilterConfig.SectionAction.IGNORE),
+                new StatementFilterConfig.SectionRule("Modelo", StatementFilterConfig.SectionAction.INCLUDE),
+                new StatementFilterConfig.SectionRule("Anexo", StatementFilterConfig.SectionAction.STOP)),
+                2,
+                true);
+        String text = String.join("\n",
+                "Portada",
+                "Resumen",
+                "Texto inicial",
+                "Notas internas",
+                "No debe aparecer",
+                "1. Modelo",
+                "Debe aparecer",
+                "Anexo",
+                "No debe aparecer tampoco");
+
+        StatementFilter.Result result = StatementFilter.filter(text, config);
+
+        assertTrue(result.structureRecognized());
+        assertTrue(result.text().contains("Texto inicial"));
+        assertTrue(result.text().contains("Debe aparecer"));
+        assertFalse(result.text().contains("No debe aparecer"));
+        assertFalse(result.text().contains("Portada"));
+        assertFalse(result.text().contains("Anexo"));
+    }
+
+    @Test
+    void savesAndLoadsConfigurationAsJson(@TempDir Path tmp) throws Exception {
+        StatementFilterConfig config = StatementFilterConfig.defaults();
+        Path jsonFile = tmp.resolve("settings/statement-filter.json");
+
+        StatementFilterConfigJson.write(config, jsonFile);
+
+        assertTrue(Files.exists(jsonFile));
+        assertTrue(Files.readString(jsonFile).contains("\"sectionRules\""));
+        assertEquals(config, StatementFilterConfigJson.read(jsonFile));
+    }
+
+    @Test
     void filtersFileAndWritesOutput(@TempDir Path tmp) throws Exception {
         Path in = tmp.resolve("enunciado.txt");
         Files.writeString(in, SAMPLE);
@@ -88,7 +141,8 @@ class StatementFilterTest {
                 "cuatro",
                 "",
                 "",
-                "");
+                "",
+                "Fechas y normas de entrega");
 
         String result = StatementFilter.filter(text).text();
 

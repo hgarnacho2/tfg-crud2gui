@@ -18,6 +18,7 @@ enunciado.pdf ──▶ enunciado.txt ──▶ enunciado-filtrado.txt ──▶
 Dependencias del módulo (se descargan solas la primera vez, hace falta internet):
 
 * [Apache PDFBox](https://pdfbox.apache.org/) 3.0.3: extracción de texto.
+* Jackson Databind 2.18.2: lectura y escritura de la configuración JSON del filtro.
 * JUnit Jupiter 5.10.2: tests.
 * `common-utils`: librería transversal para la gestión centralizada de configuración.
 
@@ -28,8 +29,11 @@ Dependencias del módulo (se descargan solas la primera vez, hace falta internet
 El módulo incorpora un gestor de configuración jerárquico a través de la clase `DotEnv` (provista por `common-utils`). Busca automáticamente los ficheros de entorno (**`.env.public`** y **`.env.private`**) subiendo de forma inteligente por los directorios padres hasta la **raíz del proyecto**, garantizando que funcione independientemente de la ruta desde donde se ejecute.
 
 ### Variables de configuración disponibles (en `.env.public`):
-* **`FILTER_STATEMENT_TEXT`** (`true` / `false`): Activa o desactiva el filtrado automático de texto innecesario durante la extracción del enunciado.
+* **`FILTER_STATEMENT_TEXT`** (`true` / `false`): Activa o desactiva el paso de filtrado durante la ejecución de `Main`.
+* **`STATEMENT_FILTER_CONFIG_PATH`**: Ruta al JSON de reglas. Por defecto apunta a `modules/statement-extractor/config/statement-filter.json`, relativa a la raíz del proyecto. Puede sustituirse con una variable de entorno o una propiedad Java `-DSTATEMENT_FILTER_CONFIG_PATH=...`.
 * **`DOTENV_DEBUG`** (`true` / `false`): Activa o desactiva de forma parametrizada las trazas de depuración detalladas de la carga de configuración en la consola (también controlable mediante variable de entorno del S.O. o propiedad del sistema `-DDOTENV_DEBUG=true`).
+
+`Main` carga el JSON indicado cuando el filtrado está activado. Para cambiar las reglas habituales basta con editar el fichero JSON; no es necesario modificar código Java.
 
 ---
 
@@ -85,13 +89,48 @@ Notas:
 Clase principal de entrada encargada de coordinar la lectura del PDF local utilizando PDFBox y de orquestar el proceso de guardado en texto plano.
 
 ### `StatementFilter`
-Limpia el texto de un enunciado descartando portadas, índices, requisitos previos e introduciendo límites por secciones, normalizando caracteres especiales a Unicode NFC.
+Filtra el texto con reglas de sección configurables. Los títulos se comparan sin distinguir mayúsculas, tildes ni numeración inicial. Debe encontrarse una regla `START` y otra `STOP`; si falta alguna, el texto original se devuelve con `structureRecognized()` en `false`.
 
 ```java
 StatementFilter.Result r = StatementFilter.filter(texto);
 r.text();                    // texto filtrado
 r.structureRecognized();     // false si no se reconoció la estructura
 ```
+
+### `StatementFilterConfig`
+Modelo de configuración independiente de la interfaz. Cada regla asocia un título de sección con una acción:
+
+* `START`: comienza el cuerpo que se filtrará e incluye ese título.
+* `INCLUDE`: incluye ese título y su sección.
+* `IGNORE`: omite esa sección hasta el siguiente encabezado reconocido.
+* `STOP`: termina el cuerpo filtrado sin incluir ese título.
+
+Las secciones sin regla explícita se incluyen por defecto. `StatementFilterConfig.defaults()` proporciona las reglas usadas para los ejemplos UNED.
+
+### Configuración JSON
+El fichero predeterminado se encuentra en `config/statement-filter.json`. Sus reglas asocian un título con una acción; los títulos se comparan sin distinguir mayúsculas, tildes ni numeración inicial. Ejemplo:
+
+```json
+{
+    "sectionRules": [
+        { "heading": "Introducción", "action": "START" },
+        { "heading": "Requisitos previos", "action": "IGNORE" },
+        { "heading": "Fechas y normas de entrega", "action": "STOP" }
+    ],
+    "maxConsecutiveBlankLines": 2,
+    "removePageNumbers": true
+}
+```
+
+`Main` carga el JSON automáticamente al ejecutar `run.sh` si `FILTER_STATEMENT_TEXT=true`. Desde otro componente Java también se puede cargar la configuración explícitamente:
+
+```java
+Path configPath = Path.of("statement-filter.json");
+StatementFilterConfig config = StatementFilterConfigJson.read(configPath);
+StatementFilter.Result result = StatementFilter.filterFile(input, output, config);
+```
+
+Para guardar cambios desde otro componente Java, se puede llamar a `StatementFilterConfigJson.write(config, configPath)`. La interfaz gráfica futura podrá editar este mismo modelo y persistirlo con esa utilidad.
 
 ---
 
