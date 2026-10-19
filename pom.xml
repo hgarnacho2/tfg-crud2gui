@@ -10,6 +10,7 @@
 
     <modules>
         <module>modules/common-utils</module>
+        <module>modules/authenticator</module>
         <module>modules/model</module>
         <module>modules/model-validator</module>
         <module>modules/java-model-extractor</module>
