@@ -14,7 +14,7 @@
     <!-- Identificación del módulo -->
     <artifactId>statement-analyzer</artifactId>
     <packaging>jar</packaging>
-    <name>Statement Analyzer</name>
+    <name>CRUD2GUI Statement Analyzer</name>
     <description>
         Módulo para analizar enunciados extraídos de documentos PDF mediante LLMs, obteniendo modelos de clases.
     </description>

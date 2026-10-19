@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>common-utils</artifactId>
+    <name>Common Utils</name>
 
     <dependencies>
         <dependency>

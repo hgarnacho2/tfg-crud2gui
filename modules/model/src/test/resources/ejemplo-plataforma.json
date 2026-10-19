@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0",
+  "source": { "root": "C:/proyectos/plataforma", "generatedAt": "2026-10-03T10:00:00Z",
+              "filesParsed": 3, "warnings": [] },
+  "types": [
+    {
+      "id": "com.tienda.PlataformaCompraVenta", "name": "PlataformaCompraVenta",
+      "packageName": "com.tienda", "kind": "CLASS", "visibility": "PUBLIC", "modifiers": [],
+      "hasMainMethod": false,
+      "fields": [
+        { "name": "usuarios",
+          "type": { "name": "List", "projectType": false, "arrayDimensions": 0,
+                    "arguments": [ { "name": "Usuario", "qualifiedName": "com.tienda.Usuario",
+                                     "projectType": true, "arrayDimensions": 0 } ] },
+          "visibility": "PRIVATE", "modifiers": [], "initializedInline": true }
+      ],
+      "methods": [
+        { "name": "addUser", "returnType": { "name": "void", "projectType": false, "arrayDimensions": 0 },
+          "visibility": "PUBLIC", "modifiers": [], "hasBody": true,
+          "parameters": [ { "name": "u", "varargs": false,
+                            "type": { "name": "Usuario", "qualifiedName": "com.tienda.Usuario",
+                                      "projectType": true, "arrayDimensions": 0 } } ],
+          "javadoc": { "description": "Da de alta un usuario.", "tags": { "param": ["u el usuario"] } },
+          "location": { "file": "src/com/tienda/PlataformaCompraVenta.java", "line": 21 } }
+      ]
+    }
+  ],
+  "relations": [
+    { "kind": "AGGREGATION", "from": "com.tienda.PlataformaCompraVenta", "to": "com.tienda.Usuario",
+      "via": "usuarios", "multiplicity": "0..*", "confidence": "HIGH",
+      "evidence": { "createdWithNew": false, "assignedFromParameter": true,
+                    "initializedInline": true, "exposedBySetter": false } }
+  ],
+  "analysis": {
+    "managerClass": { "id": "com.tienda.PlataformaCompraVenta", "score": 14.5, "confidence": "HIGH",
+                      "reasons": ["Alcanza 4 de 4 tipos del dominio", "Ningun tipo la tiene como atributo",
+                                  "Coleccion de Usuario modificada en sus metodos"] },
+    "alternatives": [], "subManagers": [], "entryPoints": ["com.tienda.LanzadorEtapa3_1"],
+    "manualOverride": false
+  },
+  "layout": { "positions": { "com.tienda.PlataformaCompraVenta": { "x": 450, "y": 20 } } }
+}

@@ -1,0 +1,10 @@
+com\crud2gui\statement\filter\StatementFilterConfig$SectionAction.class
+com\crud2gui\statement\extractor\Main.class
+com\crud2gui\statement\filter\StatementFilterConfig$SectionRule.class
+com\crud2gui\statement\filter\StatementFilterConfig.class
+com\crud2gui\statement\filter\StatementFilterConfigJson.class
+com\crud2gui\statement\filter\StatementFilter$Result.class
+com\crud2gui\statement\filter\StatementFilter.class
+com\crud2gui\statement\extractor\StatementExtractor.class
+com\crud2gui\statement\filter\StatementFilter$1.class
+com\crud2gui\statement\package-info.class

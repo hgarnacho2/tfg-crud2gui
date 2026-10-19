@@ -10,8 +10,11 @@
 
     <modules>
         <module>modules/common-utils</module>
-        <module>modules/statement-extractor</module>
-
+        <module>modules/model</module>
+        <module>modules/model-validator</module>
+        <module>modules/java-model-extractor</module>
+        <module>modules/statement-text-extractor</module>
+        <module>modules/statement-analyzer</module>
     </modules>
 
     <properties>

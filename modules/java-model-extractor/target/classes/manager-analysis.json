@@ -1,0 +1,28 @@
+{
+  "weights": {
+    "reachability": 10.0,
+    "root": 7.0,
+    "collections": 4.0,
+    "collectionUsage": 3.0,
+    "entryPoint": 1.0,
+    "lexical": 0.2
+  },
+  "confidence": {
+    "highGap": 4.0,
+    "mediumGap": 1.5,
+    "highMinimumScore": 8.0
+  },
+  "managerNameTerms": [
+    "manager",
+    "gestor",
+    "gestora",
+    "controller",
+    "administrator",
+    "administrador"
+  ],
+  "managerMethodTerms": [
+    "manage",
+    "gestiona",
+    "administrar"
+  ]
+}
