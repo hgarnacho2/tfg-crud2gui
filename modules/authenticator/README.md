@@ -40,6 +40,8 @@ authenticator.authenticate().thenAccept(user -> {
 
 `authenticate()` devuelve un `CompletableFuture`; la GUI debe consumirlo de forma asíncrona para no bloquear el hilo visual. `AuthenticatedUser` expone identificador, nombre, tenant, roles y expiración, pero no conserva tokens ni credenciales.
 
+Las páginas locales que MSAL muestra al terminar o fallar el callback están personalizadas en español y se pueden editar en `src/main/resources/templates/auth_success_page.html` y `src/main/resources/templates/auth_error_page.html`. No reemplazan ni modifican la página de inicio de sesión alojada por Microsoft.
+
 ## Prueba interactiva
 
 Desde la raiz del repositorio:

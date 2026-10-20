@@ -2,13 +2,21 @@ package com.crud2gui.authenticator;
 
 import com.microsoft.aad.msal4j.InteractiveRequestParameters;
 import com.microsoft.aad.msal4j.PublicClientApplication;
+import com.microsoft.aad.msal4j.SystemBrowserOptions;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /** Autenticacion interactiva de escritorio con Entra ID mediante navegador y MSAL4J. */
 public final class EntraIdAuthenticator {
+
+    private static final int CALLBACK_TIMEOUT_SECONDS = 300;
+    private static final String SUCCESS_PAGE = loadTemplate("/templates/auth_success_page.html");
+    private static final String ERROR_PAGE = loadTemplate("/templates/auth_error_page.html");
 
     private final AuthenticatorConfig config;
     private final PublicClientApplication application;
@@ -35,8 +43,24 @@ public final class EntraIdAuthenticator {
     public CompletableFuture<AuthenticatedUser> authenticate() {
         InteractiveRequestParameters request = InteractiveRequestParameters.builder(config.redirectUri())
                 .scopes(config.scopes())
+                .httpPollingTimeoutInSeconds(CALLBACK_TIMEOUT_SECONDS)
+                .systemBrowserOptions(SystemBrowserOptions.builder()
+                        .htmlMessageSuccess(SUCCESS_PAGE)
+                        .htmlMessageError(ERROR_PAGE)
+                        .build())
                 .build();
         return application.acquireToken(request)
                 .thenApply(result -> IdTokenClaims.parse(result.idToken()));
+    }
+
+    static String loadTemplate(String resourcePath) {
+        try (InputStream input = EntraIdAuthenticator.class.getResourceAsStream(resourcePath)) {
+            if (input == null) {
+                throw new IllegalStateException("No se encontro la plantilla HTML: " + resourcePath);
+            }
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException("No se pudo leer la plantilla HTML: " + resourcePath, e);
+        }
     }
 }
