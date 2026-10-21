@@ -10,8 +10,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.crud2gui.model.*;
-import com.crud2gui.javamodelextractor.ManagerDetectorConfig;
-import com.crud2gui.javamodelextractor.ProjectParser;
+
 
 /**
  * Pruebas del analizador sobre tres proyectos de ejemplo en {@code src/test/resources/fixtures}:
@@ -183,9 +182,10 @@ class ProjectParserTest {
         Relation realization = relation(tienda, "com.tienda.ProductoRopa", "com.tienda.Imprimible", null);
         assertEquals(RelationKind.REALIZATION, realization.kind());
 
-        Relation aggregation = relation(demo, "com.demo.ClaseGestora", "com.demo.ClasePadre1", "objetoMiembro");
-        assertEquals(RelationKind.AGGREGATION, aggregation.kind());
-        assertTrue(aggregation.evidence().assignedFromParameter());
+        Relation memberAssociation = relation(demo, "com.demo.ClaseGestora", "com.demo.ClasePadre1", "objetoMiembro");
+        assertEquals(RelationKind.ASSOCIATION, memberAssociation.kind());
+        assertTrue(memberAssociation.evidence().assignedFromParameter());
+        assertEquals(Confidence.LOW, memberAssociation.confidence());
 
         Relation composition = relation(demo, "com.demo.ClaseRelacion2", "com.demo.ClaseHijo1", "objetoCompuesto");
         assertEquals(RelationKind.COMPOSITION, composition.kind());
@@ -193,8 +193,9 @@ class ProjectParserTest {
         assertEquals(Confidence.MEDIUM, composition.confidence());
 
         Relation collection = relation(demo, "com.demo.ClaseGestora", "com.demo.ClaseRelacionN", "relaciones");
-        assertEquals(RelationKind.AGGREGATION, collection.kind());
+        assertEquals(RelationKind.ASSOCIATION, collection.kind());
         assertEquals("0..*", collection.multiplicity());
+        assertEquals(Confidence.LOW, collection.confidence());
 
         Relation dependency = demo.relations().stream()
                 .filter(r -> r.from().equals("com.demo.ClaseRelacion4"))

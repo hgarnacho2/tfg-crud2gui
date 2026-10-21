@@ -1,6 +1,7 @@
 package com.crud2gui.authenticator;
 
 import com.microsoft.aad.msal4j.InteractiveRequestParameters;
+import com.microsoft.aad.msal4j.OpenBrowserAction;
 import com.microsoft.aad.msal4j.PublicClientApplication;
 import com.microsoft.aad.msal4j.SystemBrowserOptions;
 
@@ -20,6 +21,7 @@ public final class EntraIdAuthenticator {
 
     private final AuthenticatorConfig config;
     private final PublicClientApplication application;
+    private final OpenBrowserAction embeddedBrowserAction;
 
     /**
      * Crea un cliente publico para el tenant configurado; no usa client secret.
@@ -28,7 +30,21 @@ public final class EntraIdAuthenticator {
      * @throws MalformedURLException si la autoridad configurada no es valida
      */
     public EntraIdAuthenticator(AuthenticatorConfig config) throws MalformedURLException {
+        this(config, null);
+    }
+
+    /**
+     * @param config parametros publicos de la aplicacion registrada
+     * @param embeddedBrowserAction accion que presenta la URL de autorizacion en una UI embebida
+     * @throws MalformedURLException si la autoridad configurada no es valida
+     */
+    public EntraIdAuthenticator(AuthenticatorConfig config, OpenBrowserAction embeddedBrowserAction)
+            throws MalformedURLException {
         this.config = Objects.requireNonNull(config, "config");
+        if (config.browserMode() == AuthBrowserMode.EMBEDDED && embeddedBrowserAction == null) {
+            throw new IllegalArgumentException("El modo embedded requiere una accion de navegador embebido.");
+        }
+        this.embeddedBrowserAction = embeddedBrowserAction;
         this.application = PublicClientApplication.builder(config.clientId())
                 .authority(config.authority())
                 .build();
@@ -41,13 +57,16 @@ public final class EntraIdAuthenticator {
      * @return futuro con la identidad y los roles declarados en el ID token
      */
     public CompletableFuture<AuthenticatedUser> authenticate() {
+        SystemBrowserOptions.SystemBrowserOptionsBuilder browserOptions = SystemBrowserOptions.builder()
+            .htmlMessageSuccess(SUCCESS_PAGE)
+            .htmlMessageError(ERROR_PAGE);
+        if (config.browserMode() == AuthBrowserMode.EMBEDDED) {
+            browserOptions.openBrowserAction(embeddedBrowserAction);
+        }
         InteractiveRequestParameters request = InteractiveRequestParameters.builder(config.redirectUri())
                 .scopes(config.scopes())
                 .httpPollingTimeoutInSeconds(CALLBACK_TIMEOUT_SECONDS)
-                .systemBrowserOptions(SystemBrowserOptions.builder()
-                        .htmlMessageSuccess(SUCCESS_PAGE)
-                        .htmlMessageError(ERROR_PAGE)
-                        .build())
+            .systemBrowserOptions(browserOptions.build())
                 .build();
         return application.acquireToken(request)
                 .thenApply(result -> IdTokenClaims.parse(result.idToken()));

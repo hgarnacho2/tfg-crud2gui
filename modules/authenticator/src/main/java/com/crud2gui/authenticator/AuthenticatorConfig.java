@@ -10,7 +10,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /** Configuracion publica para iniciar sesion en Microsoft Entra ID desde una aplicacion de escritorio. */
-public record AuthenticatorConfig(String clientId, String tenantId, URI redirectUri, Set<String> scopes) {
+public record AuthenticatorConfig(String clientId, String tenantId, URI redirectUri, Set<String> scopes,
+                                  AuthBrowserMode browserMode) {
 
     public static final String DEFAULT_REDIRECT_URI = "http://localhost";
     public static final String DEFAULT_SCOPES = "openid profile email";
@@ -21,6 +22,7 @@ public record AuthenticatorConfig(String clientId, String tenantId, URI redirect
         if (redirectUri == null || !isLoopbackRedirect(redirectUri)) {
             throw new IllegalArgumentException("redirectUri debe ser una URI HTTP de loopback, como http://localhost");
         }
+        browserMode = browserMode == null ? AuthBrowserMode.SYSTEM : browserMode;
         scopes = scopes == null ? Set.of() : scopes.stream()
                 .filter(scope -> scope != null && !scope.isBlank())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -30,13 +32,18 @@ public record AuthenticatorConfig(String clientId, String tenantId, URI redirect
         scopes = Collections.unmodifiableSet(scopes);
     }
 
+    public AuthenticatorConfig(String clientId, String tenantId, URI redirectUri, Set<String> scopes) {
+        this(clientId, tenantId, redirectUri, scopes, AuthBrowserMode.SYSTEM);
+    }
+
     /** Lee la configuracion con precedencia de entorno, propiedades Java y archivos .env del repositorio. */
     public static AuthenticatorConfig fromEnvironment() {
         String clientId = DotEnv.getStringVar("AZURE_CLIENT_ID", "");
         String tenantId = DotEnv.getStringVar("AZURE_TENANT_ID", "");
         URI redirectUri = URI.create(DotEnv.getStringVar("AZURE_REDIRECT_URI", DEFAULT_REDIRECT_URI));
         Set<String> scopes = parseScopes(DotEnv.getStringVar("AZURE_SCOPES", DEFAULT_SCOPES));
-        return new AuthenticatorConfig(clientId, tenantId, redirectUri, scopes);
+        AuthBrowserMode browserMode = AuthBrowserMode.parse(DotEnv.getStringVar("AZURE_AUTH_BROWSER_MODE", "system"));
+        return new AuthenticatorConfig(clientId, tenantId, redirectUri, scopes, browserMode);
     }
 
     /** @return autoridad de Entra limitada al tenant configurado */

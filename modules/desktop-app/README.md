@@ -1,6 +1,6 @@
 # CRUD2GUI Desktop App
 
-Aplicacion JavaFX de escritorio que presenta el estado de autenticacion de CRUD2GUI. La autenticacion la delega al modulo `authenticator`, que abre el navegador del sistema para completar el flujo seguro de Microsoft Entra ID.
+Aplicacion JavaFX de escritorio que presenta el estado de autenticacion de CRUD2GUI. La autenticacion la delega al modulo `authenticator`; `AZURE_AUTH_BROWSER_MODE` permite elegir entre el navegador del sistema (`system`, predeterminado) y un WebView integrado en la ventana (`embedded`). Ambos modos usan el flujo interactivo de MSAL4J con PKCE y callback loopback.
 
 Desde la raiz del repositorio, ejecuta:
 
@@ -21,7 +21,7 @@ modules/desktop-app/script/run.sh --debug --no-install
 
 La ventana muestra si el inicio de sesion se completo y el perfil `Alumno` o `Docente`. Si la cuenta se autentica pero no tiene ninguno de esos roles, la ventana indica que no tiene acceso asignado. No se muestran ni almacenan contrasenas o tokens.
 
-La configuracion de Entra se lee desde las variables `AZURE_*` de `.env.public` o desde variables de entorno/propiedades Java con mayor precedencia.
+La configuracion de Entra se lee desde las variables `AZURE_*` de `.env.public` o desde variables de entorno/propiedades Java con mayor precedencia. Para probar el WebView, configura `AZURE_AUTH_BROWSER_MODE=embedded`; para volver al navegador del sistema, usa `AZURE_AUTH_BROWSER_MODE=system`. El comportamiento de MFA y Conditional Access en WebView debe verificarse con las politicas del tenant; el modo system mantiene la compatibilidad mas amplia.
 
 ## Organización de la interfaz
 

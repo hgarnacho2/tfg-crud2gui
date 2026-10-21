@@ -1,15 +1,19 @@
 package com.crud2gui.desktop.login;
 
 import com.crud2gui.authenticator.AuthenticatedUser;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.web.WebView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+
+import java.net.URL;
 
 /** Vista JavaFX del proceso de login; no contiene detalles de MSAL ni configuración Entra. */
 public final class LoginView extends VBox {
@@ -18,6 +22,9 @@ public final class LoginView extends VBox {
     private final Label role = new Label();
     private final Button signInButton = new Button("Iniciar sesión con Microsoft");
     private final ProgressIndicator progress = new ProgressIndicator();
+        private final VBox loginContent;
+        private final Label browserNote;
+        private boolean embeddedBrowserMode;
 
     public LoginView() {
         Label brand = new Label("CRUD2GUI");
@@ -48,21 +55,38 @@ public final class LoginView extends VBox {
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
-        Label browserNote = new Label("La autenticación se completará en el navegador del sistema.");
+        browserNote = new Label("La autenticación se completará en el navegador del sistema.");
         browserNote.setStyle("-fx-text-fill: #697780; -fx-font-size: 12px;");
         browserNote.setWrapText(true);
 
-        VBox content = new VBox(18, brand, heading, description, signInButton, statusRow, role, spacer, browserNote);
-        content.setAlignment(Pos.TOP_LEFT);
-        content.setPadding(new Insets(34));
-        content.setMaxWidth(430);
-        content.setStyle("-fx-background-color: white; -fx-background-radius: 8px; "
+        loginContent = new VBox(18, brand, heading, description, signInButton, statusRow, role, spacer, browserNote);
+        loginContent.setAlignment(Pos.TOP_LEFT);
+        loginContent.setPadding(new Insets(34));
+        loginContent.setMaxWidth(430);
+        loginContent.setStyle("-fx-background-color: white; -fx-background-radius: 8px; "
                 + "-fx-effect: dropshadow(gaussian, rgba(20, 45, 55, 0.12), 22, 0.12, 0, 6);");
 
         setAlignment(Pos.CENTER);
         setPadding(new Insets(28));
         setStyle("-fx-background-color: #f1f6f4; -fx-font-family: 'Segoe UI';");
-                getChildren().add(content);
+                getChildren().add(loginContent);
+        }
+
+        public void setEmbeddedBrowserMode() {
+                embeddedBrowserMode = true;
+                browserNote.setText("La autenticación se completará dentro de esta ventana.");
+        }
+
+        public void showEmbeddedBrowser(URL authorizationUrl) {
+                Platform.runLater(() -> {
+                        WebView webView = new WebView();
+                        webView.setContextMenuEnabled(false);
+                        webView.setMinSize(0, 0);
+                        VBox.setVgrow(webView, Priority.ALWAYS);
+                        setPadding(Insets.EMPTY);
+                        getChildren().setAll(webView);
+                        webView.getEngine().load(authorizationUrl.toExternalForm());
+                });
         }
 
         void setOnSignIn(Runnable action) {
@@ -71,7 +95,8 @@ public final class LoginView extends VBox {
 
         void showBusy() {
                 signInButton.setDisable(true);
-                status.setText("Esperando autenticación en el navegador...");
+                status.setText(embeddedBrowserMode
+                        ? "Esperando autenticación..." : "Esperando autenticación en el navegador...");
                 role.setText("");
                 progress.setVisible(true);
                 progress.setManaged(true);
@@ -83,6 +108,7 @@ public final class LoginView extends VBox {
         }
 
         void showFailure() {
+                restoreLoginContent();
                 signInButton.setDisable(false);
                 progress.setVisible(false);
                 progress.setManaged(false);
@@ -91,6 +117,7 @@ public final class LoginView extends VBox {
         }
 
         void showAuthenticated(AuthenticatedUser user) {
+                restoreLoginContent();
                 signInButton.setDisable(false);
                 progress.setVisible(false);
                 progress.setManaged(false);
@@ -107,6 +134,13 @@ public final class LoginView extends VBox {
                 } else {
                         status.setText("Cuenta autenticada, sin rol de la aplicación");
                         role.setText("Por favor, solicita al administrador que te asigne el rol de Alumno o Docente.");
+                }
+        }
+
+        private void restoreLoginContent() {
+                if (!getChildren().contains(loginContent)) {
+                        setPadding(new Insets(28));
+                        getChildren().setAll(loginContent);
                 }
         }
 }

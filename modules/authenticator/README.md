@@ -20,6 +20,7 @@ El modulo utiliza `DotEnv`; la precedencia es variable de entorno del sistema, p
 | `AZURE_TENANT_ID` | ID o dominio del tenant |
 | `AZURE_REDIRECT_URI` | URI loopback registrada para la app de escritorio; por defecto `http://localhost` |
 | `AZURE_SCOPES` | Scopes separados por espacios o comas; por defecto `openid profile email` |
+| `AZURE_AUTH_BROWSER_MODE` | `system` (por defecto) o `embedded`; selecciona navegador del sistema o WebView de la app JavaFX |
 
 Estos valores identifican la aplicacion y el tenant, no son credenciales. No configures contrasenas de usuario ni client secret. La autenticacion de cada persona se realiza en el navegador.
 
@@ -40,7 +41,7 @@ authenticator.authenticate().thenAccept(user -> {
 
 `authenticate()` devuelve un `CompletableFuture`; la GUI debe consumirlo de forma asíncrona para no bloquear el hilo visual. `AuthenticatedUser` expone identificador, nombre, tenant, roles y expiración, pero no conserva tokens ni credenciales.
 
-Las páginas locales que MSAL muestra al terminar o fallar el callback están personalizadas en español y se pueden editar en `src/main/resources/templates/auth_success_page.html` y `src/main/resources/templates/auth_error_page.html`. No reemplazan ni modifican la página de inicio de sesión alojada por Microsoft.
+Las páginas locales que MSAL muestra al terminar o fallar el callback están personalizadas en español y se pueden editar en `src/main/resources/templates/auth_success_page.html` y `src/main/resources/templates/auth_error_page.html`. No reemplazan ni modifican la página de inicio de sesión alojada por Microsoft. En modo `embedded`, MSAL conserva el flujo de authorization code con PKCE y el callback loopback; la app JavaFX inyecta el WebView mediante `OpenBrowserAction`. El WebView puede no ofrecer todos los métodos de autenticación, SSO o requisitos MFA/Conditional Access disponibles en el navegador del sistema; valida el modo con las políticas del tenant. El navegador del sistema sigue siendo la opción predeterminada.
 
 ## Prueba interactiva
 

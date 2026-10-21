@@ -1,0 +1,2209 @@
+{
+  "schemaVersion" : "1.0",
+  "source" : {
+    "root" : "C:\\Users\\hgarnacho\\Documents\\UNED\\TFG\\tfg-crud2gui\\modules\\java-model-extractor\\src\\test\\resources\\fixtures\\practica-2023\\src\\main\\java\\es",
+    "generatedAt" : "2026-10-20T16:42:54.599404Z",
+    "filesParsed" : 7,
+    "warnings" : [ ]
+  },
+  "types" : [ {
+    "id" : "LanzadorEtapa3_1",
+    "name" : "LanzadorEtapa3_1",
+    "packageName" : "",
+    "kind" : "CLASS",
+    "visibility" : "PUBLIC",
+    "modifiers" : [ ],
+    "interfaces" : [ ],
+    "typeParameters" : [ ],
+    "annotations" : [ ],
+    "javadoc" : {
+      "description" : "Programa de prueba compatible con el ejemplo de la etapa 3 del enunciado.",
+      "tags" : { }
+    },
+    "location" : {
+      "file" : "LanzadorEtapa3_1.java",
+      "line" : 2
+    },
+    "hasMainMethod" : true,
+    "fields" : [ ],
+    "constructors" : [ ],
+    "methods" : [ {
+      "name" : "main",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ "STATIC" ],
+      "parameters" : [ {
+        "name" : "args",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 1
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "LanzadorEtapa3_1.java",
+        "line" : 3
+      }
+    } ],
+    "enumConstants" : [ ]
+  }, {
+    "id" : "PlataformaCompraVenta",
+    "name" : "PlataformaCompraVenta",
+    "packageName" : "",
+    "kind" : "CLASS",
+    "visibility" : "PUBLIC",
+    "modifiers" : [ ],
+    "interfaces" : [ ],
+    "typeParameters" : [ ],
+    "annotations" : [ ],
+    "javadoc" : {
+      "description" : "Gestiona los usuarios y los productos publicados en la plataforma.",
+      "tags" : { }
+    },
+    "location" : {
+      "file" : "PlataformaCompraVenta.java",
+      "line" : 5
+    },
+    "hasMainMethod" : false,
+    "fields" : [ {
+      "name" : "nombre",
+      "type" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 6
+      }
+    }, {
+      "name" : "usuarios",
+      "type" : {
+        "name" : "List",
+        "projectType" : false,
+        "arguments" : [ {
+          "name" : "Usuario",
+          "qualifiedName" : "Usuario",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        } ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 7
+      }
+    } ],
+    "constructors" : [ {
+      "visibility" : "PUBLIC",
+      "parameters" : [ {
+        "name" : "nombre",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 9
+      }
+    } ],
+    "methods" : [ {
+      "name" : "getNombre",
+      "returnType" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 15
+      }
+    }, {
+      "name" : "setNombre",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "nombre",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 16
+      }
+    }, {
+      "name" : "getUsuarios",
+      "returnType" : {
+        "name" : "List",
+        "projectType" : false,
+        "arguments" : [ {
+          "name" : "Usuario",
+          "qualifiedName" : "Usuario",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        } ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 17
+      }
+    }, {
+      "name" : "addUser",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "usuario",
+        "type" : {
+          "name" : "Usuario",
+          "qualifiedName" : "Usuario",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 19
+      }
+    }, {
+      "name" : "removeUser",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "email",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 26
+      }
+    }, {
+      "name" : "buscarUsuario",
+      "returnType" : {
+        "name" : "Usuario",
+        "qualifiedName" : "Usuario",
+        "projectType" : true,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "email",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 34
+      }
+    }, {
+      "name" : "addProduct2User",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "producto",
+        "type" : {
+          "name" : "Producto",
+          "qualifiedName" : "Producto",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "email",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 40
+      }
+    }, {
+      "name" : "addProduct2User",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "producto",
+        "type" : {
+          "name" : "Producto",
+          "qualifiedName" : "Producto",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "usuario",
+        "type" : {
+          "name" : "Usuario",
+          "qualifiedName" : "Usuario",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 48
+      }
+    }, {
+      "name" : "removeProduct2User",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "id",
+        "type" : {
+          "name" : "int",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "email",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 52
+      }
+    }, {
+      "name" : "printAllUsers",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 60
+      }
+    }, {
+      "name" : "printAllProducts",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 64
+      }
+    }, {
+      "name" : "printProductsByState",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "estado",
+        "type" : {
+          "name" : "T_Estado",
+          "qualifiedName" : "T_Estado",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 69
+      }
+    }, {
+      "name" : "printProductsByUser",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "email",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 75
+      }
+    }, {
+      "name" : "printProductsByUser",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "email",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "estado",
+        "type" : {
+          "name" : "T_Estado",
+          "qualifiedName" : "T_Estado",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 81
+      }
+    }, {
+      "name" : "searchProductsByKeyword",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "keyword",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "PlataformaCompraVenta.java",
+        "line" : 88
+      }
+    } ],
+    "enumConstants" : [ ]
+  }, {
+    "id" : "Producto",
+    "name" : "Producto",
+    "packageName" : "",
+    "kind" : "CLASS",
+    "visibility" : "PUBLIC",
+    "modifiers" : [ "ABSTRACT" ],
+    "interfaces" : [ ],
+    "typeParameters" : [ ],
+    "annotations" : [ ],
+    "javadoc" : {
+      "description" : "Clase base abstracta de los productos ofertados en la plataforma.",
+      "tags" : { }
+    },
+    "location" : {
+      "file" : "Producto.java",
+      "line" : 4
+    },
+    "hasMainMethod" : false,
+    "fields" : [ {
+      "name" : "id",
+      "type" : {
+        "name" : "int",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 5
+      }
+    }, {
+      "name" : "titulo",
+      "type" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 6
+      }
+    }, {
+      "name" : "precio",
+      "type" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 7
+      }
+    }, {
+      "name" : "descripcion",
+      "type" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 8
+      }
+    }, {
+      "name" : "estado",
+      "type" : {
+        "name" : "T_Estado",
+        "qualifiedName" : "T_Estado",
+        "projectType" : true,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 9
+      }
+    } ],
+    "constructors" : [ {
+      "visibility" : "PUBLIC",
+      "parameters" : [ {
+        "name" : "id",
+        "type" : {
+          "name" : "int",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "titulo",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "precio",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "descripcion",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "estado",
+        "type" : {
+          "name" : "T_Estado",
+          "qualifiedName" : "T_Estado",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 11
+      }
+    } ],
+    "methods" : [ {
+      "name" : "getId",
+      "returnType" : {
+        "name" : "int",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 20
+      }
+    }, {
+      "name" : "setId",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "id",
+        "type" : {
+          "name" : "int",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 21
+      }
+    }, {
+      "name" : "getTitulo",
+      "returnType" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 22
+      }
+    }, {
+      "name" : "setTitulo",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "titulo",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 23
+      }
+    }, {
+      "name" : "getPrecio",
+      "returnType" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 24
+      }
+    }, {
+      "name" : "setPrecio",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "precio",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 25
+      }
+    }, {
+      "name" : "getDescripcion",
+      "returnType" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 26
+      }
+    }, {
+      "name" : "setDescripcion",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "descripcion",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 27
+      }
+    }, {
+      "name" : "getEstado",
+      "returnType" : {
+        "name" : "T_Estado",
+        "qualifiedName" : "T_Estado",
+        "projectType" : true,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 28
+      }
+    }, {
+      "name" : "setEstado",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "estado",
+        "type" : {
+          "name" : "T_Estado",
+          "qualifiedName" : "T_Estado",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 30
+      }
+    }, {
+      "name" : "print",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 35
+      }
+    }, {
+      "name" : "printCaracteristicas",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PROTECTED",
+      "modifiers" : [ "ABSTRACT" ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : false,
+      "javadoc" : {
+        "description" : "Cada subclase imprime sus atributos específicos.",
+        "tags" : { }
+      },
+      "location" : {
+        "file" : "Producto.java",
+        "line" : 46
+      }
+    } ],
+    "enumConstants" : [ ]
+  }, {
+    "id" : "ProductoElectronica",
+    "name" : "ProductoElectronica",
+    "packageName" : "",
+    "kind" : "CLASS",
+    "visibility" : "PUBLIC",
+    "modifiers" : [ ],
+    "superclass" : {
+      "name" : "Producto",
+      "qualifiedName" : "Producto",
+      "projectType" : true,
+      "arguments" : [ ],
+      "arrayDimensions" : 0
+    },
+    "interfaces" : [ ],
+    "typeParameters" : [ ],
+    "annotations" : [ ],
+    "javadoc" : {
+      "description" : "Producto electrónico con peso y dimensiones físicas.",
+      "tags" : { }
+    },
+    "location" : {
+      "file" : "ProductoElectronica.java",
+      "line" : 2
+    },
+    "hasMainMethod" : false,
+    "fields" : [ {
+      "name" : "peso",
+      "type" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 3
+      }
+    }, {
+      "name" : "alto",
+      "type" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 4
+      }
+    }, {
+      "name" : "largo",
+      "type" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 5
+      }
+    }, {
+      "name" : "ancho",
+      "type" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 6
+      }
+    } ],
+    "constructors" : [ {
+      "visibility" : "PUBLIC",
+      "parameters" : [ {
+        "name" : "id",
+        "type" : {
+          "name" : "int",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "titulo",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "precio",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "descripcion",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "estado",
+        "type" : {
+          "name" : "T_Estado",
+          "qualifiedName" : "T_Estado",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "peso",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "alto",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "largo",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "ancho",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 8
+      }
+    } ],
+    "methods" : [ {
+      "name" : "getPeso",
+      "returnType" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 17
+      }
+    }, {
+      "name" : "setPeso",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "peso",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 18
+      }
+    }, {
+      "name" : "getAlto",
+      "returnType" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 19
+      }
+    }, {
+      "name" : "setAlto",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "alto",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 20
+      }
+    }, {
+      "name" : "getLargo",
+      "returnType" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 21
+      }
+    }, {
+      "name" : "setLargo",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "largo",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 22
+      }
+    }, {
+      "name" : "getAncho",
+      "returnType" : {
+        "name" : "double",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 23
+      }
+    }, {
+      "name" : "setAncho",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "ancho",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 24
+      }
+    }, {
+      "name" : "printCaracteristicas",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PROTECTED",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ {
+        "name" : "Override"
+      } ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoElectronica.java",
+        "line" : 26
+      }
+    } ],
+    "enumConstants" : [ ]
+  }, {
+    "id" : "ProductoRopa",
+    "name" : "ProductoRopa",
+    "packageName" : "",
+    "kind" : "CLASS",
+    "visibility" : "PUBLIC",
+    "modifiers" : [ ],
+    "superclass" : {
+      "name" : "Producto",
+      "qualifiedName" : "Producto",
+      "projectType" : true,
+      "arguments" : [ ],
+      "arrayDimensions" : 0
+    },
+    "interfaces" : [ ],
+    "typeParameters" : [ ],
+    "annotations" : [ ],
+    "javadoc" : {
+      "description" : "Producto de la categoría ropa, caracterizado por su talla.",
+      "tags" : { }
+    },
+    "location" : {
+      "file" : "ProductoRopa.java",
+      "line" : 2
+    },
+    "hasMainMethod" : false,
+    "fields" : [ {
+      "name" : "talla",
+      "type" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "ProductoRopa.java",
+        "line" : 3
+      }
+    } ],
+    "constructors" : [ {
+      "visibility" : "PUBLIC",
+      "parameters" : [ {
+        "name" : "id",
+        "type" : {
+          "name" : "int",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "titulo",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "precio",
+        "type" : {
+          "name" : "double",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "descripcion",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "estado",
+        "type" : {
+          "name" : "T_Estado",
+          "qualifiedName" : "T_Estado",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "talla",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "location" : {
+        "file" : "ProductoRopa.java",
+        "line" : 5
+      }
+    } ],
+    "methods" : [ {
+      "name" : "getTalla",
+      "returnType" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoRopa.java",
+        "line" : 11
+      }
+    }, {
+      "name" : "setTalla",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "talla",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoRopa.java",
+        "line" : 12
+      }
+    }, {
+      "name" : "printCaracteristicas",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PROTECTED",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ {
+        "name" : "Override"
+      } ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "ProductoRopa.java",
+        "line" : 14
+      }
+    } ],
+    "enumConstants" : [ ]
+  }, {
+    "id" : "T_Estado",
+    "name" : "T_Estado",
+    "packageName" : "",
+    "kind" : "ENUM",
+    "visibility" : "PUBLIC",
+    "modifiers" : [ ],
+    "interfaces" : [ ],
+    "typeParameters" : [ ],
+    "annotations" : [ ],
+    "javadoc" : {
+      "description" : "Estados posibles de un producto.",
+      "tags" : { }
+    },
+    "location" : {
+      "file" : "T_Estado.java",
+      "line" : 2
+    },
+    "hasMainMethod" : false,
+    "fields" : [ ],
+    "constructors" : [ ],
+    "methods" : [ ],
+    "enumConstants" : [ {
+      "name" : "DISPONIBLE"
+    }, {
+      "name" : "RESERVADO"
+    } ]
+  }, {
+    "id" : "Usuario",
+    "name" : "Usuario",
+    "packageName" : "",
+    "kind" : "CLASS",
+    "visibility" : "PUBLIC",
+    "modifiers" : [ ],
+    "interfaces" : [ ],
+    "typeParameters" : [ ],
+    "annotations" : [ ],
+    "javadoc" : {
+      "description" : "Usuario identificado por nombre y correo, con sus productos ofertados.",
+      "tags" : { }
+    },
+    "location" : {
+      "file" : "Usuario.java",
+      "line" : 6
+    },
+    "hasMainMethod" : false,
+    "fields" : [ {
+      "name" : "nombre",
+      "type" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 7
+      }
+    }, {
+      "name" : "email",
+      "type" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 8
+      }
+    }, {
+      "name" : "productos",
+      "type" : {
+        "name" : "List",
+        "projectType" : false,
+        "arguments" : [ {
+          "name" : "Producto",
+          "qualifiedName" : "Producto",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        } ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PRIVATE",
+      "modifiers" : [ ],
+      "initializedInline" : false,
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 9
+      }
+    } ],
+    "constructors" : [ {
+      "visibility" : "PUBLIC",
+      "parameters" : [ {
+        "name" : "nombre",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      }, {
+        "name" : "email",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 11
+      }
+    } ],
+    "methods" : [ {
+      "name" : "getNombre",
+      "returnType" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 18
+      }
+    }, {
+      "name" : "setNombre",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "nombre",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 19
+      }
+    }, {
+      "name" : "getEmail",
+      "returnType" : {
+        "name" : "String",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 20
+      }
+    }, {
+      "name" : "setEmail",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "email",
+        "type" : {
+          "name" : "String",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 21
+      }
+    }, {
+      "name" : "getProductos",
+      "returnType" : {
+        "name" : "List",
+        "projectType" : false,
+        "arguments" : [ {
+          "name" : "Producto",
+          "qualifiedName" : "Producto",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        } ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 22
+      }
+    }, {
+      "name" : "setProductos",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "productos",
+        "type" : {
+          "name" : "List",
+          "projectType" : false,
+          "arguments" : [ {
+            "name" : "Producto",
+            "qualifiedName" : "Producto",
+            "projectType" : true,
+            "arguments" : [ ],
+            "arrayDimensions" : 0
+          } ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 23
+      }
+    }, {
+      "name" : "addProducto",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "producto",
+        "type" : {
+          "name" : "Producto",
+          "qualifiedName" : "Producto",
+          "projectType" : true,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 27
+      }
+    }, {
+      "name" : "removeProducto",
+      "returnType" : {
+        "name" : "boolean",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "id",
+        "type" : {
+          "name" : "int",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 34
+      }
+    }, {
+      "name" : "buscarProducto",
+      "returnType" : {
+        "name" : "Producto",
+        "qualifiedName" : "Producto",
+        "projectType" : true,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ {
+        "name" : "id",
+        "type" : {
+          "name" : "int",
+          "projectType" : false,
+          "arguments" : [ ],
+          "arrayDimensions" : 0
+        },
+        "varargs" : false
+      } ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 39
+      }
+    }, {
+      "name" : "print",
+      "returnType" : {
+        "name" : "void",
+        "projectType" : false,
+        "arguments" : [ ],
+        "arrayDimensions" : 0
+      },
+      "visibility" : "PUBLIC",
+      "modifiers" : [ ],
+      "parameters" : [ ],
+      "thrown" : [ ],
+      "annotations" : [ ],
+      "hasBody" : true,
+      "location" : {
+        "file" : "Usuario.java",
+        "line" : 44
+      }
+    } ],
+    "enumConstants" : [ ]
+  } ],
+  "relations" : [ {
+    "kind" : "DEPENDENCY",
+    "from" : "LanzadorEtapa3_1",
+    "to" : "PlataformaCompraVenta",
+    "via" : "main(gestor)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "LanzadorEtapa3_1",
+    "to" : "Usuario",
+    "via" : "main(user1)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "LanzadorEtapa3_1",
+    "to" : "Usuario",
+    "via" : "main(user2)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "LanzadorEtapa3_1",
+    "to" : "Producto",
+    "via" : "main(producto1)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "LanzadorEtapa3_1",
+    "to" : "Producto",
+    "via" : "main(producto2)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "LanzadorEtapa3_1",
+    "to" : "Producto",
+    "via" : "main(producto3)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "LanzadorEtapa3_1",
+    "to" : "Producto",
+    "via" : "main(producto4)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "ASSOCIATION",
+    "from" : "PlataformaCompraVenta",
+    "to" : "Usuario",
+    "via" : "usuarios",
+    "multiplicity" : "0..*",
+    "confidence" : "LOW",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : true,
+      "initializedInline" : false,
+      "exposedBySetter" : false
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "PlataformaCompraVenta",
+    "to" : "Producto",
+    "via" : "addProduct2User(producto)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "parameter"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "PlataformaCompraVenta",
+    "to" : "Producto",
+    "via" : "printAllProducts(p)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "PlataformaCompraVenta",
+    "to" : "T_Estado",
+    "via" : "printProductsByState(estado)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "parameter"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "PlataformaCompraVenta",
+    "to" : "Producto",
+    "via" : "printProductsByState(p)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "PlataformaCompraVenta",
+    "to" : "Producto",
+    "via" : "printProductsByUser(p)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "PlataformaCompraVenta",
+    "to" : "T_Estado",
+    "via" : "printProductsByUser(estado)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "parameter"
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "PlataformaCompraVenta",
+    "to" : "Producto",
+    "via" : "searchProductsByKeyword(p)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "local"
+    }
+  }, {
+    "kind" : "ASSOCIATION",
+    "from" : "Producto",
+    "to" : "T_Estado",
+    "via" : "estado",
+    "multiplicity" : "1",
+    "confidence" : "LOW",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : true,
+      "initializedInline" : false,
+      "exposedBySetter" : true
+    }
+  }, {
+    "kind" : "INHERITANCE",
+    "from" : "ProductoElectronica",
+    "to" : "Producto",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "ProductoElectronica",
+    "to" : "T_Estado",
+    "via" : "<init>(estado)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "parameter"
+    }
+  }, {
+    "kind" : "INHERITANCE",
+    "from" : "ProductoRopa",
+    "to" : "Producto",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false
+    }
+  }, {
+    "kind" : "DEPENDENCY",
+    "from" : "ProductoRopa",
+    "to" : "T_Estado",
+    "via" : "<init>(estado)",
+    "confidence" : "HIGH",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : false,
+      "initializedInline" : false,
+      "exposedBySetter" : false,
+      "usedIn" : "parameter"
+    }
+  }, {
+    "kind" : "ASSOCIATION",
+    "from" : "Usuario",
+    "to" : "Producto",
+    "via" : "productos",
+    "multiplicity" : "0..*",
+    "confidence" : "LOW",
+    "evidence" : {
+      "createdWithNew" : false,
+      "assignedFromParameter" : true,
+      "initializedInline" : false,
+      "exposedBySetter" : false
+    }
+  } ],
+  "analysis" : {
+    "managerClass" : {
+      "id" : "PlataformaCompraVenta",
+      "score" : 25.0,
+      "confidence" : "HIGH",
+      "reasons" : [ "Alcance estructural: alcanza 3 tipos de dominio.", "Raiz estructural: nadie la contiene como atributo (considerando ciclos).", "Contiene 1 atributo(s) de coleccion con tipos del proyecto.", "Sus metodos operan sobre 1 coleccion(es) del dominio.", "Instanciada desde un punto de entrada o una prueba." ]
+    },
+    "alternatives" : [ {
+      "id" : "Usuario",
+      "score" : 14.666666666666666,
+      "confidence" : "HIGH",
+      "reasons" : [ "Alcance estructural: alcanza 2 tipos de dominio.", "Contiene 1 atributo(s) de coleccion con tipos del proyecto.", "Sus metodos operan sobre 1 coleccion(es) del dominio.", "Instanciada desde un punto de entrada o una prueba." ]
+    } ],
+    "subManagers" : [ "Usuario" ],
+    "entryPoints" : [ "LanzadorEtapa3_1" ],
+    "manualOverride" : false
+  }
+}

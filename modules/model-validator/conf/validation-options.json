@@ -1,0 +1,16 @@
+{
+  "types": {
+    "classes": true,
+    "interfaces": true,
+    "enums": true,
+    "records": true,
+    "annotations": true,
+    "abstractness": true
+  },
+  "relationships": true,
+  "attributes": false,
+  "constructors": false,
+  "methods": false,
+  "enumConstants": false,
+  "collectionOperations": true
+}

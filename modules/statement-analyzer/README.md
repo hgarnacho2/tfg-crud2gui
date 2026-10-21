@@ -6,6 +6,8 @@ extrae del codigo Java real.
 
 Proveedores actuales: **Gemini** (remoto) y **Ollama** (local, p. ej. `qwen3:8b`).
 
+El modelo esperado incluye `expectedManagerId` cuando el enunciado designa explícitamente una clase gestora; si no, el campo es `null`. Esta expectativa se mantiene separada de `analysis`, que corresponde a la detección del código.
+
 ## Estructura
 
 | Clase | Papel |

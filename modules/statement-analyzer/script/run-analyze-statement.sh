@@ -13,9 +13,21 @@ PROCESS_OLLAMA_MODEL="${STATEMENT_ANALYZER_OLLAMA_MODEL:-${OLLAMA_MODEL:-}}"
 PROCESS_GROQ_MODEL="${STATEMENT_ANALYZER_GROQ_MODEL:-${GROQ_MODEL:-}}"
 
 if [ -f "$REPO_ROOT/.env.public" ]; then
-    set -a
-    . "$REPO_ROOT/.env.public"
-    set +a
+    while IFS= read -r line || [ -n "$line" ]; do
+        line=${line%$'\r'}
+        case "$line" in
+            STATEMENT_ANALYZER_GEMINI_MODEL=*|STATEMENT_ANALYZER_OLLAMA_MODEL=*|STATEMENT_ANALYZER_GROQ_MODEL=*)
+                key=${line%%=*}
+                value=${line#*=}
+                case "$value" in
+                    \"*\") value=${value#\"}; value=${value%\"} ;;
+                    \'*\') value=${value#\'}; value=${value%\'} ;;
+                esac
+                printf -v "$key" '%s' "$value"
+                export "$key"
+                ;;
+        esac
+    done < "$REPO_ROOT/.env.public"
 fi
 
 if [ -n "$PROCESS_GEMINI_MODEL" ]; then

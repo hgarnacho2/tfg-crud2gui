@@ -27,12 +27,15 @@ class ModelIOTest {
         assertEquals("List<Usuario>", t.fields().get(0).type().display());
         assertEquals(RelationKind.AGGREGATION, m.relations().get(0).kind());
         assertEquals("com.tienda.PlataformaCompraVenta", m.analysis().managerClass().id());
+        assertTrue(m.expectedManagerId() == null);
     }
 
     /** Escribir y volver a leer devuelve un modelo igual al original. */
     @Test
     void idaYVueltaConservaElModelo() throws Exception {
-        ProjectModel original = ModelIO.read(EJEMPLO);
+        ProjectModel model = ModelIO.read(EJEMPLO);
+        ProjectModel original = new ProjectModel(model.schemaVersion(), "com.tienda.PlataformaCompraVenta",
+            model.source(), model.types(), model.relations(), model.analysis(), model.layout());
         Path tmp = Files.createTempFile("modelo", ".json");
         ModelIO.write(original, tmp);
         assertEquals(original, ModelIO.read(tmp));

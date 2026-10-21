@@ -71,10 +71,11 @@ final class RelationAnalyzer {
                     boolean requiredByConstructor = assignedInConstructor(
                         declaration.declaration(), declaration.context(), field, targetId);
                     String multiplicity = multiplicity(field.type(), requiredByConstructor);
+                        Confidence confidence = kind == RelationKind.ASSOCIATION ? Confidence.LOW
+                            : evidence.createdWithNew() && evidence.assignedFromParameter()
+                                ? Confidence.MEDIUM : Confidence.HIGH;
                     add(relations, new Relation(kind, owner.id(), targetId, field.name(), multiplicity,
-                            evidence.createdWithNew() && evidence.assignedFromParameter()
-                                    ? Confidence.MEDIUM : Confidence.HIGH,
-                            evidence));
+                            confidence, evidence));
                     structuralPairs.add(new TypePair(owner.id(), targetId));
                 }
             }
@@ -282,7 +283,6 @@ final class RelationAnalyzer {
 
     private static RelationKind fieldKind(Evidence evidence) {
         if (evidence.createdWithNew()) return RelationKind.COMPOSITION;
-        if (evidence.assignedFromParameter()) return RelationKind.AGGREGATION;
         return RelationKind.ASSOCIATION;
     }
 

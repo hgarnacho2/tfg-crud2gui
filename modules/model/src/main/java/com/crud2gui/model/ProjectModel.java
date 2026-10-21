@@ -7,17 +7,24 @@ import java.util.List;
  * Es la unidad que se serializa a JSON con {@link ModelIO}.
  *
  * @param schemaVersion version del formato; la version mayor debe coincidir al leer
+ * @param expectedManagerId id simple de la clase gestora exigida por el enunciado, o {@code null} si no se especifica
  * @param source        origen y datos de la generacion
  * @param types         tipos declarados en el proyecto
  * @param relations     relaciones entre los tipos calculadas por el parser
  * @param analysis      resultados calculados, incluida la candidata a clase gestora
  * @param layout        disposicion visual; {@code null} si no se definio
  */
-public record ProjectModel(String schemaVersion, SourceInfo source, List<TypeInfo> types,
+public record ProjectModel(String schemaVersion, String expectedManagerId, SourceInfo source, List<TypeInfo> types,
                            List<Relation> relations, Analysis analysis, Layout layout) {
 
     /** Version actual del esquema JSON. */
     public static final String CURRENT_SCHEMA = "1.0";
+
+    /** Mantiene compatibilidad con callers que aun no proporcionan una gestora esperada. */
+    public ProjectModel(String schemaVersion, SourceInfo source, List<TypeInfo> types,
+                        List<Relation> relations, Analysis analysis, Layout layout) {
+        this(schemaVersion, null, source, types, relations, analysis, layout);
+    }
 
     /**
      * Normaliza las listas: {@code null} se convierte en una lista vacia inmutable.
