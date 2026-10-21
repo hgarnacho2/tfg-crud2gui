@@ -16,25 +16,7 @@ class AuthenticatorConfigTest {
                 URI.create("http://localhost"), Set.of("openid", "profile"));
 
         assertEquals("https://login.microsoftonline.com/tenant.example", config.authority());
-        assertEquals(AuthBrowserMode.SYSTEM, config.browserMode());
         assertThrows(UnsupportedOperationException.class, () -> config.scopes().add("User.Read"));
-    }
-
-    @Test
-    void parsesConfiguredBrowserMode() {
-        assertEquals(AuthBrowserMode.SYSTEM, AuthBrowserMode.parse(null));
-        assertEquals(AuthBrowserMode.SYSTEM, AuthBrowserMode.parse("system"));
-        assertEquals(AuthBrowserMode.EMBEDDED, AuthBrowserMode.parse("embedded"));
-        assertThrows(IllegalArgumentException.class, () -> AuthBrowserMode.parse("unknown"));
-    }
-
-    @Test
-    void embeddedModeKeepsTheRegisteredLoopbackRedirect() {
-        AuthenticatorConfig config = new AuthenticatorConfig("client-id", "tenant.example",
-                URI.create("http://localhost"), Set.of("openid"), AuthBrowserMode.EMBEDDED);
-
-        assertEquals(AuthBrowserMode.EMBEDDED, config.browserMode());
-        assertEquals(URI.create("http://localhost"), config.redirectUri());
     }
 
     @Test

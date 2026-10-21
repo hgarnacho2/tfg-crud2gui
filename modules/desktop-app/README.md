@@ -1,6 +1,6 @@
 # CRUD2GUI Desktop App
 
-Aplicacion JavaFX de escritorio que presenta el estado de autenticacion de CRUD2GUI. La autenticacion la delega al modulo `authenticator`; `AZURE_AUTH_BROWSER_MODE` permite elegir entre el navegador del sistema (`system`, predeterminado) y un WebView integrado en la ventana (`embedded`). Ambos modos usan el flujo interactivo de MSAL4J con PKCE y callback loopback.
+Aplicacion JavaFX de escritorio que presenta el estado de autenticacion de CRUD2GUI. La autenticacion la delega al modulo `authenticator` y siempre se completa en un WebView integrado en la misma ventana mediante MSAL4J, PKCE y callback loopback.
 
 Desde la raiz del repositorio, ejecuta:
 
@@ -8,10 +8,9 @@ Desde la raiz del repositorio, ejecuta:
 modules/desktop-app/script/run.sh
 ```
 
-Por defecto, el script omite la instalación y oculta los mensajes informativos; requiere que las dependencias estén instaladas en Maven. Usa `--install` para instalar `common-utils`, `authenticator` y `desktop-app`. Opciones:
+Por defecto, el script instala `common-utils`, `authenticator` y `desktop-app` antes de arrancar, para usar siempre las versiones actuales del flujo embebido. Usa `--no-install` solo cuando los snapshots actuales ya estén instalados en Maven. Opciones:
 
 ```bash
-modules/desktop-app/script/run.sh --install
 modules/desktop-app/script/run.sh --no-install
 modules/desktop-app/script/run.sh --debug
 modules/desktop-app/script/run.sh --debug --no-install
@@ -21,7 +20,7 @@ modules/desktop-app/script/run.sh --debug --no-install
 
 La ventana muestra si el inicio de sesion se completo y el perfil `Alumno` o `Docente`. Si la cuenta se autentica pero no tiene ninguno de esos roles, la ventana indica que no tiene acceso asignado. No se muestran ni almacenan contrasenas o tokens.
 
-La configuracion de Entra se lee desde las variables `AZURE_*` de `.env.public` o desde variables de entorno/propiedades Java con mayor precedencia. Para probar el WebView, configura `AZURE_AUTH_BROWSER_MODE=embedded`; para volver al navegador del sistema, usa `AZURE_AUTH_BROWSER_MODE=system`. El comportamiento de MFA y Conditional Access en WebView debe verificarse con las politicas del tenant; el modo system mantiene la compatibilidad mas amplia.
+La configuracion de Entra se lee desde las variables `AZURE_*` de `.env.public` o desde variables de entorno/propiedades Java con mayor precedencia. El WebView puede no ofrecer todos los métodos de autenticación, SSO o requisitos MFA/Conditional Access disponibles en un navegador del sistema; valida el flujo con las políticas del tenant.
 
 ## Organización de la interfaz
 

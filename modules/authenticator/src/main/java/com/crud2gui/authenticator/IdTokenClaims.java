@@ -10,13 +10,28 @@ import java.util.Base64;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/** Extrae identidad y roles del ID token que MSAL ya recibio en el flujo autenticado. */
+/**
+ * Convierte los claims del ID token devuelto por MSAL en el modelo de identidad de la aplicación.
+ * Extrae identificador, usuario, nombre visible, tenant, roles y expiración. No valida la firma del JWT;
+ * debe recibir únicamente el ID token obtenido por el flujo autenticado de MSAL.
+ */
 final class IdTokenClaims {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    /** Evita crear instancias de esta clase de utilidades. */
     private IdTokenClaims() { }
 
+    /**
+     * Decodifica el payload de un ID token y construye el usuario autenticado.
+     * Usa {@code oid} o {@code sub} como identificador, y busca el nombre de usuario en
+     * {@code preferred_username}, {@code upn} o {@code email}, en ese orden.
+     *
+     * @param idToken JWT de identidad devuelto por MSAL tras completar la autenticación
+     * @return identidad normalizada con los roles y la expiración disponibles en el token
+     * @throws IllegalArgumentException si el token está vacío, no tiene formato JWT, no se puede leer
+     *                                  o no contiene un identificador de usuario
+     */
     static AuthenticatedUser parse(String idToken) {
         if (idToken == null || idToken.isBlank()) {
             throw new IllegalArgumentException("MSAL no devolvio un ID token");
@@ -48,6 +63,13 @@ final class IdTokenClaims {
         }
     }
 
+    /**
+     * Devuelve el primer claim textual no vacío de una lista de nombres alternativos.
+     *
+     * @param claims objeto JSON con los claims del token
+     * @param names nombres de claim que se prueban en orden de prioridad
+     * @return valor del primer claim textual no vacío, o {@code null} si ninguno existe
+     */
     private static String firstText(JsonNode claims, String... names) {
         for (String name : names) {
             JsonNode value = claims.path(name);

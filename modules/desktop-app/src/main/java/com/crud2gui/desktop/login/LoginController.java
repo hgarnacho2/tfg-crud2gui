@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletionException;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 /** Coordina los eventos de la vista Login con el servicio de autenticacion. */
 public final class LoginController {
@@ -15,10 +17,13 @@ public final class LoginController {
 
     private final LoginView view;
     private final EntraIdAuthenticator authenticator;
+    private final Consumer<AuthenticatedUser> onAuthenticated;
 
-    public LoginController(LoginView view, EntraIdAuthenticator authenticator) {
-        this.view = view;
-        this.authenticator = authenticator;
+    public LoginController(LoginView view, EntraIdAuthenticator authenticator,
+                           Consumer<AuthenticatedUser> onAuthenticated) {
+        this.view = Objects.requireNonNull(view, "view");
+        this.authenticator = Objects.requireNonNull(authenticator, "authenticator");
+        this.onAuthenticated = Objects.requireNonNull(onAuthenticated, "onAuthenticated");
         view.setOnSignIn(this::signIn);
     }
 
@@ -38,6 +43,7 @@ public final class LoginController {
 
     private void showResult(AuthenticatedUser user) {
         view.showAuthenticated(user);
+        onAuthenticated.accept(user);
         if (user.roles().isEmpty()) {
             LOGGER.warn("LOGIN_OK | Cuenta autenticada sin rol de aplicacion asignado.");
         } else {

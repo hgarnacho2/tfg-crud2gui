@@ -5,7 +5,7 @@ script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 module_dir=$(cd -- "$script_dir/.." && pwd)
 project_root=$(cd -- "$script_dir/../../.." && pwd)
 
-install_dependencies=false
+install_dependencies=true
 show_info=false
 
 usage() {
@@ -13,15 +13,15 @@ usage() {
 Uso: $0 [opciones]
 
 Opciones:
-	--install      Instala common-utils, authenticator y desktop-app antes de arrancar.
-	--no-install   Omite la instalación (predeterminado); requiere las dependencias ya instaladas en Maven.
+	--install      Instala common-utils, authenticator y desktop-app antes de arrancar (predeterminado).
+	--no-install   Omite la instalación; requiere snapshots actuales ya instalados en Maven.
   --debug        Muestra la salida INFO de Maven y el diagnóstico DEBUG de MSAL.
   -h, --help     Muestra esta ayuda.
 
 Ejemplos:
-	$0 --install
-  $0 --no-install
-  $0 --debug --no-install
+	$0
+	$0 --no-install
+	$0 --debug --no-install
 USAGE
 }
 

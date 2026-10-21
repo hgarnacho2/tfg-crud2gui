@@ -12,7 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-/** Autenticacion interactiva de escritorio con Entra ID mediante navegador y MSAL4J. */
+/**
+ * Servicio de autenticación interactiva para una aplicación JavaFX de escritorio.
+ * Configura MSAL4J como cliente público y presenta la autorización de Entra ID mediante la acción embebida
+ * proporcionada por la interfaz; el flujo usa el redirect URI loopback configurado y no expone tokens al llamador.
+ */
 public final class EntraIdAuthenticator {
 
     private static final int CALLBACK_TIMEOUT_SECONDS = 300;
@@ -21,48 +25,38 @@ public final class EntraIdAuthenticator {
 
     private final AuthenticatorConfig config;
     private final PublicClientApplication application;
-    private final OpenBrowserAction embeddedBrowserAction;
+    private final OpenBrowserAction browserAction;
 
     /**
-     * Crea un cliente publico para el tenant configurado; no usa client secret.
+    * Crea un cliente público que delega la presentación del login en la vista JavaFX.
      *
-     * @param config parametros publicos de la aplicacion registrada
-     * @throws MalformedURLException si la autoridad configurada no es valida
+    * @param config configuración pública de Entra ID con client ID, tenant, redirect URI y scopes
+    * @param browserAction acción que carga la URL de autorización en el WebView de la interfaz
+    * @throws NullPointerException si la configuración o la acción de navegador son {@code null}
+    * @throws MalformedURLException si la autoridad configurada no es válida
      */
-    public EntraIdAuthenticator(AuthenticatorConfig config) throws MalformedURLException {
-        this(config, null);
-    }
-
-    /**
-     * @param config parametros publicos de la aplicacion registrada
-     * @param embeddedBrowserAction accion que presenta la URL de autorizacion en una UI embebida
-     * @throws MalformedURLException si la autoridad configurada no es valida
-     */
-    public EntraIdAuthenticator(AuthenticatorConfig config, OpenBrowserAction embeddedBrowserAction)
+    public EntraIdAuthenticator(AuthenticatorConfig config, OpenBrowserAction browserAction)
             throws MalformedURLException {
         this.config = Objects.requireNonNull(config, "config");
-        if (config.browserMode() == AuthBrowserMode.EMBEDDED && embeddedBrowserAction == null) {
-            throw new IllegalArgumentException("El modo embedded requiere una accion de navegador embebido.");
-        }
-        this.embeddedBrowserAction = embeddedBrowserAction;
+        this.browserAction = Objects.requireNonNull(browserAction, "browserAction");
         this.application = PublicClientApplication.builder(config.clientId())
                 .authority(config.authority())
                 .build();
     }
 
     /**
-     * Abre el inicio de sesion interactivo en el navegador predeterminado.
-     * La llamada es asincrona para que una GUI no bloquee su hilo de interfaz.
+        * Inicia el flujo interactivo de MSAL4J y muestra la autorización mediante la acción embebida configurada.
+        * La operación es asíncrona para no bloquear el hilo de interfaz; al completarse, interpreta el ID token
+        * y devuelve únicamente la identidad y los roles de aplicación.
      *
-     * @return futuro con la identidad y los roles declarados en el ID token
+        * @return futuro que se completa con la identidad autenticada, o excepcionalmente si falla el login,
+        *         el callback o la lectura de claims
      */
     public CompletableFuture<AuthenticatedUser> authenticate() {
         SystemBrowserOptions.SystemBrowserOptionsBuilder browserOptions = SystemBrowserOptions.builder()
             .htmlMessageSuccess(SUCCESS_PAGE)
             .htmlMessageError(ERROR_PAGE);
-        if (config.browserMode() == AuthBrowserMode.EMBEDDED) {
-            browserOptions.openBrowserAction(embeddedBrowserAction);
-        }
+        browserOptions.openBrowserAction(browserAction);
         InteractiveRequestParameters request = InteractiveRequestParameters.builder(config.redirectUri())
                 .scopes(config.scopes())
                 .httpPollingTimeoutInSeconds(CALLBACK_TIMEOUT_SECONDS)
@@ -72,6 +66,13 @@ public final class EntraIdAuthenticator {
                 .thenApply(result -> IdTokenClaims.parse(result.idToken()));
     }
 
+    /**
+     * Lee como UTF-8 una página local que MSAL muestra tras completar o fallar el callback.
+     *
+     * @param resourcePath ruta absoluta del recurso HTML dentro del classpath
+     * @return contenido HTML de la plantilla
+     * @throws IllegalStateException si el recurso no existe o no puede leerse
+     */
     static String loadTemplate(String resourcePath) {
         try (InputStream input = EntraIdAuthenticator.class.getResourceAsStream(resourcePath)) {
             if (input == null) {

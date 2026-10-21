@@ -23,8 +23,6 @@ public final class LoginView extends VBox {
     private final Button signInButton = new Button("Iniciar sesión con Microsoft");
     private final ProgressIndicator progress = new ProgressIndicator();
         private final VBox loginContent;
-        private final Label browserNote;
-        private boolean embeddedBrowserMode;
 
     public LoginView() {
         Label brand = new Label("CRUD2GUI");
@@ -55,7 +53,7 @@ public final class LoginView extends VBox {
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
-        browserNote = new Label("La autenticación se completará en el navegador del sistema.");
+        Label browserNote = new Label("La autenticación se completará dentro de esta ventana.");
         browserNote.setStyle("-fx-text-fill: #697780; -fx-font-size: 12px;");
         browserNote.setWrapText(true);
 
@@ -70,11 +68,6 @@ public final class LoginView extends VBox {
         setPadding(new Insets(28));
         setStyle("-fx-background-color: #f1f6f4; -fx-font-family: 'Segoe UI';");
                 getChildren().add(loginContent);
-        }
-
-        public void setEmbeddedBrowserMode() {
-                embeddedBrowserMode = true;
-                browserNote.setText("La autenticación se completará dentro de esta ventana.");
         }
 
         public void showEmbeddedBrowser(URL authorizationUrl) {
@@ -95,8 +88,7 @@ public final class LoginView extends VBox {
 
         void showBusy() {
                 signInButton.setDisable(true);
-                status.setText(embeddedBrowserMode
-                        ? "Esperando autenticación..." : "Esperando autenticación en el navegador...");
+                status.setText("Esperando autenticación...");
                 role.setText("");
                 progress.setVisible(true);
                 progress.setManaged(true);
