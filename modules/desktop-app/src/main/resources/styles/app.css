@@ -31,14 +31,14 @@
 
 .current-user-name {
     -fx-text-fill: white;
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
     -fx-font-weight: bold;
     -fx-wrap-text: true;
 }
 
 .current-user-role {
     -fx-text-fill: #ffffff;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
     -fx-padding: 3px 8px;
     -fx-background-color: #255c4e;
     -fx-background-radius: 9px;
@@ -77,7 +77,7 @@
 
 .text-muted {
     -fx-text-fill: #64736f;
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-wrap-text: true;
 }
 
@@ -128,7 +128,7 @@
 .action-button {
     -fx-background-color: #087e65;
     -fx-text-fill: white;
-    -fx-font-size: 14px;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
     -fx-padding: 10px 14px;
     -fx-background-radius: 4px;
@@ -149,7 +149,7 @@
 .action-button.sign-out-button {
     -fx-background-color: transparent;
     -fx-text-fill: #ffffff;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
     -fx-font-weight: normal;
     -fx-border-color: #a8d5c5;
     -fx-border-radius: 5px;
@@ -204,7 +204,7 @@
 }
 .section-breadcrumb {
     -fx-text-fill: #087e65;
-    -fx-font-size: 10px;
+    -fx-font-size: 11px;
     -fx-font-weight: bold;
 }
 
@@ -216,7 +216,7 @@
 
 .section-subtitle {
     -fx-text-fill: #64736f;
-    -fx-font-size: 13px;
+    -fx-font-size: 15px;
     -fx-wrap-text: true;
 }
 
@@ -237,7 +237,7 @@
 }
 
 .sidebar-navigation-button {
-    -fx-font-size: 13px;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
     -fx-max-width: infinity;
     -fx-alignment: center-left;
@@ -263,7 +263,7 @@
 }
 
 .statement-text {
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
 }
 
 .statement-file-card {
@@ -281,7 +281,7 @@
 }
 
 .statement-file-name {
-    -fx-font-size: 15px;
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: #173e33;
     -fx-wrap-text: true;
@@ -292,12 +292,12 @@
     -fx-background-color: #087e65;
     -fx-background-radius: 5px;
     -fx-text-fill: white;
-    -fx-font-size: 10px;
+    -fx-font-size: 11px;
     -fx-font-weight: bold;
 }
 
 .statement-file-path {
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-text-fill: #52675d;
     -fx-wrap-text: true;
 }
@@ -308,7 +308,7 @@
 
 .statement-preview-page {
     -fx-text-fill: #173e33;
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
     -fx-font-weight: bold;
 }
 
@@ -396,14 +396,14 @@
 
 .statement-step-title {
     -fx-text-fill: #173e33;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-wrap-text: true;
 }
 
 .statement-step-description {
     -fx-text-fill: #52675d;
-    -fx-font-size: 11px;
+    -fx-font-size: 13px;
     -fx-wrap-text: true;
 }
 

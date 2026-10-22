@@ -126,7 +126,7 @@ class UiComponentsTest {
                 var buttons = sidebar.getChildren().stream().filter(Button.class::isInstance)
                         .map(Button.class::cast).toList();
                 for (Button button : buttons) {
-                    assertEquals(13, button.getFont().getSize(), 0.01);
+                    assertEquals(15, button.getFont().getSize(), 0.01);
                     assertTrue(button.getFont().getStyle().contains("Bold"));
                 }
                 assertEquals(dashboard instanceof TeacherDashboardView ? 5 : 4, buttons.size());
@@ -356,7 +356,7 @@ class UiComponentsTest {
                     assertEquals(dashboard instanceof StudentDashboardView ? "Perfil alumno" : "Perfil docente",
                             role.getText());
                     assertEquals(Color.WHITE, role.getTextFill());
-                    assertEquals(12, role.getFont().getSize());
+                    assertEquals(13, role.getFont().getSize());
                     Button signOut = (Button) card.lookup(".sign-out-button");
                     assertEquals(Color.WHITE, signOut.getTextFill());
                     assertTrue(contrast(Color.WHITE, Color.web("#255c4e")) >= 4.5);
@@ -523,10 +523,10 @@ class UiComponentsTest {
 
             assertTrue(text.isWrapText());
             assertEquals(Color.web("#64736f"), text.getTextFill());
-            assertEquals(12, text.getFont().getSize(), 0.01);
+            assertEquals(14, text.getFont().getSize(), 0.01);
             assertEquals(Color.WHITE, button.getTextFill());
             assertEquals(Color.web("#087e65"), button.getBackground().getFills().get(0).getFill());
-            assertEquals(14, button.getFont().getSize(), 0.01);
+            assertEquals(15, button.getFont().getSize(), 0.01);
             assertEquals(new Insets(10, 14, 10, 14), button.getPadding());
             assertEquals(Cursor.HAND, button.getCursor());
             button.fire();

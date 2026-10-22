@@ -108,9 +108,8 @@ final class TeacherComponents {
 
     static VBox panelHeading(String titleText, String subtitleText) {
         Label title = new Label(titleText);
-        title.setStyle("-fx-text-fill: " + INK + "; -fx-font-size: 15px; -fx-font-weight: bold;");
-        Label subtitle = new Label(subtitleText);
-        subtitle.setStyle("-fx-text-fill: " + MUTED + "; -fx-font-size: 11px;");
+        title.setStyle("-fx-text-fill: " + INK + "; -fx-font-size: 16px; -fx-font-weight: bold;");
+        Label subtitle = com.crud2gui.desktop.ui.UiComponents.mutedText(subtitleText);
         return new VBox(4, title, subtitle);
     }
 

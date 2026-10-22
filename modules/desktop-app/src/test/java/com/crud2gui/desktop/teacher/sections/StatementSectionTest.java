@@ -76,7 +76,7 @@ class StatementSectionTest {
             controls.section().applyCss();
             Label filename = (Label) controls.section().lookup(".statement-file-name");
             assertEquals("first.pdf", filename.getText());
-            assertEquals(15, filename.getFont().getSize(), 0.01);
+            assertEquals(16, filename.getFont().getSize(), 0.01);
             assertTrue(filename.getFont().getStyle().contains("Bold"));
             assertTrue(filename.isWrapText());
             assertEquals(pdf.toFile().getAbsolutePath(),
@@ -382,6 +382,17 @@ class StatementSectionTest {
             try {
                 stage.setScene(controls.section().getScene());
                 stage.show();
+                controls.section().applyCss();
+                Label panelSubtitle = controls.section().lookupAll(".label").stream()
+                        .filter(Label.class::isInstance).map(Label.class::cast)
+                        .filter(label -> "El documento de partida".equals(label.getText()))
+                        .findFirst().orElseThrow();
+                Label explanation = controls.section().lookupAll(".label").stream()
+                        .filter(Label.class::isInstance).map(Label.class::cast)
+                        .filter(label -> label.getText().startsWith("Elige un PDF local."))
+                        .findFirst().orElseThrow();
+                assertEquals(14, panelSubtitle.getFont().getSize(), 0.01);
+                assertEquals(explanation.getFont().getSize(), panelSubtitle.getFont().getSize());
                 for (int width : new int[]{760, 960, 1800}) {
                     controls.section().resize(width, 680);
                     controls.section().applyCss();
