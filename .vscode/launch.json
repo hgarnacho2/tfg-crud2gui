@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "CRUD2GUI Desktop",
+            "request": "launch",
+            "mainClass": "com.crud2gui.desktop.Crud2GuiDesktopApp",
+            "windows": {
+                "vmArgs": "-Dprism.order=sw"
+            }
+        }
+    ]
+}

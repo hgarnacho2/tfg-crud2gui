@@ -4,10 +4,13 @@ import com.microsoft.aad.msal4j.InteractiveRequestParameters;
 import com.microsoft.aad.msal4j.OpenBrowserAction;
 import com.microsoft.aad.msal4j.PublicClientApplication;
 import com.microsoft.aad.msal4j.SystemBrowserOptions;
+import com.microsoft.aad.msal4j.Prompt;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -58,12 +61,33 @@ public final class EntraIdAuthenticator {
             .htmlMessageError(ERROR_PAGE);
         browserOptions.openBrowserAction(browserAction);
         InteractiveRequestParameters request = InteractiveRequestParameters.builder(config.redirectUri())
+                .prompt(Prompt.LOGIN)
                 .scopes(config.scopes())
                 .httpPollingTimeoutInSeconds(CALLBACK_TIMEOUT_SECONDS)
-            .systemBrowserOptions(browserOptions.build())
+                .systemBrowserOptions(browserOptions.build())
                 .build();
         return application.acquireToken(request)
                 .thenApply(result -> IdTokenClaims.parse(result.idToken()));
+    }
+
+    /**
+     * Elimina las cuentas y tokens de la cache MSAL en memoria.
+     *
+     * @return futuro que finaliza al vaciar la cache; no cierra por si solo la sesion del navegador
+     */
+    public CompletableFuture<Void> clearAccounts() {
+        return application.getAccounts().thenCompose(accounts -> CompletableFuture.allOf(
+                accounts.stream().map(application::removeAccount).toArray(CompletableFuture[]::new)));
+    }
+
+    /**
+     * Obtiene la URL de cierre de Microsoft con retorno al redirect URI registrado.
+     *
+     * @return endpoint de cierre de sesion del tenant
+     */
+    public URI logoutUri() {
+        return URI.create(config.authority() + "/oauth2/v2.0/logout?post_logout_redirect_uri="
+                + URLEncoder.encode(config.redirectUri().toString(), StandardCharsets.UTF_8));
     }
 
     /**

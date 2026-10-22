@@ -18,14 +18,46 @@ modules/desktop-app/script/run.sh --debug --no-install
 
 `--debug` muestra la salida `INFO` de Maven y activa el logging de diagnóstico de MSAL.
 
+El punto de entrada es `com.crud2gui.desktop.Crud2GuiDesktopApp`. En Windows el perfil Maven
+`windows-renderer` pasa `-Dprism.order=sw` a la JVM de la aplicacion. En VS Code utiliza la
+configuracion "CRUD2GUI Desktop" de `.vscode/launch.json`, que aplica la misma opcion solo
+en Windows. Para otros arranques manuales en Windows, incluye esa opcion en los argumentos
+de la JVM, no en los de la aplicacion.
+
+El renderizado por software evita la ruta de texturas Direct3D (`D3DTexture.getContext`)
+que fallo al volver a acceder despues del cierre de sesion; no modifica la autenticacion
+y puede aumentar el uso de CPU. La opcion debe aplicarse antes de iniciar JavaFX, por lo
+que requiere reiniciar la aplicacion. Maven permite cambiarla con `-Dprism.order=...` o
+desactivar el perfil con `-P!windows-renderer`; en VS Code se modifica `vmArgs`.
+
 La ventana muestra si el inicio de sesion se completo y el perfil `Alumno` o `Docente`. Si la cuenta se autentica pero no tiene ninguno de esos roles, la ventana indica que no tiene acceso asignado. No se muestran ni almacenan contrasenas o tokens.
 
 La configuracion de Entra se lee desde las variables `AZURE_*` de `.env.public` o desde variables de entorno/propiedades Java con mayor precedencia. El WebView puede no ofrecer todos los métodos de autenticación, SSO o requisitos MFA/Conditional Access disponibles en un navegador del sistema; valida el flujo con las políticas del tenant.
 
 ## Organización de la interfaz
 
+Los paneles de alumno y docente incluyen "Cerrar sesion". Se retira el panel, se vacia la cache
+MSAL en memoria y se abre el endpoint de cierre de Microsoft en el WebView integrado. El cierre
+remoto solo se considera confirmado cuando Microsoft redirige a `AZURE_REDIRECT_URI`, que debe
+estar registrado como URI de redireccion en Entra ID. Tras el retorno se crea un acceso nuevo.
+La vista de cierre no incluye un boton para volver al acceso: espera el retorno de Microsoft.
+Si falla la red o pasan 120 segundos sin retorno, se vuelve al acceso con un aviso
+de que el cierre de Microsoft no pudo confirmarse. No se cierran sesiones de otros navegadores.
+Cada inicio de sesion solicita `prompt=login`; Microsoft decide el metodo de autenticacion
+(contrasena, passkey, MFA o politicas del tenant).
+
 * `Crud2GuiDesktopApp`: punto de entrada JavaFX y creación del `Stage`.
 * `login/LoginView`: controles y estados visuales del login.
 * `login/LoginController`: coordina la acción de login y actualiza la vista al completarse `authenticator`.
+* `ui/UiComponents`: crea textos secundarios y botones de accion con clases CSS.
+* `src/main/resources/styles/app.css`: sustituye los records `TextStyle` y `ButtonStyle`. Define `.text-muted`, `.action-button` y la variante `.login-button`. Tambien establece el cursor de los botones y su estado `:disabled`.
+
+La hoja CSS se carga una vez en la escena y se mantiene al cambiar de vista. Para crear una variante visual, anade una clase CSS y asignala con `getStyleClass().add(...)`. Propiedades como `maxWidth`, `defaultButton` y las acciones siguen configurandose en Java. Los estilos especificos restantes de las vistas no se han migrado.
+
+Los paneles de alumno y docente comparten la tarjeta de cuenta de `UiComponents`, con avatar,
+nombre, perfil y cierre de sesion, sin un encabezado redundante. El perfil y el boton usan
+texto de 12px de alto contraste. La cuenta permanece al pie cuando hay espacio; con poca
+altura, la barra lateral permite desplazarse para acceder a la navegacion y a la tarjeta
+sin superponerlas.
 
 Las siguientes áreas funcionales pueden añadirse como vistas y controladores separados sin mezclar su navegación con la lógica de autenticación.

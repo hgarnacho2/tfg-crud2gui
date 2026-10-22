@@ -24,7 +24,7 @@
 
     <!-- Propiedades generales del proyecto -->
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Versiones de dependencias -->
@@ -72,7 +72,7 @@
     <build>
         <plugins>
 
-            <!-- Compila el código fuente con Java 17 -->
+            <!-- Compila el código fuente con Java 25 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

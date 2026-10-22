@@ -11,17 +11,22 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import com.crud2gui.desktop.ui.UiComponents;
 
 /** Pantalla inicial del perfil docente, con datos de muestra mientras se conecta el backend. */
 public final class TeacherDashboardView extends BorderPane {
@@ -32,6 +37,7 @@ public final class TeacherDashboardView extends BorderPane {
     private static final String BORDER = "#e1e9e5";
 
     private final AuthenticatedUser user;
+    private final Runnable onSignOut;
     private final VBox pageContent = new VBox(20);
     private final Map<Section, Button> navigation = new EnumMap<>(Section.class);
     private final List<PracticeItem> practices = new ArrayList<>(List.of(
@@ -39,8 +45,9 @@ public final class TeacherDashboardView extends BorderPane {
             new PracticeItem("Reparto de leña", "POO · 2024", "6 grupos", "En revisión", "Actualizada ayer"),
             new PracticeItem("CRUD2GUI", "Proyecto · 2026", "4 grupos", "Borrador", "Actualizada el lunes")));
 
-    public TeacherDashboardView(AuthenticatedUser user) {
+    public TeacherDashboardView(AuthenticatedUser user, Runnable onSignOut) {
         this.user = user;
+        this.onSignOut = Objects.requireNonNull(onSignOut, "onSignOut");
         setStyle("-fx-background-color: #f3f7f5; -fx-font-family: 'Segoe UI';");
         setLeft(createSidebar());
 
@@ -59,13 +66,24 @@ public final class TeacherDashboardView extends BorderPane {
         sidebar.setPadding(new Insets(26, 18, 20, 18));
         sidebar.setStyle("-fx-background-color: #123b35;");
 
-        Label brand = new Label("CRUD2GUI");
-        brand.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
-        Label workspace = new Label("ESPACIO DOCENTE");
-        workspace.setPadding(new Insets(0, 0, 16, 0));
-        workspace.setStyle("-fx-text-fill: #9ec6b8; -fx-font-size: 10px; -fx-font-weight: bold;");
+        Label brand = UiComponents.label("CRUD2GUI", List.of("sidebar-brand-name"));
+        Label workspace = UiComponents.label("Panel docente", List.of("current-user-role"));
 
-        sidebar.getChildren().addAll(brand, workspace);
+        VBox branding = UiComponents.vBox(List.of("current-user-details"), brand, workspace);
+        branding.setMinWidth(0);
+        HBox.setHgrow(branding, Priority.ALWAYS);
+        ImageView logo = new ImageView(new Image(Objects.requireNonNull(
+                getClass().getResource("/uned.png"), "No se encontro el logo de la UNED").toExternalForm()));
+        logo.setFitWidth(36);
+        logo.setFitHeight(36);
+        logo.setPreserveRatio(true);
+        logo.setSmooth(true);
+        logo.setAccessibleText("UNED");
+        logo.getStyleClass().add("sidebar-uned-logo");
+        StackPane logoFrame = new StackPane(logo);
+        logoFrame.getStyleClass().add("sidebar-logo-frame");
+        HBox header = UiComponents.hBox(List.of("sidebar-branding"), logoFrame, branding);
+        sidebar.getChildren().add(header);
         for (Section section : Section.values()) {
             Button button = new Button(section.label);
             button.setMaxWidth(Double.MAX_VALUE);
@@ -75,21 +93,8 @@ public final class TeacherDashboardView extends BorderPane {
             sidebar.getChildren().add(button);
         }
 
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-        Label prototype = new Label("PROTOTIPO · DATOS DE MUESTRA");
-        prototype.setWrapText(true);
-        prototype.setStyle("-fx-text-fill: #9ec6b8; -fx-font-size: 10px;");
-
-        String displayName = user.displayName() == null || user.displayName().isBlank()
-                ? user.username() : user.displayName();
-        Label accountName = new Label(displayName == null ? "Docente" : displayName);
-        accountName.setWrapText(true);
-        accountName.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold;");
-        Label accountRole = new Label("Perfil docente");
-        accountRole.setStyle("-fx-text-fill: #9ec6b8; -fx-font-size: 11px;");
-        sidebar.getChildren().addAll(spacer, prototype, accountName, accountRole);
-        return sidebar;
+        return UiComponents.dashboardSidebar(sidebar,
+                UiComponents.currentUserCard(user, "docente", onSignOut));
     }
 
     private void showSection(Section section) {
@@ -105,26 +110,10 @@ public final class TeacherDashboardView extends BorderPane {
         pageContent.getChildren().setAll(createHeader(section), createSection(section));
     }
 
-    private Node createHeader(Section section) {
-        Label eyebrow = new Label("CRUD2GUI  /  DOCENCIA");
-        eyebrow.setStyle("-fx-text-fill: " + GREEN + "; -fx-font-size: 10px; -fx-font-weight: bold;");
-        Label title = new Label(section.title);
-        title.setStyle("-fx-text-fill: " + INK + "; -fx-font-size: 26px; -fx-font-weight: bold;");
-        Label subtitle = new Label(section.subtitle);
-        subtitle.setWrapText(true);
-        subtitle.setStyle("-fx-text-fill: " + MUTED + "; -fx-font-size: 13px;");
-        VBox heading = new VBox(6, eyebrow, title, subtitle);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Button newPractice = new Button("Nueva práctica");
-        newPractice.setOnAction(event -> showNewPracticeDialog());
-        newPractice.setStyle("-fx-background-color: " + GREEN + "; -fx-text-fill: white; "
-                + "-fx-font-weight: bold; -fx-padding: 10px 16px; -fx-background-radius: 5px;");
-
-        HBox header = new HBox(20, heading, spacer, newPractice);
-        header.setAlignment(Pos.CENTER_LEFT);
-        return header;
+    private HBox createHeader(Section section) {
+        Button newPractice = UiComponents.actionButton(
+                "Nueva práctica", List.of("section-header-action"), this::showNewPracticeDialog);
+        return UiComponents.sectionHeader("DOCENCIA", section.title, section.subtitle, newPractice);
     }
 
     private Node createSection(Section section) {

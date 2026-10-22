@@ -1,6 +1,7 @@
 package com.crud2gui.desktop.student;
 
 import com.crud2gui.authenticator.AuthenticatedUser;
+import com.crud2gui.desktop.ui.UiComponents;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -10,11 +11,12 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /** Pantalla inicial del perfil alumno, con información de ejemplo mientras se conecta el backend. */
 public final class StudentDashboardView extends BorderPane {
@@ -24,11 +26,13 @@ public final class StudentDashboardView extends BorderPane {
     private static final String GREEN = "#087e65";
 
     private final AuthenticatedUser user;
+    private final Runnable onSignOut;
     private final VBox pageContent = new VBox(20);
     private final Map<Section, Button> navigation = new EnumMap<>(Section.class);
 
-    public StudentDashboardView(AuthenticatedUser user) {
+    public StudentDashboardView(AuthenticatedUser user, Runnable onSignOut) {
         this.user = user;
+        this.onSignOut = Objects.requireNonNull(onSignOut, "onSignOut");
         setStyle("-fx-background-color: #f3f7f5; -fx-font-family: 'Segoe UI';");
         setLeft(createSidebar());
 
@@ -62,20 +66,8 @@ public final class StudentDashboardView extends BorderPane {
             sidebar.getChildren().add(button);
         }
 
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-        Label prototype = new Label("PROTOTIPO · DATOS DE MUESTRA");
-        prototype.setWrapText(true);
-        prototype.setStyle("-fx-text-fill: #9ec6b8; -fx-font-size: 10px;");
-        String displayName = user.displayName() == null || user.displayName().isBlank()
-                ? user.username() : user.displayName();
-        Label accountName = new Label(displayName == null || displayName.isBlank() ? "Alumno" : displayName);
-        accountName.setWrapText(true);
-        accountName.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold;");
-        Label accountRole = new Label("Perfil alumno");
-        accountRole.setStyle("-fx-text-fill: #9ec6b8; -fx-font-size: 11px;");
-        sidebar.getChildren().addAll(spacer, prototype, accountName, accountRole);
-        return sidebar;
+        return UiComponents.dashboardSidebar(sidebar,
+                UiComponents.currentUserCard(user, "alumno", onSignOut));
     }
 
     private void showSection(Section section) {
@@ -91,15 +83,8 @@ public final class StudentDashboardView extends BorderPane {
         pageContent.getChildren().setAll(createHeader(section), createSection(section));
     }
 
-    private Node createHeader(Section section) {
-        Label eyebrow = new Label("CRUD2GUI  /  APRENDIZAJE");
-        eyebrow.setStyle("-fx-text-fill: " + GREEN + "; -fx-font-size: 10px; -fx-font-weight: bold;");
-        Label title = new Label(section.title);
-        title.setStyle("-fx-text-fill: " + INK + "; -fx-font-size: 26px; -fx-font-weight: bold;");
-        Label subtitle = new Label(section.subtitle);
-        subtitle.setWrapText(true);
-        subtitle.setStyle("-fx-text-fill: " + MUTED + "; -fx-font-size: 13px;");
-        return new VBox(6, eyebrow, title, subtitle);
+    private VBox createHeader(Section section) {
+        return UiComponents.sectionHeader(section.label, section.title, section.subtitle);
     }
 
     private Node createSection(Section section) {
@@ -124,8 +109,12 @@ public final class StudentDashboardView extends BorderPane {
                 practiceRow("Red social", "Programación orientada a objetos", "Entregada: 18 oct", "Revisada"));
         VBox nextStep = panel(
                 panelHeading("Siguiente paso", "CRUD2GUI · Práctica 3"),
-                text("Completa el modelo de clases y valida las relaciones antes de preparar la entrega."),
-                actionButton("Abrir mis prácticas", () -> showSection(Section.PRACTICES)));
+                UiComponents.mutedText(
+                        "Completa el modelo de clases y valida las relaciones antes de preparar la entrega."),
+                UiComponents.actionButton(
+                        "Abrir mis prácticas",
+                        List.of(),
+                        () -> showSection(Section.PRACTICES)));
         nextStep.setPrefWidth(300);
         practices.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(practices, Priority.ALWAYS);
@@ -220,21 +209,6 @@ public final class StudentDashboardView extends BorderPane {
         subtitle.setWrapText(true);
         subtitle.setStyle("-fx-text-fill: " + MUTED + "; -fx-font-size: 11px;");
         return new VBox(4, title, subtitle);
-    }
-
-    private static Label text(String value) {
-        Label label = new Label(value);
-        label.setWrapText(true);
-        label.setStyle("-fx-text-fill: " + MUTED + "; -fx-font-size: 12px;");
-        return label;
-    }
-
-    private static Button actionButton(String label, Runnable action) {
-        Button button = new Button(label);
-        button.setOnAction(event -> action.run());
-        button.setStyle("-fx-background-color: " + GREEN + "; -fx-text-fill: white; "
-                + "-fx-font-weight: bold; -fx-padding: 10px 14px; -fx-background-radius: 5px;");
-        return button;
     }
 
     private static Label statusBadge(String text) {

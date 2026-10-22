@@ -1,9 +1,8 @@
 package com.crud2gui.desktop.login;
 
 import com.crud2gui.authenticator.AuthenticatedUser;
+import com.crud2gui.desktop.ui.UiComponents;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
@@ -14,93 +13,133 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.net.URL;
+import java.util.List;
+import java.util.Objects;
 
-/** Vista JavaFX del proceso de login; no contiene detalles de MSAL ni configuración Entra. */
+/**
+ * Vista JavaFX del acceso a la aplicacion, implementada como un contenedor {@link VBox}.
+ * Presenta el formulario de login, los mensajes de estado y el navegador integrado de autorizacion.
+ * No representa la ventana ({@code Stage}) ni realiza la autenticacion: delega la accion de acceso
+ * en {@link LoginController}, sin conocer los detalles de MSAL ni la configuracion de Entra ID.
+ *
+ * <p>Los estilos se definen mediante clases CSS. Salvo {@link #showEmbeddedBrowser(URL)},
+ * que programa su actualizacion con {@link Platform#runLater(Runnable)}, la creacion y las
+ * modificaciones de esta vista deben realizarse en el hilo de JavaFX.
+ */
 public final class LoginView extends VBox {
 
-    private final Label status = new Label("No has iniciado sesión.");
-    private final Label role = new Label();
-    private final Button signInButton = new Button("Iniciar sesión con Microsoft");
-    private final ProgressIndicator progress = new ProgressIndicator();
-        private final VBox loginContent;
+    private final Label status;
+    private final Label role;
+    private Runnable onSignIn;
+    private final Button signInButton;
+    private final ProgressIndicator progress;
+    private final VBox loginContainer;
 
+    /**
+     * Construye el formulario con los controles de acceso y salida, el indicador de progreso
+     * inicialmente oculto y los mensajes de estado. Configura el acceso como boton predeterminado
+     * y asigna las clases CSS a los controles y contenedores.
+     *
+     * <p>La accion de acceso debe registrarse con {@link #setOnSignIn(Runnable)} antes de activar
+     * el boton; de lo contrario, su manejador lanza {@link NullPointerException}.
+     */
     public LoginView() {
-        Label brand = new Label("CRUD2GUI");
-        brand.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #087e65;");
+        //Inicialización de los componentes de clase (visibles desde cualquier método de LoginView)
+        status = UiComponents.label("No has iniciado sesión.", List.of("login-status"));
 
-        Label heading = new Label("Acceso");
-        heading.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #17212b;");
+        role = UiComponents.label("", List.of("login-role"));
 
-        Label description = new Label("Inicia sesión con tu cuenta de la aplicación.");
-        description.setStyle("-fx-font-size: 14px; -fx-text-fill: #52616b;");
-        description.setWrapText(true);
+        progress = UiComponents.progressIndicator(false, List.of("login-progress"));        
 
-        signInButton.setMaxWidth(Double.MAX_VALUE);
+        signInButton = UiComponents.actionButton(
+            "Iniciar sesión con Microsoft",
+            List.of("login-button"),
+            () -> Objects.requireNonNull(onSignIn, "No se ha configurado la accion de login").run());
+
         signInButton.setDefaultButton(true);
-        signInButton.setStyle("-fx-background-color: #087e65; -fx-text-fill: white; -fx-font-size: 14px; "
-                + "-fx-font-weight: bold; -fx-padding: 12px 16px; -fx-background-radius: 4px;");
 
-        progress.setMaxSize(22, 22);
-        progress.setVisible(false);
-        progress.setManaged(false);
+        //Inicializacion de los componentes locales de la vista de login
+        Label brand = UiComponents.label("CRUD2GUI", List.of("login-brand"));
 
-        HBox statusRow = new HBox(10, progress, status);
-        statusRow.setAlignment(Pos.CENTER_LEFT);
-        status.setWrapText(true);
-        status.setStyle("-fx-text-fill: #17212b; -fx-font-size: 14px;");
-        role.setStyle("-fx-text-fill: #087e65; -fx-font-size: 16px; -fx-font-weight: bold;");
-        role.setWrapText(true);
+        Label heading = UiComponents.label("Acceso", List.of("login-heading"));
+
+        Label description = UiComponents.label(
+                "Inicia sesión con tu cuenta de la aplicación.", List.of("login-description"));
+
+        Button exitButton = UiComponents.actionButton("Salir", List.of("exit-button"), Platform::exit);
+
+        HBox statusRow = UiComponents.hBox(List.of("login-status-row"), progress, status);
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
-        Label browserNote = new Label("La autenticación se completará dentro de esta ventana.");
-        browserNote.setStyle("-fx-text-fill: #697780; -fx-font-size: 12px;");
-        browserNote.setWrapText(true);
 
-        loginContent = new VBox(18, brand, heading, description, signInButton, statusRow, role, spacer, browserNote);
-        loginContent.setAlignment(Pos.TOP_LEFT);
-        loginContent.setPadding(new Insets(34));
-        loginContent.setMaxWidth(430);
-        loginContent.setStyle("-fx-background-color: white; -fx-background-radius: 8px; "
-                + "-fx-effect: dropshadow(gaussian, rgba(20, 45, 55, 0.12), 22, 0.12, 0, 6);");
+        loginContainer = UiComponents.vBox(List.of("login-container"),
+                brand, heading, description, signInButton, exitButton, statusRow, role, spacer);
 
-        setAlignment(Pos.CENTER);
-        setPadding(new Insets(28));
-        setStyle("-fx-background-color: #f1f6f4; -fx-font-family: 'Segoe UI';");
-                getChildren().add(loginContent);
+        //Establecemos la clase y los estilos para el Stage>Scene>loginView (this)
+        getStyleClass().add("login-view");
+                getChildren().add(loginContainer);
         }
 
+        /**
+         * Sustituye el formulario por un {@link WebView} que carga la pagina de autorizacion.
+         * Activa el estilo sin margen interior y permite al navegador ocupar el espacio disponible.
+         * La actualizacion se programa en el hilo de JavaFX, por lo que puede llamarse desde otro hilo.
+         *
+         * @param authorizationUrl URL de autorizacion proporcionada por el servicio de autenticacion;
+         *                         no debe ser {@code null}
+         */
         public void showEmbeddedBrowser(URL authorizationUrl) {
                 Platform.runLater(() -> {
                         WebView webView = new WebView();
                         webView.setContextMenuEnabled(false);
                         webView.setMinSize(0, 0);
                         VBox.setVgrow(webView, Priority.ALWAYS);
-                        setPadding(Insets.EMPTY);
+                        if (!getStyleClass().contains("embedded-browser")) {
+                                getStyleClass().add("embedded-browser");
+                        }
                         getChildren().setAll(webView);
                         webView.getEngine().load(authorizationUrl.toExternalForm());
                 });
         }
 
+        /**
+         * Registra o reemplaza la accion que ejecuta el boton de acceso al activarse.
+         *
+         * @param action accion de inicio de sesion definida por el controlador
+         * @throws NullPointerException si {@code action} es {@code null}
+         */
         void setOnSignIn(Runnable action) {
-                signInButton.setOnAction(event -> action.run());
+                onSignIn = Objects.requireNonNull(action, "action");
         }
 
+        /**
+         * Indica que hay una autenticacion en curso: deshabilita nuevos intentos, limpia el aviso
+         * de roles y muestra el indicador de progreso, reservando espacio para el en la fila de estado.
+         */
         void showBusy() {
                 signInButton.setDisable(true);
-                status.setText("Esperando autenticación...");
+                status.setText("Iniciando autenticación...");
                 role.setText("");
                 progress.setVisible(true);
                 progress.setManaged(true);
         }
 
+        /**
+         * Muestra que no se pudo cargar la configuracion de autenticacion y deshabilita el acceso
+         * para evitar intentos con una configuracion no disponible.
+         */
         public void showConfigurationError() {
                 signInButton.setDisable(true);
                 status.setText("No se pudo cargar la configuración de autenticación.");
         }
 
+        /**
+         * Restaura el formulario tras un fallo de autenticacion, oculta el indicador sin reservar
+         * espacio, muestra el mensaje de error y habilita el boton para volver a intentarlo.
+         */
         void showFailure() {
-                restoreLoginContent();
+                restoreLoginContainer();
                 signInButton.setDisable(false);
                 progress.setVisible(false);
                 progress.setManaged(false);
@@ -108,31 +147,36 @@ public final class LoginView extends VBox {
                 role.setText("");
         }
 
-        void showAuthenticated(AuthenticatedUser user) {
-                restoreLoginContent();
+        /**
+         * Restablece los controles del formulario tras una autenticacion correcta y muestra un
+         * aviso si la cuenta no tiene ninguno de los roles admitidos.
+         * No realiza la navegacion: el controlador y la aplicacion abren el panel correspondiente
+         * cuando la cuenta tiene el rol Alumno o Docente.
+         *
+         * @param user identidad autenticada cuyos roles se consultan; no debe ser {@code null}
+         * @throws NullPointerException si {@code user} es {@code null}
+         */
+        void handleAuthenticationResult(AuthenticatedUser user) {
+                restoreLoginContainer();
                 signInButton.setDisable(false);
                 progress.setVisible(false);
                 progress.setManaged(false);
 
-                if (user.isAlumno() && user.isDocente()) {
-                        status.setText("Autenticación correcta");
-                        role.setText("Perfiles: Alumno y Docente");
-                } else if (user.isAlumno()) {
-                        status.setText("Autenticación correcta");
-                        role.setText("Perfil: Alumno");
-                } else if (user.isDocente()) {
-                        status.setText("Autenticación correcta");
-                        role.setText("Perfil: Docente");
-                } else {
+                if (!user.isAlumno() && !user.isDocente()) {
                         status.setText("Cuenta autenticada, sin rol de la aplicación");
                         role.setText("Por favor, solicita al administrador que te asigne el rol de Alumno o Docente.");
                 }
         }
 
-        private void restoreLoginContent() {
-                if (!getChildren().contains(loginContent)) {
-                        setPadding(new Insets(28));
-                        getChildren().setAll(loginContent);
+        /**
+         * Vuelve a mostrar el contenedor del formulario si fue sustituido por el navegador integrado
+         * y retira la clase CSS que elimina el margen interior. No modifica los mensajes ni el
+         * estado de los controles.
+         */
+        private void restoreLoginContainer() {
+                if (!getChildren().contains(loginContainer)) {
+                        getStyleClass().remove("embedded-browser");
+                        getChildren().setAll(loginContainer);
                 }
         }
 }
