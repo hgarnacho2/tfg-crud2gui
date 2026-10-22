@@ -94,6 +94,8 @@ Inicialmente solo esta disponible el primero. Elegir un PDF habilita el segundo 
 pero mantiene abierto el primero para previsualizar el documento. El visor local usa PDFBox
 en segundo plano, con anterior/siguiente, contador de paginas y zoom del 50 al 150 %.
 Renderiza solo una pagina, limita la resolucion y cierra el archivo tras cada carga.
+La altura del visor se ajusta a la hoja completa y al zoom; si supera la ventana,
+se utiliza el desplazamiento general de la seccion.
 No permite seleccionar texto. Los errores del visor se muestran sin bloquear el flujo.
 El boton del segundo paso usa `StatementExtractor.extractText(Path)` en un hilo auxiliar y muestra
 el texto de solo lectura. Una extraccion correcta habilita el tercer paso, sin ocultar
@@ -106,6 +108,20 @@ como completado. Ambos resultados se pueden seleccionar y copiar.
 Se puede volver a los pasos habilitados sin perder datos. Elegir otro PDF invalida la
 extraccion y el filtrado; repetir la extraccion invalida el filtro. Cancelar el selector
 conserva el estado. Durante el procesamiento se bloquean acciones y navegacion, y se
-muestra progreso. Los errores permiten reintentar. No se realiza OCR, no se crean archivos
-TXT ni se envian documentos a servicios externos. El estado se conserva al navegar por el
+muestra progreso. Los errores permiten reintentar. No se realiza OCR ni se envian documentos
+a servicios externos. El estado se conserva al navegar por el
 dashboard. El modulo extractor hereda Java 21 del proyecto padre.
+
+La carpeta de salida predeterminada es la del PDF y se puede cambiar antes de cada
+operacion. Para `enunciado.pdf`, el paso 2 guarda `enunciado.txt` y el paso 3 guarda
+`enunciado-filtrado.txt`, ambos en UTF-8. El destino se muestra durante el proceso y
+la ruta generada aparece solo en el mensaje final inferior, tras guardar
+correctamente. Los archivos existentes requieren confirmacion antes de sobrescribir;
+cancelar conserva los resultados. Cambiar la carpeta no mueve archivos anteriores;
+seleccionar otro PDF restablece el destino a su carpeta. No se guarda un TXT vacio si
+el PDF no contiene texto. Si el filtro no reconoce la estructura, guarda el original
+en el archivo `-filtrado.txt` con un aviso explicito.
+La configuracion de salida aparece dentro de los pasos 2 y 3, justo despues de su
+subtitulo; el paso 1 se dedica al PDF. El boton secundario «Cambiar carpeta de salida»
+permite modificar el destino. Debajo del mensaje final, «Abrir carpeta de salida»
+abre ese destino en el explorador del sistema y comunica los errores de apertura.

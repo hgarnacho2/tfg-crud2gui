@@ -6,6 +6,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -59,6 +60,11 @@ class StatementSectionTest {
             controls.step(2).fire();
             assertSelected(controls, 1);
             controls.select().fire();
+            var settings = controls.section().lookup(".statement-output-settings");
+            assertFalse(settings.isVisible());
+            assertFalse(settings.isManaged());
+            assertFalse(controls.section().lookup(".statement-open-folder").isVisible());
+            assertFalse(controls.section().lookup(".statement-open-folder").isManaged());
             assertTrue(controls.step(2).isDisabled());
             assertSelected(controls, 1);
             return null;
@@ -91,6 +97,11 @@ class StatementSectionTest {
         onFx(() -> {
             assertEquals("Enunciado de prueba: crear una clase Persona.", controls.text().getText().strip());
             assertFalse(controls.text().isEditable());
+            controls.section().applyCss();
+            assertEquals(15, controls.status().getFont().getSize(), 0.01);
+            assertTrue(controls.status().getFont().getStyle().contains("Bold"));
+            assertEquals(javafx.scene.paint.Color.web("#135c48"), controls.status().getTextFill());
+            assertNotNull(controls.status().getBackground());
             assertFalse(controls.step(3).isDisabled());
             assertSelected(controls, 2);
             controls.step(1).fire();
@@ -114,8 +125,9 @@ class StatementSectionTest {
             assertEquals("Segundo enunciado.", controls.text().getText().strip());
             return null;
         });
-        assertFalse(Files.exists(directory.resolve("first.txt")));
-        assertFalse(Files.exists(directory.resolve("second.txt")));
+        assertEquals("Enunciado de prueba: crear una clase Persona.",
+                Files.readString(directory.resolve("first.txt")).strip());
+        assertEquals("Segundo enunciado.", Files.readString(directory.resolve("second.txt")).strip());
     }
 
     @Test
@@ -170,6 +182,7 @@ class StatementSectionTest {
             assertEquals("", controls.text().getText());
             return null;
         });
+        assertFalse(Files.exists(directory.resolve("empty.txt")));
     }
 
     @Test
@@ -197,8 +210,11 @@ class StatementSectionTest {
             return null;
         });
         runOperation(controls, controls.filter());
+        assertTrue(Files.readString(directory.resolve("flow.txt")).contains("Contenido omitido."));
+        assertFalse(Files.readString(directory.resolve("flow-filtrado.txt")).contains("Contenido omitido."));
         onFx(() -> {
             String filtered = controls.filtered().getText();
+            assertEquals(filtered, Files.readString(directory.resolve("flow-filtrado.txt")));
             assertTrue(filtered.contains("Crear una clase Persona."));
             assertTrue(filtered.contains("Atributos del modelo."));
             assertFalse(filtered.contains("Portada"));
@@ -256,6 +272,112 @@ class StatementSectionTest {
     }
 
     @Test
+    void changesOutputFolderConfirmsOverwriteAndReportsWriteFailures() throws Exception {
+        Path pdf = createPdf("output.pdf", "Texto para guardar.", false);
+        Path destination = Files.createDirectory(directory.resolve("results"));
+        AtomicReference<File> folder = new AtomicReference<>(destination.toFile());
+        java.util.concurrent.atomic.AtomicBoolean overwrite = new java.util.concurrent.atomic.AtomicBoolean(false);
+        StatementSection section = onFx(() -> new StatementSection(owner -> pdf.toFile(),
+                (owner, current) -> folder.get(), path -> overwrite.get()));
+        Controls controls = onFx(() -> {
+            Scene scene = new Scene(section, 960, 680);
+            scene.getStylesheets().add(Objects.requireNonNull(
+                    getClass().getResource("/styles/app.css")).toExternalForm());
+            section.applyCss();
+            return new Controls(section, (Button) section.lookup(".statement-select"),
+                    (Button) section.lookup(".statement-extract"), (Button) section.lookup(".statement-filter"),
+                    (TextArea) section.lookup("#statement-raw-text"), (Label) section.lookup(".statement-status"),
+                    (TextArea) section.lookup(".statement-filtered-text"));
+        });
+        onFx(() -> {
+            controls.select().fire();
+            assertTrue(((Label) section.lookup(".statement-output-folder")).getText().contains(directory.toString()));
+            assertFalse(section.lookup(".statement-output-settings").isVisible());
+            assertFalse(section.lookup(".statement-output-settings").isManaged());
+            controls.step(2).fire();
+            assertTrue(section.lookup(".statement-output-settings").isVisible());
+            assertTrue(section.lookup(".statement-output-settings").isManaged());
+            VBox extractionContent = (VBox) controls.text().getParent();
+            assertSame(section.lookup(".statement-output-settings"), extractionContent.getChildren().get(1));
+            Button changeFolder = (Button) section.lookup(".statement-change-folder");
+            Button openFolder = (Button) section.lookup(".statement-open-folder");
+            assertTrue(changeFolder.getStyleClass().contains("secondary-button"));
+            assertTrue(openFolder.getStyleClass().contains("secondary-button"));
+            assertTrue(openFolder.isVisible());
+            assertTrue(openFolder.isManaged());
+            ((Button) section.lookup(".statement-change-folder")).fire();
+            assertTrue(((Label) section.lookup(".statement-output-folder")).getText().contains(destination.toString()));
+            folder.set(null);
+            ((Button) section.lookup(".statement-change-folder")).fire();
+            assertTrue(((Label) section.lookup(".statement-output-folder")).getText().contains(destination.toString()));
+            return null;
+        });
+        Path output = destination.resolve("output.txt");
+        Files.writeString(output, "No reemplazar");
+        onFx(() -> {
+            controls.step(2).fire();
+            controls.extract().fire();
+            assertFalse(controls.extract().isDisabled());
+            assertTrue(controls.status().getText().contains("cancelada"));
+            return null;
+        });
+        assertEquals("No reemplazar", Files.readString(output));
+        overwrite.set(true);
+        extract(controls);
+        assertEquals("Texto para guardar.", Files.readString(output).strip());
+        onFx(() -> {
+            controls.step(3).fire();
+            return null;
+        });
+        Path filteredOutput = destination.resolve("output-filtrado.txt");
+        Files.writeString(filteredOutput, "Filtro previo");
+        overwrite.set(false);
+        onFx(() -> {
+            controls.filter().fire();
+            assertTrue(controls.status().getText().contains("cancelada"));
+            assertFalse(controls.filter().isDisabled());
+            return null;
+        });
+        assertEquals("Filtro previo", Files.readString(filteredOutput));
+        overwrite.set(true);
+        runOperation(controls, controls.filter());
+        assertEquals(Files.readString(output).replace("\r\n", "\n"), Files.readString(filteredOutput));
+        onFx(() -> {
+            assertTrue(controls.status().getText().contains(filteredOutput.toString()));
+            assertTrue(section.lookupAll(".statement-output-file").isEmpty());
+            assertTrue(section.lookup(".statement-output-settings").isVisible());
+            controls.step(1).fire();
+            assertFalse(section.lookup(".statement-output-settings").isVisible());
+            assertFalse(section.lookup(".statement-output-settings").isManaged());
+            assertFalse(section.lookup(".statement-open-folder").isVisible());
+            controls.step(3).fire();
+            assertTrue(section.lookup(".statement-output-settings").isVisible());
+            VBox filterContent = (VBox) controls.filtered().getParent();
+            assertSame(section.lookup(".statement-output-settings"), filterContent.getChildren().get(1));
+            assertTrue(section.lookup(".statement-open-folder").isVisible());
+            return null;
+        });
+        Path invalidDestination = directory.resolve("not-a-folder");
+        Files.writeString(invalidDestination, "Un archivo no es una carpeta");
+        folder.set(invalidDestination.toFile());
+        onFx(() -> {
+            ((Button) section.lookup(".statement-change-folder")).fire();
+            return null;
+        });
+        extract(controls);
+        runOperation(controls, onFx(() -> (Button) section.lookup(".statement-open-folder")));
+        onFx(() -> {
+            assertTrue(controls.status().getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
+            assertTrue(controls.status().getText().contains(invalidDestination.toString()));
+            assertEquals("", controls.text().getText());
+            assertTrue(controls.step(3).isDisabled());
+            assertTrue(section.lookupAll(".statement-output-file").isEmpty());
+            return null;
+        });
+        assertEquals("Texto para guardar.", Files.readString(output).strip());
+    }
+
+    @Test
     void previewsPagesWithZoomAndResetsOnReplacement() throws Exception {
         Path original = createPdf("preview-source.pdf", "Primera pagina.", false);
         Path pdf = directory.resolve("preview.pdf");
@@ -280,6 +402,7 @@ class StatementSectionTest {
             var image = (javafx.scene.image.ImageView) preview.lookup(".statement-preview-image");
             assertEquals(900, image.getImage().getWidth(), 1);
             assertEquals(900, image.getFitWidth(), 0.1);
+            assertFullPageHeight(preview);
             return null;
         });
         awaitPreview(preview, () -> ((Button) preview.lookup(".preview-next")).fire());
@@ -295,6 +418,7 @@ class StatementSectionTest {
                     ((Label) preview.lookup(".statement-preview-page")).getText());
             assertEquals(1125, ((javafx.scene.image.ImageView) preview.lookup(".statement-preview-image"))
                     .getFitWidth(), 0.1);
+            assertFullPageHeight(preview);
             return null;
         });
         Path replacement = createPdf("preview-replacement.pdf", "Nuevo PDF.", false);
@@ -332,6 +456,18 @@ class StatementSectionTest {
             return result;
         });
         loaded.get(15, TimeUnit.SECONDS);
+    }
+
+    private static void assertFullPageHeight(PdfPreview preview) {
+        preview.applyCss();
+        preview.resize(960, preview.prefHeight(960));
+        preview.layout();
+        var viewport = (javafx.scene.control.ScrollPane) preview.lookup(".statement-preview-viewport");
+        var image = (javafx.scene.image.ImageView) preview.lookup(".statement-preview-image");
+        double pageHeight = image.getBoundsInLocal().getHeight();
+        assertTrue(pageHeight > 460);
+        assertTrue(viewport.getPrefViewportHeight() >= pageHeight + 36);
+        assertTrue(viewport.getViewportBounds().getHeight() >= pageHeight + 36);
     }
 
     @Test
@@ -458,7 +594,8 @@ class StatementSectionTest {
     }
 
     private static Controls controls(AtomicReference<File> selection) {
-        StatementSection section = new StatementSection(owner -> selection.get());
+        StatementSection section = new StatementSection(owner -> selection.get(),
+                (owner, current) -> null, path -> true);
         Scene scene = new Scene(section, 960, 680);
         scene.getStylesheets().add(Objects.requireNonNull(
                 StatementSectionTest.class.getResource("/styles/app.css")).toExternalForm());

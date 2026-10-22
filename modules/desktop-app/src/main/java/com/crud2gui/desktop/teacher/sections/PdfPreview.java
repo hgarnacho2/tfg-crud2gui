@@ -2,6 +2,7 @@ package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.desktop.ui.UiComponents;
 import javafx.concurrent.Task;
+import javafx.beans.binding.Bindings;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -9,6 +10,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.apache.pdfbox.Loader;
@@ -69,7 +71,11 @@ final class PdfPreview extends VBox {
         StackPane paper = new StackPane(image);
         paper.getStyleClass().add("statement-preview-paper");
         ScrollPane viewport = new ScrollPane(paper);
-        viewport.setPrefViewportHeight(460);
+        viewport.prefViewportHeightProperty().bind(Bindings.createDoubleBinding(
+                () -> image.getBoundsInLocal().getHeight()
+                        + paper.getPadding().getTop() + paper.getPadding().getBottom(),
+                image.boundsInLocalProperty(), paper.paddingProperty()));
+        viewport.setMinHeight(Region.USE_PREF_SIZE);
         viewport.setFitToWidth(true);
         viewport.getStyleClass().add("statement-preview-viewport");
         getChildren().addAll(toolbar, status, viewport);
