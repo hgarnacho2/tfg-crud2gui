@@ -20,6 +20,11 @@
   <dependencies>
     <dependency>
       <groupId>com.crud2gui</groupId>
+      <artifactId>statement-text-extractor</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.crud2gui</groupId>
       <artifactId>crud2gui-authenticator</artifactId>
       <version>${project.version}</version>
     </dependency>

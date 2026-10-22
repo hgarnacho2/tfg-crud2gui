@@ -13,7 +13,7 @@ usage() {
 Uso: $0 [opciones]
 
 Opciones:
-	--install      Instala common-utils, authenticator y desktop-app antes de arrancar (predeterminado).
+	--install      Instala desktop-app y sus dependencias, incluido statement-text-extractor (predeterminado).
 	--no-install   Omite la instalación; requiere snapshots actuales ya instalados en Maven.
   --debug        Muestra la salida INFO de Maven y el diagnóstico DEBUG de MSAL.
   -h, --help     Muestra esta ayuda.

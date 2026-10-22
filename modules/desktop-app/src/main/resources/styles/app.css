@@ -229,3 +229,197 @@
     -fx-padding: 10px 16px;
     -fx-background-radius: 5px;
 }
+.sidebar-content {
+    -fx-spacing: 10px;
+    -fx-pref-width: 236px;
+    -fx-padding: 26px 18px 20px 18px;
+    -fx-background-color: #123b35;
+}
+
+.sidebar-navigation-button {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-max-width: infinity;
+    -fx-alignment: center-left;
+    -fx-background-color: transparent;
+    -fx-text-fill: #d8e8e2;
+    -fx-background-radius: 5px;
+    -fx-padding: 11px 12px;
+}
+
+.sidebar-navigation-button:selected {
+    -fx-background-color: #1b5b50;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.statement-progress {
+    -fx-max-width: 24px;
+    -fx-max-height: 24px;
+}
+
+.statement-status:error {
+    -fx-text-fill: #a12b32;
+}
+
+.statement-text {
+    -fx-font-size: 13px;
+}
+
+.statement-file-card {
+    -fx-spacing: 8px;
+    -fx-padding: 16px 18px;
+    -fx-background-color: #f3f7f5;
+    -fx-background-radius: 10px;
+    -fx-border-color: #d7e3dd;
+    -fx-border-radius: 10px;
+}
+
+.statement-file-card:selected {
+    -fx-background-color: #e4f3ec;
+    -fx-border-color: #68a58f;
+}
+
+.statement-file-name {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #173e33;
+    -fx-wrap-text: true;
+}
+
+.statement-file-badge {
+    -fx-padding: 6px 8px;
+    -fx-background-color: #087e65;
+    -fx-background-radius: 5px;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.statement-file-path {
+    -fx-font-size: 12px;
+    -fx-text-fill: #52675d;
+    -fx-wrap-text: true;
+}
+
+.statement-preview-toolbar {
+    -fx-alignment: center-left;
+}
+
+.statement-preview-page {
+    -fx-text-fill: #173e33;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.statement-preview-paper {
+    -fx-padding: 18px;
+    -fx-background-color: #e4eae7;
+}
+
+.statement-preview-viewport {
+    -fx-background-color: #e4eae7;
+    -fx-background-radius: 8px;
+}
+
+.statement-flow, .statement-step-graphic, .statement-feedback {
+    -fx-alignment: center-left;
+}
+
+.statement-flow {
+    -fx-max-width: 860px;
+}
+
+.statement-step {
+    -fx-min-height: 76px;
+    -fx-pref-height: 76px;
+    -fx-max-height: 76px;
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: #d7e3dd;
+    -fx-border-radius: 12px;
+    -fx-padding: 12px 14px;
+    -fx-alignment: center-left;
+}
+
+.statement-step:hover {
+    -fx-background-color: #edf6f1;
+    -fx-border-color: #91b9aa;
+}
+
+.statement-step:completed {
+    -fx-border-color: #68a58f;
+}
+
+.statement-step:selected {
+    -fx-background-color: #e4f3ec;
+    -fx-border-color: #087e65;
+    -fx-effect: dropshadow(gaussian, rgba(8, 126, 101, 0.12), 10, 0, 0, 3);
+}
+
+.statement-step:focused {
+    -fx-border-color: #087e65;
+    -fx-border-width: 2px;
+    -fx-padding: 11px 13px;
+}
+
+.statement-step:disabled {
+    -fx-opacity: 0.55;
+    -fx-background-color: #eef1ef;
+    -fx-effect: null;
+}
+
+.statement-step-number {
+    -fx-min-width: 34px;
+    -fx-pref-width: 34px;
+    -fx-max-width: 34px;
+    -fx-min-height: 34px;
+    -fx-pref-height: 34px;
+    -fx-max-height: 34px;
+    -fx-alignment: center;
+    -fx-background-color: #e8eeeb;
+    -fx-background-radius: 17px;
+    -fx-text-fill: #52675d;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.statement-step:selected .statement-step-number,
+.statement-step:completed .statement-step-number {
+    -fx-background-color: #087e65;
+    -fx-text-fill: white;
+}
+
+.statement-step-labels {
+    -fx-spacing: 5px;
+}
+
+.statement-step-title {
+    -fx-text-fill: #173e33;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-wrap-text: true;
+}
+
+.statement-step-description {
+    -fx-text-fill: #52675d;
+    -fx-font-size: 11px;
+    -fx-wrap-text: true;
+}
+
+.statement-connector {
+    -fx-min-width: 20px;
+    -fx-pref-width: 20px;
+    -fx-max-width: 20px;
+    -fx-min-height: 26px;
+    -fx-pref-height: 26px;
+    -fx-max-height: 26px;
+}
+
+.statement-connector-arrow {
+    -fx-fill: transparent;
+    -fx-stroke: #087e65;
+    -fx-stroke-width: 3.5px;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}

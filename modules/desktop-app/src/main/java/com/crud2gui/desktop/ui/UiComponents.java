@@ -2,7 +2,9 @@ package com.crud2gui.desktop.ui;
 
 import com.crud2gui.authenticator.AuthenticatedUser;
 
-import javafx.geometry.Pos;
+import javafx.css.PseudoClass;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Priority;
@@ -17,6 +19,8 @@ import javafx.scene.control.ProgressIndicator;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
+import javafx.beans.property.ObjectProperty;
 
 /**
  * Factorias de controles y composiciones visuales reutilizables de la aplicacion.
@@ -67,7 +71,7 @@ public final class UiComponents {
      * @param accountCard tarjeta de la cuenta activa
      * @return barra desplazable que conserva la altura natural de sus controles
      */
-    public static ScrollPane dashboardSidebar(VBox sidebar, VBox accountCard) {
+    private static ScrollPane scrollableSidebar(VBox sidebar, VBox accountCard) {
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
         sidebar.getChildren().addAll(spacer, accountCard);
@@ -79,6 +83,69 @@ public final class UiComponents {
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scroll.setMinHeight(0);
         return scroll;
+    }
+
+    /**
+     * Construye la barra completa compartida por todos los perfiles, con logo UNED,
+     * cabecera, enlaces y cuenta. Notifica la seleccion sin construir las paginas.
+     *
+     * @param <S> tipo que identifica las secciones
+     * @param workspace nombre del panel mostrado junto al logo
+     * @param accountCard tarjeta de la cuenta activa
+     * @param sections secciones disponibles, en orden de presentacion
+     * @param sectionLabel funcion que obtiene el texto de cada enlace
+     * @param selectedSection propiedad compartida con el dashboard para navegar
+     * @return barra desplazable con cabecera, enlaces y cuenta
+     * @throws NullPointerException si el recurso del logo no existe
+     */
+    public static <S> ScrollPane dashboardSidebar(String workspace, VBox accountCard,
+            List<S> sections, Function<S, String> sectionLabel, ObjectProperty<S> selectedSection) {
+        VBox branding = vBox(List.of("current-user-details"),
+                label("CRUD2GUI", List.of("sidebar-brand-name")),
+                label(workspace, List.of("current-user-role")));
+        branding.setMinWidth(0);
+        HBox.setHgrow(branding, Priority.ALWAYS);
+        ImageView logo = new ImageView(new Image(Objects.requireNonNull(
+                UiComponents.class.getResource("/uned.png"), "No se encontro el logo de la UNED")
+                .toExternalForm()));
+        logo.setFitWidth(36);
+        logo.setFitHeight(36);
+        logo.setPreserveRatio(true);
+        logo.setSmooth(true);
+        logo.setAccessibleText("UNED");
+        logo.getStyleClass().add("sidebar-uned-logo");
+        StackPane frame = new StackPane(logo);
+        frame.getStyleClass().add("sidebar-logo-frame");
+        HBox header = hBox(List.of("sidebar-branding"), frame, branding);
+        return createDashboardSidebar(header, accountCard, sections, sectionLabel, selectedSection);
+    }
+
+    /**
+     * Compone el contenedor y sincroniza los enlaces con la seleccion del dashboard.
+     *
+     * @param <S> tipo que identifica las secciones
+     * @param header cabecera ya construida
+     * @param accountCard tarjeta de la cuenta
+     * @param sections secciones ordenadas
+     * @param sectionLabel funcion que obtiene sus etiquetas
+     * @param selectedSection seleccion compartida con el dashboard
+     * @return barra lateral completa y desplazable
+     */
+    private static <S> ScrollPane createDashboardSidebar(Node header, VBox accountCard,
+            List<S> sections, Function<S, String> sectionLabel, ObjectProperty<S> selectedSection) {
+        VBox sidebar = vBox(List.of("sidebar-content"), header);
+        PseudoClass selected = PseudoClass.getPseudoClass("selected");
+        for (S section : sections) {
+            Button button = new Button(sectionLabel.apply(section));
+            button.getStyleClass().add("sidebar-navigation-button");
+            Runnable updateSelection = () -> button.pseudoClassStateChanged(
+                    selected, Objects.equals(section, selectedSection.get()));
+            button.setOnAction(event -> selectedSection.set(section));
+            selectedSection.addListener((observable, previous, current) -> updateSelection.run());
+            updateSelection.run();
+            sidebar.getChildren().add(button);
+        }
+        return scrollableSidebar(sidebar, accountCard);
     }
 
     /**

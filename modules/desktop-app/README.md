@@ -8,7 +8,7 @@ Desde la raiz del repositorio, ejecuta:
 modules/desktop-app/script/run.sh
 ```
 
-Por defecto, el script instala `common-utils`, `authenticator` y `desktop-app` antes de arrancar, para usar siempre las versiones actuales del flujo embebido. Usa `--no-install` solo cuando los snapshots actuales ya estén instalados en Maven. Opciones:
+Por defecto, el script instala `common-utils`, `authenticator`, `statement-text-extractor` y `desktop-app` antes de arrancar, para usar siempre las versiones actuales. Usa `--no-install` solo cuando los snapshots actuales ya estén instalados en Maven. Opciones:
 
 ```bash
 modules/desktop-app/script/run.sh --no-install
@@ -61,3 +61,51 @@ altura, la barra lateral permite desplazarse para acceder a la navegacion y a la
 sin superponerlas.
 
 Las siguientes áreas funcionales pueden añadirse como vistas y controladores separados sin mezclar su navegación con la lógica de autenticación.
+
+### Dashboards y paginas
+
+`StudentDashboardView` y `TeacherDashboardView` componen la barra lateral y el area central.
+Los enums privados `StudentDashboardView.StudentSection` y `TeacherDashboardView.TeacherSection` definen las opciones del menu;
+`UiComponents.dashboardSidebar` crea sus enlaces y sincroniza la seleccion con el dashboard,
+sin construir paginas.
+
+La misma factoria construye toda la barra para ambos perfiles: contenedor, cabecera con
+logo UNED, menu y tarjeta de cuenta. Los dashboards solo proporcionan el nombre del panel,
+la tarjeta de cuenta y las opciones de navegacion. El layout y los estados visuales del
+menu se definen en CSS, sin duplicar su construccion en los dashboards.
+
+Cada perfil tiene una carpeta `sections` con una clase por pagina. Cada pagina construye
+su propia cabecera mediante `UiComponents.sectionHeader` y su contenido. Los componentes
+visuales compartidos de un perfil permanecen en un helper de ese perfil, no en el dashboard.
+Las paginas se crean al visitarlas por primera vez y se conservan al navegar. Las acciones
+que cambian de pagina reciben callbacks del dashboard; no crean otros dashboards.
+Los datos de practicas del docente se comparten entre resumen y practicas para reflejar
+los borradores nuevos sin descartar las instancias de las paginas.
+
+### Enunciados del docente
+
+`teacher/sections/StatementSection` muestra tres tarjetas numeradas conectadas por flechas:
+**Seleccionar PDF → Extraer texto → Filtrar texto**. Las tarjetas abren el panel del paso
+sin ejecutar su accion y resaltan el paso activo y los completados.
+Las tarjetas tienen una altura uniforme de 76 px y el flujo un ancho maximo de 860 px,
+para mantener una cabecera compacta incluso en ventanas grandes.
+
+Inicialmente solo esta disponible el primero. Elegir un PDF habilita el segundo paso,
+pero mantiene abierto el primero para previsualizar el documento. El visor local usa PDFBox
+en segundo plano, con anterior/siguiente, contador de paginas y zoom del 50 al 150 %.
+Renderiza solo una pagina, limita la resolucion y cierra el archivo tras cada carga.
+No permite seleccionar texto. Los errores del visor se muestran sin bloquear el flujo.
+El boton del segundo paso usa `StatementExtractor.extractText(Path)` en un hilo auxiliar y muestra
+el texto de solo lectura. Una extraccion correcta habilita el tercer paso, sin ocultar
+el resultado extraido. El tercer panel permite ejecutar `StatementFilter.filter(String)`
+con las reglas predeterminadas del modulo: inicio en Introduccion, omision de Requisitos
+previos y fin en Fechas y normas de entrega. No modifica el texto original.
+Si no se reconoce la estructura, muestra un aviso y el original sin marcar el filtrado
+como completado. Ambos resultados se pueden seleccionar y copiar.
+
+Se puede volver a los pasos habilitados sin perder datos. Elegir otro PDF invalida la
+extraccion y el filtrado; repetir la extraccion invalida el filtro. Cancelar el selector
+conserva el estado. Durante el procesamiento se bloquean acciones y navegacion, y se
+muestra progreso. Los errores permiten reintentar. No se realiza OCR, no se crean archivos
+TXT ni se envian documentos a servicios externos. El estado se conserva al navegar por el
+dashboard. El modulo extractor hereda Java 21 del proyecto padre.

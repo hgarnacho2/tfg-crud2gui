@@ -11,7 +11,7 @@ enunciado.pdf ──▶ enunciado.txt ──▶ enunciado-filtrado.txt ──▶
 
 | Herramienta | Versión |
 |---|---|
-| Java | 17 o superior |
+| Java | 21 o superior (version de compilacion heredada del proyecto padre) |
 | Maven | 3.x |
 | Bash | Git Bash en Windows (para el script `run.sh`) |
 

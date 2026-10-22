@@ -12,11 +12,13 @@ import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +32,34 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UiComponentsTest {
+
+    @Test
+    void updatesCachedTeacherPagesWhenPracticeDataChanges() throws Exception {
+        onJavaFxThread(() -> {
+            var data = new com.crud2gui.desktop.teacher.TeacherPracticeData(() -> {});
+            var overview = new com.crud2gui.desktop.teacher.sections.OverviewSection(data);
+            var practices = new com.crud2gui.desktop.teacher.sections.PracticesSection(data);
+            VBox root = new VBox(overview, practices);
+            styledScene(root);
+            root.applyCss();
+            var draft = new com.crud2gui.desktop.teacher.TeacherPracticeData.PracticeItem(
+                    "Prueba de borrador", "Curso de prueba", "0 grupos", "Borrador", "Creada ahora");
+            data.practices().add(0, draft);
+            root.applyCss();
+            for (VBox page : List.of(overview, practices)) {
+                assertTrue(page.lookupAll(".label").stream()
+                        .filter(Label.class::isInstance).map(Label.class::cast)
+                        .anyMatch(label -> "Prueba de borrador".equals(label.getText())));
+            }
+            data.practices().remove(draft);
+            root.applyCss();
+            for (VBox page : List.of(overview, practices)) {
+                assertFalse(page.lookupAll(".label").stream()
+                        .filter(Label.class::isInstance).map(Label.class::cast)
+                        .anyMatch(label -> "Prueba de borrador".equals(label.getText())));
+            }
+        });
+    }
 
     @Test
     void createsSectionHeadersWithAndWithoutActionButton() throws Exception {
@@ -74,6 +104,88 @@ class UiComponentsTest {
                             ((Label) dashboard.lookup(".section-breadcrumb")).getText());
                 }
             }
+        });
+    }
+
+    @Test
+    void cachesEveryDashboardPageAndKeepsSidebarSelectionInSync() throws Exception {
+        onJavaFxThread(() -> {
+            var user = new AuthenticatedUser("user", "user@example.test", "Usuario",
+                    "tenant", java.util.Set.of("alumno", "docente"), null);
+            for (BorderPane dashboard : List.of(
+                    new StudentDashboardView(user, () -> {}),
+                    new TeacherDashboardView(user, () -> {}))) {
+                styledScene(new VBox(dashboard));
+                dashboard.applyCss();
+                VBox sidebar = (VBox) ((ScrollPane) dashboard.getLeft()).getContent();
+                assertNotNull(sidebar.lookup(".sidebar-uned-logo"));
+                assertNotNull(sidebar.lookup(".sidebar-branding"));
+                assertEquals(new Insets(26, 18, 20, 18), sidebar.getPadding());
+                assertEquals(10, sidebar.getSpacing());
+                assertTrue(sidebar.getStyle().isEmpty());
+                var buttons = sidebar.getChildren().stream().filter(Button.class::isInstance)
+                        .map(Button.class::cast).toList();
+                for (Button button : buttons) {
+                    assertEquals(13, button.getFont().getSize(), 0.01);
+                    assertTrue(button.getFont().getStyle().contains("Bold"));
+                }
+                assertEquals(dashboard instanceof TeacherDashboardView ? 5 : 4, buttons.size());
+                if (dashboard instanceof TeacherDashboardView) {
+                    assertEquals("Enunciados", buttons.get(buttons.size() - 1).getText());
+                }
+                ScrollPane content = (ScrollPane) dashboard.getCenter();
+                java.util.Map<Button, Node> visited = new java.util.LinkedHashMap<>();
+                for (Button button : buttons) {
+                    button.fire();
+                    dashboard.applyCss();
+                    Node page = content.getContent();
+                    assertNotNull(page.lookup(".section-breadcrumb"));
+                    assertInstanceOf(VBox.class, page);
+                    assertEquals(new Insets(32, 38, 36, 38), ((VBox) page).getPadding());
+                    assertTrue(button.getPseudoClassStates().contains(javafx.css.PseudoClass.getPseudoClass("selected")));
+                    assertEquals(Color.web("#1b5b50"), button.getBackground().getFills().get(0).getFill());
+                    assertEquals(dashboard instanceof TeacherDashboardView
+                                    && !"Enunciados".equals(button.getText()) ? 1 : 0,
+                            page.lookupAll(".section-header-action").size());
+                    visited.put(button, page);
+                }
+                for (var entry : visited.entrySet()) {
+                    entry.getKey().fire();
+                    assertSame(entry.getValue(), content.getContent());
+                }
+                buttons.get(0).fire();
+                if (dashboard instanceof StudentDashboardView) {
+                    Button shortcut = content.getContent().lookupAll(".button").stream()
+                            .filter(node -> node instanceof Button button
+                                    && "Abrir mis prácticas".equals(button.getText()))
+                            .map(Button.class::cast).findFirst().orElseThrow();
+                    shortcut.fire();
+                    assertSame(visited.get(buttons.get(1)), content.getContent());
+                    assertTrue(buttons.get(1).getPseudoClassStates().contains(javafx.css.PseudoClass.getPseudoClass("selected")));
+                    assertFalse(buttons.get(0).getPseudoClassStates().contains(javafx.css.PseudoClass.getPseudoClass("selected")));
+                }
+            }
+        });
+    }
+
+    @Test
+    void buildsSidebarLinksAndNotifiesSelectionWithoutCreatingPages() throws Exception {
+        onJavaFxThread(() -> {
+            var selected = new javafx.beans.property.SimpleObjectProperty<>("Resumen");
+            ScrollPane scroll = UiComponents.dashboardSidebar("Panel de prueba", new VBox(),
+                    List.of("Resumen", "Practicas"), name -> name, selected);
+            VBox sidebar = (VBox) scroll.getContent();
+            Button overview = (Button) sidebar.getChildren().get(1);
+            Button practices = (Button) sidebar.getChildren().get(2);
+            var active = javafx.css.PseudoClass.getPseudoClass("selected");
+            assertEquals("Practicas", practices.getText());
+            assertTrue(overview.getPseudoClassStates().contains(active));
+            practices.fire();
+            assertEquals("Practicas", selected.get());
+            assertTrue(practices.getPseudoClassStates().contains(active));
+            selected.set("Resumen");
+            assertTrue(overview.getPseudoClassStates().contains(active));
+            assertFalse(practices.getPseudoClassStates().contains(active));
         });
     }
 
@@ -208,7 +320,8 @@ class UiComponentsTest {
             Label name = (Label) dashboard.lookup(".current-user-name");
             assertEquals("Alumno UNED", name.getText());
             assertTrue(name.isWrapText());
-            assertEquals("Perfil alumno", ((Label) dashboard.lookup(".current-user-role")).getText());
+            assertEquals("Perfil alumno", ((Label) dashboard.lookup(".current-user-card")
+                    .lookup(".current-user-role")).getText());
             assertNotNull(dashboard.lookup(".current-user-card"));
             Button signOut = (Button) dashboard.lookup(".sign-out-button");
             assertEquals("Cerrar sesión", signOut.getText());
@@ -289,13 +402,13 @@ class UiComponentsTest {
     @BeforeAll
     static void startJavaFx() throws Exception {
         CompletableFuture<Void> started = new CompletableFuture<>();
-        Platform.startup(() -> started.complete(null));
+        try {
+            Platform.startup(() -> started.complete(null));
+        } catch (IllegalStateException alreadyStarted) {
+            Platform.runLater(() -> started.complete(null));
+        }
         started.get(10, TimeUnit.SECONDS);
-    }
-
-    @AfterAll
-    static void stopJavaFx() {
-        Platform.exit();
+        Platform.setImplicitExit(false);
     }
 
     @Test
