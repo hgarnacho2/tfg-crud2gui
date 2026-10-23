@@ -40,16 +40,16 @@ public final class OverviewSection extends VBox {
                 TeacherComponents.metric("AVISOS DE MODELO", "03", "En validaciones recientes", "#526b91"));
 
         VBox practicePanel = new VBox(14,
-                TeacherComponents.panelHeading("Prácticas recientes", "Seguimiento del curso"),
+                UiComponents.panelHeading("Prácticas recientes", "Seguimiento del curso"),
                 TeacherComponents.practiceRows(data.practices(), 3));
         VBox reviewPanel = new VBox(14,
-                TeacherComponents.panelHeading("Pendientes de revisión", "Actividad de tus grupos"),
+                UiComponents.panelHeading("Pendientes de revisión", "Actividad de tus grupos"),
                 TeacherComponents.reviewRow("María G.", "Red social", "Hace 18 min"),
                 TeacherComponents.reviewRow("Aitor L.", "Reparto de leña", "Hace 1 h"),
                 TeacherComponents.reviewRow("Nerea P.", "Red social", "Ayer"));
 
-        VBox left = TeacherComponents.surface(practicePanel);
-        VBox right = TeacherComponents.surface(reviewPanel);
+        VBox left = UiComponents.surface(practicePanel);
+        VBox right = UiComponents.surface(reviewPanel);
         HBox.setHgrow(left, Priority.ALWAYS);
         left.setMaxWidth(Double.MAX_VALUE);
         right.setPrefWidth(320);

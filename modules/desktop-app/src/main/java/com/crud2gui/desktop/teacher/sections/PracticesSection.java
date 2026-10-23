@@ -30,8 +30,8 @@ public final class PracticesSection extends VBox {
 
     private Node createContent() {
         VBox panel = new VBox(14,
-                TeacherComponents.panelHeading("Prácticas del curso", "Enunciados y grupos asociados"),
+                UiComponents.panelHeading("Prácticas del curso", "Enunciados y grupos asociados"),
                 TeacherComponents.practiceRows(data.practices(), data.practices().size()));
-        return TeacherComponents.surface(panel);
+        return UiComponents.surface(panel);
     }
 }

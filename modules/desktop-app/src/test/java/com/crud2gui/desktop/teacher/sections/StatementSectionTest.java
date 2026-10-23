@@ -48,6 +48,101 @@ class StatementSectionTest {
     }
 
     @Test
+    void rendersPanelSubtitlesAndTxtDestinationCards() throws Exception {
+        Path pdf = createPdf("destination-card.pdf", "Texto del enunciado.", false);
+        onFx(() -> {
+            Controls controls = controls(new AtomicReference<>(pdf.toFile()));
+            controls.select().fire();
+            controls.section().applyCss();
+            var subtitles = controls.section().lookupAll(".panel-subtitle");
+            assertEquals(3, subtitles.size());
+            for (var node : subtitles) {
+                Label subtitle = (Label) node;
+                assertEquals(15, subtitle.getFont().getSize(), 0.01);
+                assertEquals(8, ((VBox) subtitle.getParent()).getSpacing(), 0.01);
+            }
+            var settings = controls.section().lookupAll(".statement-output-settings");
+            assertEquals(2, settings.size());
+            for (var node : settings) {
+                VBox card = (VBox) node.lookup(".statement-file-card");
+                Label name = (Label) card.lookup(".statement-file-name");
+                Label badge = (Label) name.getGraphic();
+                Label path = (Label) card.lookup(".statement-output-folder");
+                assertEquals("TXT", badge.getText());
+                assertTrue(name.getText().equals("destination-card.txt")
+                        || name.getText().equals("destination-card-filtrado.txt"));
+                assertEquals(directory.resolve(name.getText()).toString(), path.getText());
+                assertTrue(card.getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
+                assertEquals(javafx.scene.paint.Color.web("#e4f3ec"),
+                        card.getBackground().getFills().get(0).getFill());
+            }
+            return null;
+        });
+    }
+
+    @Test
+    void keepsResultsInsideTheirPanelsAndClearsInvalidatedMessages() throws Exception {
+        Path pdf = createPdf("panel-status.pdf", "Introducción\nContenido del enunciado.", false);
+        AtomicReference<File> selection = new AtomicReference<>(pdf.toFile());
+        Controls controls = onFx(() -> controls(selection));
+        onFx(() -> {
+            Label selectionStatus = (Label) controls.section().lookup("#statement-selection-status");
+            Label extractionStatus = (Label) controls.section().lookup("#statement-extraction-status");
+            Label filterStatus = (Label) controls.section().lookup("#statement-filter-status");
+            assertFalse(selectionStatus.isManaged());
+            assertFalse(extractionStatus.isManaged());
+            assertFalse(filterStatus.isManaged());
+            assertNotSame(selectionStatus.getParent(), extractionStatus.getParent());
+            assertNotSame(extractionStatus.getParent(), filterStatus.getParent());
+            assertNotSame(controls.section(), selectionStatus.getParent());
+            var openButtons = controls.section().lookupAll(".statement-open-folder");
+            assertEquals(2, openButtons.size());
+            for (var button : openButtons) {
+                assertTrue(button.getParent() == extractionStatus.getParent()
+                        || button.getParent() == filterStatus.getParent());
+                var siblings = button.getParent().getChildrenUnmodifiable();
+                assertTrue(siblings.indexOf(button) > siblings.indexOf(
+                        button.getParent() == extractionStatus.getParent() ? extractionStatus : filterStatus));
+            }
+            controls.select().fire();
+            assertTrue(selectionStatus.getText().startsWith("PDF seleccionado"));
+            assertTrue(selectionStatus.isManaged());
+            assertEquals("", extractionStatus.getText());
+            return null;
+        });
+        extract(controls);
+        onFx(() -> {
+            Label extractionStatus = (Label) controls.section().lookup("#statement-extraction-status");
+            assertTrue(extractionStatus.getText().contains("Archivo generado:"));
+            assertTrue(extractionStatus.getText().contains("panel-status.txt"));
+            controls.step(1).fire();
+            assertTrue(controls.status().getText().startsWith("PDF seleccionado"));
+            controls.step(2).fire();
+            assertSame(extractionStatus, controls.status());
+            controls.step(3).fire();
+            assertEquals("", controls.status().getText());
+            return null;
+        });
+        runOperation(controls, controls.filter());
+        onFx(() -> {
+            assertTrue(controls.status().getText().contains("panel-status-filtrado.txt"));
+            controls.step(2).fire();
+            assertTrue(controls.status().getText().startsWith("Texto extraído"));
+            return null;
+        });
+        extract(controls);
+        onFx(() -> {
+            assertEquals("", ((Label) controls.section().lookup("#statement-filter-status")).getText());
+            selection.set(createPdf("new-panel-status.pdf", "Otro documento.", false).toFile());
+            controls.step(1).fire();
+            controls.select().fire();
+            assertEquals("", ((Label) controls.section().lookup("#statement-extraction-status")).getText());
+            assertEquals("", ((Label) controls.section().lookup("#statement-filter-status")).getText());
+            return null;
+        });
+    }
+
+    @Test
     void startsWithOnlyFirstStepEnabledAndCancellationKeepsState() throws Exception {
         onFx(() -> {
             Controls controls = controls(new AtomicReference<>());
@@ -61,10 +156,8 @@ class StatementSectionTest {
             assertSelected(controls, 1);
             controls.select().fire();
             var settings = controls.section().lookup(".statement-output-settings");
-            assertFalse(settings.isVisible());
-            assertFalse(settings.isManaged());
-            assertFalse(controls.section().lookup(".statement-open-folder").isVisible());
-            assertFalse(controls.section().lookup(".statement-open-folder").isManaged());
+            assertFalse(isEffectivelyVisible(settings));
+            assertFalse(isEffectivelyVisible(controls.section().lookup(".statement-open-folder")));
             assertTrue(controls.step(2).isDisabled());
             assertSelected(controls, 1);
             return null;
@@ -292,11 +385,9 @@ class StatementSectionTest {
         onFx(() -> {
             controls.select().fire();
             assertTrue(((Label) section.lookup(".statement-output-folder")).getText().contains(directory.toString()));
-            assertFalse(section.lookup(".statement-output-settings").isVisible());
-            assertFalse(section.lookup(".statement-output-settings").isManaged());
+            assertFalse(isEffectivelyVisible(section.lookup(".statement-output-settings")));
             controls.step(2).fire();
-            assertTrue(section.lookup(".statement-output-settings").isVisible());
-            assertTrue(section.lookup(".statement-output-settings").isManaged());
+            assertTrue(isEffectivelyVisible(section.lookup(".statement-output-settings")));
             VBox extractionContent = (VBox) controls.text().getParent();
             assertSame(section.lookup(".statement-output-settings"), extractionContent.getChildren().get(1));
             Button changeFolder = (Button) section.lookup(".statement-change-folder");
@@ -345,16 +436,20 @@ class StatementSectionTest {
         onFx(() -> {
             assertTrue(controls.status().getText().contains(filteredOutput.toString()));
             assertTrue(section.lookupAll(".statement-output-file").isEmpty());
-            assertTrue(section.lookup(".statement-output-settings").isVisible());
+            assertTrue(isEffectivelyVisible(controls.filtered().getParent().lookup(".statement-output-settings")));
             controls.step(1).fire();
-            assertFalse(section.lookup(".statement-output-settings").isVisible());
-            assertFalse(section.lookup(".statement-output-settings").isManaged());
-            assertFalse(section.lookup(".statement-open-folder").isVisible());
+            for (var settings : section.lookupAll(".statement-output-settings")) {
+                assertFalse(isEffectivelyVisible(settings));
+            }
+            for (var button : section.lookupAll(".statement-open-folder")) {
+                assertFalse(isEffectivelyVisible(button));
+            }
             controls.step(3).fire();
-            assertTrue(section.lookup(".statement-output-settings").isVisible());
             VBox filterContent = (VBox) controls.filtered().getParent();
-            assertSame(section.lookup(".statement-output-settings"), filterContent.getChildren().get(1));
-            assertTrue(section.lookup(".statement-open-folder").isVisible());
+            var filterSettings = filterContent.lookup(".statement-output-settings");
+            assertTrue(isEffectivelyVisible(filterSettings));
+            assertSame(filterSettings, filterContent.getChildren().get(1));
+            assertTrue(isEffectivelyVisible(filterContent.lookup(".statement-open-folder")));
             return null;
         });
         Path invalidDestination = directory.resolve("not-a-folder");
@@ -519,16 +614,14 @@ class StatementSectionTest {
                 stage.setScene(controls.section().getScene());
                 stage.show();
                 controls.section().applyCss();
-                Label panelSubtitle = controls.section().lookupAll(".label").stream()
-                        .filter(Label.class::isInstance).map(Label.class::cast)
-                        .filter(label -> "El documento de partida".equals(label.getText()))
-                        .findFirst().orElseThrow();
-                Label explanation = controls.section().lookupAll(".label").stream()
-                        .filter(Label.class::isInstance).map(Label.class::cast)
-                        .filter(label -> label.getText().startsWith("Elige un PDF local."))
-                        .findFirst().orElseThrow();
-                assertEquals(14, panelSubtitle.getFont().getSize(), 0.01);
-                assertEquals(explanation.getFont().getSize(), panelSubtitle.getFont().getSize());
+                var subtitles = controls.section().lookupAll(".panel-subtitle");
+                assertEquals(3, subtitles.size());
+                for (var node : subtitles) {
+                    Label subtitle = assertInstanceOf(Label.class, node);
+                    assertFalse(subtitle.getText().isBlank());
+                    assertEquals(15, subtitle.getFont().getSize(), 0.01);
+                    assertEquals(8, ((VBox) subtitle.getParent()).getSpacing(), 0.01);
+                }
                 for (int width : new int[]{760, 960, 1800}) {
                     controls.section().resize(width, 680);
                     controls.section().applyCss();
@@ -645,6 +738,15 @@ class StatementSectionTest {
         return result.get(10, TimeUnit.SECONDS);
     }
 
+    private static boolean isEffectivelyVisible(javafx.scene.Node node) {
+        for (javafx.scene.Node current = node; current != null; current = current.getParent()) {
+            if (!current.isVisible()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static void assertSelected(Controls controls, int step) {
         for (int i = 1; i <= 3; i++) {
             assertEquals(i == step, controls.step(i).getPseudoClassStates()
@@ -655,6 +757,16 @@ class StatementSectionTest {
 
     private record Controls(StatementSection section, Button select, Button extract,
                             Button filter, TextArea text, Label status, TextArea filtered) {
+        public Label status() {
+            String[] ids = {"statement-selection-status", "statement-extraction-status", "statement-filter-status"};
+            for (int i = 0; i < ids.length; i++) {
+                if (step(i + 1).getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected"))) {
+                    return (Label) section.lookup("#" + ids[i]);
+                }
+            }
+            throw new IllegalStateException("No hay ningún paso seleccionado");
+        }
+
         Button step(int number) {
             return (Button) section.lookup("#statement-step-" + number);
         }

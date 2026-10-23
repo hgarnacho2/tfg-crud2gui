@@ -288,6 +288,10 @@
     -fx-border-color: #d89b9f;
 }
 
+.panel-subtitle {
+    -fx-font-size: 15px;
+}
+
 .statement-output-settings {
     -fx-spacing: 10px;
 }

@@ -18,11 +18,11 @@ public final class ModelsSection extends VBox {
         Button newPractice = UiComponents.actionButton(
                 "Nueva práctica", List.of("section-header-action"), data::showNewPracticeDialog);
         VBox panel = new VBox(14,
-                TeacherComponents.panelHeading("Modelos de clase", "Modelos esperados y validaciones recientes"),
+                UiComponents.panelHeading("Modelos de clase", "Modelos esperados y validaciones recientes"),
                 TeacherComponents.modelRow("Red social", "6 clases · 8 relaciones", "Modelo disponible"),
                 TeacherComponents.modelRow("Reparto de leña", "8 clases · 6 relaciones", "2 decisiones pendientes"),
                 TeacherComponents.modelRow("CRUD2GUI", "Modelo en preparación", "Sin validar"));
         getChildren().addAll(UiComponents.sectionHeader("DOCENCIA", "Modelos de clase",
-                "Modelos esperados y validaciones recientes.", newPractice), TeacherComponents.surface(panel));
+                "Modelos esperados y validaciones recientes.", newPractice), UiComponents.surface(panel));
     }
 }

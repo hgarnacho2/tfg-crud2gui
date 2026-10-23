@@ -18,12 +18,12 @@ public final class ReviewsSection extends VBox {
         Button newPractice = UiComponents.actionButton(
                 "Nueva práctica", List.of("section-header-action"), data::showNewPracticeDialog);
         VBox panel = new VBox(14,
-                TeacherComponents.panelHeading("Revisiones pendientes", "Entregas que requieren atención"),
+                UiComponents.panelHeading("Revisiones pendientes", "Entregas que requieren atención"),
                 TeacherComponents.reviewRow("María G.", "Red social · grupo 2", "Hace 18 min"),
                 TeacherComponents.reviewRow("Aitor L.", "Reparto de leña · grupo 1", "Hace 1 h"),
                 TeacherComponents.reviewRow("Nerea P.", "Red social · grupo 4", "Ayer"),
                 TeacherComponents.reviewRow("Iker R.", "CRUD2GUI · grupo 3", "Ayer"));
         getChildren().addAll(UiComponents.sectionHeader("DOCENCIA", "Revisiones",
-                "Entregas pendientes de revisión.", newPractice), TeacherComponents.surface(panel));
+                "Entregas pendientes de revisión.", newPractice), UiComponents.surface(panel));
     }
 }

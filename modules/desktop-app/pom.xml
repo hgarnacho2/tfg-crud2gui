@@ -74,6 +74,34 @@
 
   <profiles>
     <profile>
+      <id>portable-windows</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.8.1</version>
+            <executions>
+              <execution>
+                <id>portable-runtime-dependencies</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                  <includeScope>runtime</includeScope>
+                  <outputDirectory>${desktop.package.input}</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <properties>
+        <desktop.package.input>${project.build.directory}/portable-input</desktop.package.input>
+      </properties>
+    </profile>
+    <profile>
       <id>windows-renderer</id>
       <activation>
         <os>

@@ -1,6 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.desktop.teacher.TeacherPracticeData.PracticeItem;
+import com.crud2gui.desktop.ui.UiComponents;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -28,7 +29,7 @@ final class TeacherComponents {
         number.setStyle("-fx-text-fill: " + accent + "; -fx-font-size: 28px; -fx-font-weight: bold;");
         Label caption = new Label(detail);
         caption.setStyle("-fx-text-fill: " + MUTED + "; -fx-font-size: 11px;");
-        VBox metric = surface(new VBox(8, heading, number, caption));
+        VBox metric = UiComponents.surface(new VBox(8, heading, number, caption));
         metric.setMinWidth(170);
         metric.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(metric, Priority.ALWAYS);
@@ -96,21 +97,6 @@ final class TeacherComponents {
         text.setPadding(new Insets(12, 0, 12, 0));
         VBox.setVgrow(text, Priority.NEVER);
         return text;
-    }
-
-    static VBox surface(Node content) {
-        VBox surface = new VBox(content);
-        surface.setPadding(new Insets(20));
-        surface.setStyle("-fx-background-color: white; -fx-background-radius: 7px; "
-                + "-fx-border-color: #e5ece8; -fx-border-radius: 7px;");
-        return surface;
-    }
-
-    static VBox panelHeading(String titleText, String subtitleText) {
-        Label title = new Label(titleText);
-        title.setStyle("-fx-text-fill: " + INK + "; -fx-font-size: 16px; -fx-font-weight: bold;");
-        Label subtitle = com.crud2gui.desktop.ui.UiComponents.mutedText(subtitleText);
-        return new VBox(4, title, subtitle);
     }
 
     private static Label columnHeader(String text) {

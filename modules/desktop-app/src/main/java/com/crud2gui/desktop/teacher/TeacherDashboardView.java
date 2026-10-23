@@ -27,7 +27,7 @@ public final class TeacherDashboardView extends BorderPane {
         PRACTICES("Prácticas"),
         REVIEWS("Revisiones"),
         MODELS("Modelos"),
-        STATEMENTS("Enunciados");
+        STATEMENT("Enunciado");
 
         private final String label;
 
@@ -77,7 +77,7 @@ public final class TeacherDashboardView extends BorderPane {
             case PRACTICES -> new PracticesSection(practices);
             case REVIEWS -> new ReviewsSection(practices);
             case MODELS -> new ModelsSection(practices);
-            case STATEMENTS -> new StatementSection();
+            case STATEMENT -> new StatementSection();
         };
     }
 }

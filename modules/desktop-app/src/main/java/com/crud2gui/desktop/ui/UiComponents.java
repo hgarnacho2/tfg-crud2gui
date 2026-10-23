@@ -3,10 +3,12 @@ package com.crud2gui.desktop.ui;
 import com.crud2gui.authenticator.AuthenticatedUser;
 
 import javafx.css.PseudoClass;
+import javafx.geometry.Insets;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -20,6 +22,7 @@ import javafx.scene.control.ProgressIndicator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import javafx.beans.property.ObjectProperty;
 
 /**
@@ -32,8 +35,55 @@ import javafx.beans.property.ObjectProperty;
  */
 public final class UiComponents {
 
+    public enum Direction {
+        UP, DOWN, LEFT, RIGHT
+    }
+
     /** Impide instanciar esta clase de utilidades con metodos estaticos. */
     private UiComponents() {
+    }
+
+    /**
+     * Envuelve un contenido en una tarjeta con fondo blanco, borde y esquinas redondeadas.
+     *
+     * @param content nodo que se incorpora como hijo de la tarjeta
+     * @return contenedor vertical con 20 píxeles de margen interior y radio de 7 píxeles
+     */
+    public static VBox surface(Node content) {
+        VBox surface = new VBox(content);
+        surface.setPadding(new Insets(20));
+        surface.setStyle("-fx-background-color: white; -fx-background-radius: 7px; "
+                + "-fx-border-color: #e5ece8; -fx-border-radius: 7px;");
+        return surface;
+    }
+
+    /**
+     * Crea una cabecera de panel con título destacado y subtítulo secundario.
+     *
+     * @param titleText título del panel
+     * @param subtitleText descripción breve del panel
+     * @return contenedor vertical con 8 píxeles de separación entre los textos
+     */
+    public static VBox panelHeading(String titleText, String subtitleText) {
+        return panelHeading(titleText, subtitleText, 16, 8);
+    }
+
+    /**
+     * Crea una cabecera con tamaño de título y separación configurables.
+     *
+     * @param titleText título del panel
+     * @param subtitleText descripción breve del panel
+     * @param titleSize tamaño del título en píxeles
+     * @param spacing separación entre título y descripción en píxeles
+     * @return contenedor vertical con los textos y dimensiones indicados
+     */
+    public static VBox panelHeading(
+            String titleText, String subtitleText, double titleSize, double spacing) {
+        Label title = new Label(titleText);
+        title.setStyle("-fx-text-fill: #17212b; -fx-font-size: " + titleSize + "px; -fx-font-weight: bold;");
+        Label subtitle = mutedText(subtitleText);
+        subtitle.getStyleClass().add("panel-subtitle");
+        return new VBox(spacing, title, subtitle);
     }
 
     /**
@@ -198,9 +248,45 @@ public final class UiComponents {
      */
     public static Label label(String text, List<String> styleClasses) {
         Label label = new Label(text);
-        label.getStyleClass().add("label");
         label.getStyleClass().addAll(styleClasses);
         return label;
+    }
+
+    /**
+     * Crea una etiqueta con gráfico que puede ocupar el ancho disponible.
+     *
+     * @param text texto de la etiqueta
+     * @param styleClasses clases CSS adicionales de la etiqueta
+     * @param graphic nodo que acompaña al texto, por ejemplo una insignia o un icono
+     * @param graphicTextGap separación entre el gráfico y el texto, en píxeles
+     * @return etiqueta con gráfico y sin límite de ancho máximo
+     */
+    public static Label labelWithGraphic(
+            String text, List<String> styleClasses, Node graphic, double graphicTextGap) {
+        Label label = label(text, styleClasses);
+        label.setGraphic(graphic);
+        label.setGraphicTextGap(graphicTextGap);
+        label.setMaxWidth(Double.MAX_VALUE);
+        return label;
+    }
+
+    /**
+     * Crea un área de texto con edición, ajuste de línea, altura y estilos configurables.
+     *
+     * @param editable si el usuario puede modificar el contenido
+     * @param wrapText si las líneas se ajustan al ancho disponible
+     * @param prefRowCount número preferido de filas visibles
+     * @param styleClasses clases CSS adicionales; puede ser una lista vacia, pero no {@code null}
+     * @return área de texto inicialmente vacía con la configuración indicada
+     */
+    public static TextArea textArea(
+            boolean editable, boolean wrapText, int prefRowCount, List<String> styleClasses) {
+        TextArea area = new TextArea();
+        area.setEditable(editable);
+        area.setWrapText(wrapText);
+        area.setPrefRowCount(prefRowCount);
+        area.getStyleClass().addAll(styleClasses);
+        return area;
     }
 
     /**
@@ -221,6 +307,39 @@ public final class UiComponents {
     }
 
     /**
+     * Crea una tarjeta de navegación numerada con título, descripción y acción de selección.
+     *
+     * @param index posición del paso, empezando en cero
+     * @param title título de la tarjeta
+     * @param description explicación breve del paso
+     * @param onSelect acción invocada con el índice al seleccionar la tarjeta
+     * @return botón accesible por ratón y teclado
+     */
+    public static Button stepButton(int index, String title, String description, IntConsumer onSelect) {
+        Objects.requireNonNull(onSelect, "onSelect");
+        Label number = label(Integer.toString(index + 1), List.of("statement-step-number"));
+        VBox labels = vBox(List.of("statement-step-labels"),
+                label(title, List.of("statement-step-title")),
+                label(description, List.of("statement-step-description")));
+        labels.setMinWidth(0);
+        labels.setMaxHeight(Region.USE_PREF_SIZE);
+        HBox graphic = new HBox(12, number, labels);
+        graphic.getStyleClass().add("statement-step-graphic");
+        graphic.setMaxHeight(Region.USE_PREF_SIZE);
+        Button button = new Button();
+        button.setGraphic(graphic);
+        button.setAccessibleText("Paso " + (index + 1) + ": " + title);
+        button.getStyleClass().add("statement-step");
+        button.setId("statement-step-" + (index + 1));
+        button.setMinWidth(0);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setPrefWidth(260);
+        HBox.setHgrow(button, Priority.ALWAYS);
+        button.setOnAction(event -> onSelect.accept(index));
+        return button;
+    }
+
+    /**
      * Crea un indicador de progreso indeterminado con el estado inicial de visibilidad indicado.
      * Inicializa {@code visible} y {@code managed} con el mismo valor para que, si esta oculto,
      * no reserve espacio. Las dos propiedades no quedan vinculadas para cambios posteriores.
@@ -232,9 +351,27 @@ public final class UiComponents {
      */
     public static ProgressIndicator progressIndicator(
             boolean visible, List<String> styleClasses) {
+        return progressIndicator(visible, styleClasses, false);
+    }
+
+    /**
+     * Crea un indicador con sincronización opcional entre visibilidad y participación en el layout.
+     *
+     * @param visible visibilidad inicial del indicador
+     * @param styleClasses clases CSS adicionales a {@code progress-indicator};
+     *                     puede ser una lista vacia, pero no {@code null}
+     * @param bindManagedToVisible si {@code managed} debe seguir los cambios de {@code visible};
+     *                             si es falso, solo se igualan sus valores iniciales
+     * @return indicador configurado con sus estilos y la sincronización solicitada
+     */
+    public static ProgressIndicator progressIndicator(
+            boolean visible, List<String> styleClasses, boolean bindManagedToVisible) {
         ProgressIndicator progress = new ProgressIndicator();
         progress.setVisible(visible);
         progress.setManaged(visible);
+        if (bindManagedToVisible) {
+            progress.managedProperty().bind(progress.visibleProperty());
+        }
         progress.getStyleClass().add("progress-indicator");
         progress.getStyleClass().addAll(styleClasses);
         return progress;
@@ -277,4 +414,37 @@ public final class UiComponents {
         actionButton.setMinWidth(Region.USE_PREF_SIZE);
         return hBox(List.of("section-header"), heading, spacer, actionButton);
     }
+
+    /**
+     * @return conector visual que indica el orden de los pasos
+     */
+    public static StackPane arrowConnector(Direction direction) {
+        SVGPath arrow = new SVGPath();
+
+        switch (direction) {
+            case RIGHT:
+                arrow.setContent("M 3 3 L 11 11 L 3 19");
+                break;
+            case LEFT:
+                arrow.setContent("M 11 3 L 3 11 L 11 19");
+                break;
+            case DOWN:
+                arrow.setContent("M 3 3 L 11 11 L 19 3");
+                break;
+            case UP:
+                arrow.setContent("M 3 11 L 11 3 L 19 11");
+                break;
+        }
+
+        arrow.getStyleClass().add("statement-connector-arrow");
+
+        StackPane connector = new StackPane(arrow);
+        connector.getStyleClass().add("statement-connector");
+        connector.setMouseTransparent(true);
+
+        return connector;
+    }
+
+    
+
 }

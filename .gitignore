@@ -3,3 +3,5 @@
 .env.private
 /statement/.env.private
 /doc
+/dist/
+**/target/portable-input*/

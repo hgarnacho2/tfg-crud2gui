@@ -13,11 +13,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.SVGPath;
 import javafx.stage.FileChooser;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
@@ -46,33 +44,48 @@ public final class StatementSection extends VBox {
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
     private static final PseudoClass COMPLETED = PseudoClass.getPseudoClass("completed");
 
-    private final Button selectButton;
+    private final Button selectPDFButton;
     private final Button extractButton;
     private final Button filterButton;
     private final Button changeFolderButton;
+    private final Button filterChangeFolderButton;
     private final Button openFolderButton;
-    private final Label outputFolderLabel = UiComponents.mutedText("");
-    private final VBox outputSettings;
+    private final Button filterOpenFolderButton;
+    private final Label outputFolderLabel = UiComponents.label("", List.of("statement-file-path", "statement-output-folder"));
+    private final Label filterOutputFolderLabel = UiComponents.label("", List.of("statement-file-path", "statement-output-folder"));
+    private final Label outputFilename = UiComponents.labelWithGraphic("",
+            List.of("statement-file-name"),
+            UiComponents.label("TXT", List.of("statement-file-badge")), 12);
+    private final Label filterOutputFilename = UiComponents.labelWithGraphic("",
+            List.of("statement-file-name"),
+            UiComponents.label("TXT", List.of("statement-file-badge")), 12);
     private final BiFunction<Window, Path, File> chooseFolder;
     private final Predicate<Path> confirmOverwrite;
-    private final Label filename = UiComponents.label("Ningún PDF seleccionado.",
-            List.of("statement-file-name"));
+    private final Label filename = UiComponents.labelWithGraphic("Ningún PDF seleccionado.",
+            List.of("statement-file-name"),
+            UiComponents.label("PDF", List.of("statement-file-badge")), 12);
     private final Label filePath = UiComponents.label("Selecciona un documento para comenzar.",
             List.of("statement-file-path"));
     private final VBox fileCard = UiComponents.vBox(List.of("statement-file-card"), filename, filePath);
-    private final PdfPreview preview = new PdfPreview();
-    private final Label status = UiComponents.label("", List.of("text-muted", "statement-status"));
-    private final ProgressIndicator progress = new ProgressIndicator();
-    private final TextArea text = new TextArea();
-    private final TextArea filteredText = new TextArea();
+    private final PdfPreview pdfPreview = new PdfPreview();
+    private final List<Label> statuses = List.of(
+            statusLabel("statement-selection-status"),
+            statusLabel("statement-extraction-status"),
+            statusLabel("statement-filter-status"));
+    private final ProgressIndicator progress =
+            UiComponents.progressIndicator(false, List.of("statement-progress"), true);
+    private final TextArea text =
+            UiComponents.textArea(false, true, 16, List.of("statement-text"));
+    private final TextArea filteredText =
+            UiComponents.textArea(false, true, 16, List.of("statement-text", "statement-filtered-text"));
     private final List<Button> steps;
     private final List<VBox> panels;
-    private final List<VBox> processingContents;
     private final StackPane panelHost = new StackPane();
     private Path selectedPdf;
     private Path outputFolder;
     private boolean busy;
     private boolean filterCompleted;
+    private int currentStep;
 
     /** Crea el flujo y utiliza el selector de archivos del sistema. */
     public StatementSection() {
@@ -101,7 +114,7 @@ public final class StatementSection extends VBox {
         this.chooseFolder = chooseFolder;
         this.confirmOverwrite = confirmOverwrite;
         setPadding(new Insets(32, 38, 36, 38));
-        selectButton = UiComponents.actionButton("Seleccionar PDF", List.of("statement-select"), () -> {
+        selectPDFButton = UiComponents.actionButton("Seleccionar PDF", List.of("statement-select"), () -> {
             File file = chooseFile.apply(getScene() == null ? null : getScene().getWindow());
             if (file != null) {
                 selectPdf(file);
@@ -111,115 +124,79 @@ public final class StatementSection extends VBox {
         filterButton = UiComponents.actionButton("Filtrar texto", List.of("statement-filter"), this::filterText);
         changeFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
                 List.of("statement-change-folder", "secondary-button"), this::changeOutputFolder);
+        filterChangeFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
+                List.of("statement-change-folder", "secondary-button"), this::changeOutputFolder);
         openFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
                 List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
-        outputFolderLabel.getStyleClass().add("statement-output-folder");
-        outputSettings = UiComponents.vBox(List.of("statement-output-settings"),
-                outputFolderLabel, changeFolderButton);
-        progress.getStyleClass().add("statement-progress");
-        progress.setVisible(false);
-        progress.managedProperty().bind(progress.visibleProperty());
-        configureTextArea(text);
+        filterOpenFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
+                List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
         text.setId("statement-raw-text");
-        configureTextArea(filteredText);
-        filteredText.getStyleClass().add("statement-filtered-text");
-        Label pdfBadge = UiComponents.label("PDF", List.of("statement-file-badge"));
-        filename.setGraphic(pdfBadge);
-        filename.setGraphicTextGap(12);
-        filename.setMaxWidth(Double.MAX_VALUE);
         filePath.setMaxWidth(Double.MAX_VALUE);
-        VBox pdfPanel = TeacherComponents.surface(new VBox(14,
-                TeacherComponents.panelHeading("Seleccionar PDF", "El documento de partida"),
-                UiComponents.mutedText("Elige un PDF local. Después podrás continuar con la extracción del texto."),
-                selectButton, fileCard, preview));
-        VBox extractionContent = new VBox(14,
-                TeacherComponents.panelHeading("Extraer texto", "Del PDF al texto plano"),
-                outputSettings,
+
+
+
+        VBox pdfPanel = UiComponents.surface(new VBox(14,
+                UiComponents.panelHeading("Seleccionar PDF",
+                        "En el primer paso, se selecciona el documento PDF que contiene el enunciado de la práctica.",
+                        17, 8),
+//                UiComponents.mutedText("Pulsa el botón para seleccionar un PDF local. Después podrás continuar con la extracción del texto."),
+                selectPDFButton, fileCard, pdfPreview, statuses.get(0)));
+        VBox extractionPanel = UiComponents.surface(new VBox(14,
+                UiComponents.panelHeading("Extraer texto", "Una vez seleccionado el PDF, se extrae el contenido como texto plano."),
+                outputSettings(outputFilename, outputFolderLabel, changeFolderButton),
                 UiComponents.mutedText("Extrae el contenido del documento. El resultado se mostrará aquí."),
-                extractButton, text);
-        VBox filterContent = new VBox(14,
-                TeacherComponents.panelHeading("Filtrar texto", "Prepara el contenido del enunciado"),
+                extractButton, text, statuses.get(1), openFolderButton));
+        VBox filterPanel = UiComponents.surface(new VBox(14,
+                UiComponents.panelHeading("Filtrar texto", "Antes de trabajar con un LLM que analice el contenido del enunciado, se aplica un filtro para optimizar el texto obtenido."),
+                outputSettings(filterOutputFilename, filterOutputFolderLabel, filterChangeFolderButton),
                 UiComponents.mutedText("Usa las reglas predeterminadas: desde «Introducción» hasta "
                         + "«Fechas y normas de entrega», omitiendo «Requisitos previos» y números de página. "
                         + "Si no se reconoce la estructura, se conserva el texto original."),
-                filterButton, filteredText);
-        processingContents = List.of(extractionContent, filterContent);
-        VBox extractionPanel = TeacherComponents.surface(extractionContent);
-        VBox filterPanel = TeacherComponents.surface(filterContent);
+                filterButton, filteredText, statuses.get(2), filterOpenFolderButton));
         panels = List.of(pdfPanel, extractionPanel, filterPanel);
+
+
+        
         steps = List.of(
-                stepButton(0, "SELECCIONAR PDF", "Documento de origen"),
-                stepButton(1, "EXTRAER TEXTO", "Contenido en texto plano"),
-                stepButton(2, "FILTRAR TEXTO", "Enunciado preparado"));
-        HBox flow = new HBox(12, steps.get(0), connector(), steps.get(1), connector(), steps.get(2));
+                UiComponents.stepButton(0, "SELECCIONAR PDF", "Documento de origen", this::showStep),
+                UiComponents.stepButton(1, "EXTRAER TEXTO", "Contenido en texto plano", this::showStep),
+                UiComponents.stepButton(2, "FILTRAR TEXTO", "Enunciado preparado", this::showStep));
+        HBox flow = new HBox(12, steps.get(0),
+                UiComponents.arrowConnector(UiComponents.Direction.RIGHT), steps.get(1),
+                UiComponents.arrowConnector(UiComponents.Direction.RIGHT), steps.get(2));
         flow.getStyleClass().add("statement-flow");
         flow.setMaxHeight(Region.USE_PREF_SIZE);
         panelHost.getChildren().addAll(panels);
-        HBox feedback = new HBox(10, progress, status);
-        status.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(status, Priority.ALWAYS);
-        status.visibleProperty().bind(status.textProperty().isNotEmpty());
-        status.managedProperty().bind(status.visibleProperty());
-        feedback.getStyleClass().add("statement-feedback");
-        getChildren().addAll(UiComponents.sectionHeader("ENUNCIADOS", "Enunciados",
-                "Prepara tu enunciado paso a paso: selecciona el PDF, extrae el texto y aplica el filtro."),
-                flow, panelHost, feedback, openFolderButton);
+        getChildren().addAll(UiComponents.sectionHeader("ENUNCIADO", "Enunciado",
+                "Extracción de información del enunciado paso a paso: selecciona el PDF, extrae el texto y aplica el filtro para optimizar el texto obtenido."),
+                flow, panelHost, progress);
         showStep(0);
         updateState();
     }
 
-    /**
-     * Crea una tarjeta de navegación con número, título y descripción.
-     *
-     * @param index posición del paso en el flujo
-     * @param title título de la tarjeta
-     * @param description explicación breve del paso
-     * @return botón accesible por ratón y teclado
-     */
-    private Button stepButton(int index, String title, String description) {
-        Label number = UiComponents.label(Integer.toString(index + 1), List.of("statement-step-number"));
-        VBox labels = UiComponents.vBox(List.of("statement-step-labels"),
-                UiComponents.label(title, List.of("statement-step-title")),
-                UiComponents.label(description, List.of("statement-step-description")));
-        labels.setMinWidth(0);
-        labels.setMaxHeight(Region.USE_PREF_SIZE);
-        HBox graphic = new HBox(12, number, labels);
-        graphic.getStyleClass().add("statement-step-graphic");
-        graphic.setMaxHeight(Region.USE_PREF_SIZE);
-        Button button = new Button();
-        button.setGraphic(graphic);
-        button.setAccessibleText("Paso " + (index + 1) + ": " + title);
-        button.getStyleClass().add("statement-step");
-        button.setId("statement-step-" + (index + 1));
-        button.setMinWidth(0);
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setPrefWidth(260);
-        HBox.setHgrow(button, Priority.ALWAYS);
-        button.setOnAction(event -> showStep(index));
-        return button;
-    }
-
-    /** @return conector visual que indica el orden de los pasos */
-    private StackPane connector() {
-        SVGPath arrow = new SVGPath();
-        arrow.setContent("M 3 3 L 11 11 L 3 19");
-        arrow.getStyleClass().add("statement-connector-arrow");
-        StackPane connector = new StackPane(arrow);
-        connector.getStyleClass().add("statement-connector");
-        connector.setMouseTransparent(true);
-        return connector;
+    /** Crea un mensaje de panel que no reserva espacio mientras está vacío. */
+    private static Label statusLabel(String id) {
+        Label label = UiComponents.label("", List.of("text-muted", "statement-status"));
+        label.setId(id);
+        label.setMaxWidth(Double.MAX_VALUE);
+        label.visibleProperty().bind(label.textProperty().isNotEmpty());
+        label.managedProperty().bind(label.visibleProperty());
+        return label;
     }
 
     /**
-     * Configura un resultado de texto seleccionable y de solo lectura.
+     * Crea los controles de destino que permanecen dentro de su panel.
      *
-     * @param area control de texto del resultado
+     * @param nameLabel nombre del archivo de salida con insignia TXT
+     * @param folderLabel ruta completa del archivo de salida
+     * @param changeButton botón para cambiar el destino
+     * @return selector de carpeta del panel
      */
-    private void configureTextArea(TextArea area) {
-        area.setEditable(false);
-        area.setWrapText(true);
-        area.setPrefRowCount(16);
-        area.getStyleClass().add("statement-text");
+    private static VBox outputSettings(Label nameLabel, Label folderLabel, Button changeButton) {
+        folderLabel.setMaxWidth(Double.MAX_VALUE);
+        VBox card = UiComponents.vBox(List.of("statement-file-card"), nameLabel, folderLabel);
+        card.pseudoClassStateChanged(SELECTED, true);
+        return UiComponents.vBox(List.of("statement-output-settings"), card, changeButton);
     }
 
     /**
@@ -228,14 +205,7 @@ public final class StatementSection extends VBox {
      * @param index posición del paso habilitado
      */
     private void showStep(int index) {
-        if (index != 0) {
-            processingContents.forEach(content -> content.getChildren().remove(outputSettings));
-            processingContents.get(index - 1).getChildren().add(1, outputSettings);
-        }
-        outputSettings.setVisible(index != 0);
-        outputSettings.setManaged(index != 0);
-        openFolderButton.setVisible(index != 0);
-        openFolderButton.setManaged(index != 0);
+        currentStep = index;
         for (int i = 0; i < panels.size(); i++) {
             panels.get(i).setVisible(i == index);
             panels.get(i).setManaged(i == index);
@@ -256,11 +226,12 @@ public final class StatementSection extends VBox {
         filePath.setText(file.getAbsolutePath());
         fileCard.pseudoClassStateChanged(SELECTED, true);
         text.clear();
+        statuses.get(1).setText("");
         resetFilter();
         updateState();
         showStep(0);
-        preview.load(selectedPdf);
-        showStatus("PDF seleccionado. Pulsa «Extraer texto» para continuar.", false);
+        pdfPreview.load(selectedPdf);
+        showStatus(0, "PDF seleccionado. Pulsa «Extraer texto» para continuar.", false);
     }
 
     /**
@@ -298,14 +269,15 @@ public final class StatementSection extends VBox {
         if (folder != null) {
             outputFolder = folder.toPath().toAbsolutePath().normalize();
             updateOutputFolderLabel();
-            showStatus("Carpeta de salida actualizada. Los archivos ya generados no se han movido.", false);
+            showStatus(currentStep, "Carpeta de salida actualizada. Los archivos ya generados no se han movido.", false);
         }
     }
 
     /** Abre el destino en el explorador del sistema y comunica cualquier error. */
     private void openOutputFolder() {
         Path folder = outputFolder;
-        runTask(() -> {
+        int step = currentStep;
+        runTask(step, () -> {
             if (!Files.isDirectory(folder)) {
                 throw new IOException("La carpeta de salida no existe: " + folder);
             }
@@ -315,15 +287,18 @@ public final class StatementSection extends VBox {
             Desktop.getDesktop().open(folder.toFile());
             return folder;
         }, "Abriendo carpeta de salida: " + folder,
-                opened -> showStatus("Carpeta de salida abierta: " + opened, false),
+                opened -> showStatus(step, "Carpeta de salida abierta: " + opened, false),
                 "No se pudo abrir la carpeta de salida: " + folder);
     }
 
     /** Muestra el destino y los nombres que se utilizarán en las próximas operaciones. */
     private void updateOutputFolderLabel() {
-        outputFolderLabel.setText("Carpeta de salida: " + outputFolder
-                + "\nExtracción: " + outputPath(false).getFileName()
-                + " · Filtrado: " + outputPath(true).getFileName());
+        Path extractedPath = outputPath(false);
+        Path filteredPath = outputPath(true);
+        outputFilename.setText(extractedPath.getFileName().toString());
+        outputFolderLabel.setText(extractedPath.toString());
+        filterOutputFilename.setText(filteredPath.getFileName().toString());
+        filterOutputFolderLabel.setText(filteredPath.toString());
     }
 
     /**
@@ -360,10 +335,10 @@ public final class StatementSection extends VBox {
      * @param path destino del resultado
      * @return destino autorizado, o null si se cancela
      */
-    private OutputFile prepareOutput(Path path) {
+    private OutputFile prepareOutput(Path path, int step) {
         boolean exists = Files.exists(path);
         if (exists && !confirmOverwrite.test(path)) {
-            showStatus("Operación cancelada. No se ha sobrescrito el archivo: " + path, false);
+            showStatus(step, "Operación cancelada. No se ha sobrescrito el archivo: " + path, false);
             return null;
         }
         return new OutputFile(path, exists);
@@ -383,14 +358,14 @@ public final class StatementSection extends VBox {
 
     /** Extrae el PDF en un hilo auxiliar y presenta el resultado en el hilo de JavaFX. */
     private void extractText() {
-        OutputFile output = prepareOutput(outputPath(false));
+        OutputFile output = prepareOutput(outputPath(false), 1);
         if (output == null) {
             return;
         }
         Path pdf = selectedPdf;
         text.clear();
         resetFilter();
-        runTask(() -> {
+        runTask(1, () -> {
             String result = StatementExtractor.extractText(pdf);
             if (!result.isBlank()) {
                 writeOutput(output, result);
@@ -398,12 +373,12 @@ public final class StatementSection extends VBox {
             return result;
         }, "Extrayendo texto del PDF…\nArchivo de salida: " + output.path(), result -> {
             if (result.isBlank()) {
-                showStatus("El PDF no contiene texto extraíble. Si está escaneado, necesita OCR.", true);
+                showStatus(1, "El PDF no contiene texto extraíble. Si está escaneado, necesita OCR.", true);
                 return;
             }
             text.setText(result);
             text.positionCaret(0);
-            showStatus("Texto extraído correctamente. Ya puedes continuar al paso 3: Filtrar texto."
+            showStatus(1, "Texto extraído correctamente. Ya puedes continuar al paso 3: Filtrar texto."
                     + "\nArchivo generado: " + output.path(), false);
         }, "No se pudo extraer el texto. Comprueba que el PDF sea válido, legible "
                 + "y no esté protegido con contraseña, y que puedas escribir en el destino: " + output.path());
@@ -411,13 +386,13 @@ public final class StatementSection extends VBox {
 
     /** Ejecuta el filtro existente sin modificar el texto original extraído. */
     private void filterText() {
-        OutputFile output = prepareOutput(outputPath(true));
+        OutputFile output = prepareOutput(outputPath(true), 2);
         if (output == null) {
             return;
         }
         String original = text.getText();
         resetFilter();
-        runTask(() -> {
+        runTask(2, () -> {
             StatementFilter.Result result = StatementFilter.filter(original);
             writeOutput(output, result.text());
             return result;
@@ -425,7 +400,7 @@ public final class StatementSection extends VBox {
             filteredText.setText(result.text());
             filteredText.positionCaret(0);
             filterCompleted = result.structureRecognized();
-            showStatus((filterCompleted ? "Texto filtrado correctamente."
+            showStatus(2, (filterCompleted ? "Texto filtrado correctamente."
                     : "No se ha reconocido la estructura del enunciado. Se conserva el texto original sin filtrar.")
                     + "\nArchivo generado: " + output.path(),
                     !filterCompleted);
@@ -435,6 +410,7 @@ public final class StatementSection extends VBox {
     /** Invalida el resultado del filtro cuando cambia su entrada o se vuelve a ejecutar. */
     private void resetFilter() {
         filteredText.clear();
+        statuses.get(2).setText("");
         filterCompleted = false;
     }
 
@@ -442,12 +418,13 @@ public final class StatementSection extends VBox {
      * Ejecuta una operación en segundo plano y comunica su resultado en JavaFX.
      *
      * @param <T> tipo del resultado
+     * @param step panel al que pertenece la operación y sus mensajes
      * @param operation operación local que puede fallar
      * @param message mensaje durante la ejecución
      * @param onSuccess presentación del resultado
      * @param failureMessage mensaje recuperable en caso de error
      */
-    private <T> void runTask(Callable<T> operation, String message, Consumer<T> onSuccess,
+    private <T> void runTask(int step, Callable<T> operation, String message, Consumer<T> onSuccess,
                             String failureMessage) {
         Task<T> task = new Task<>() {
             /** Ejecuta la operación fuera del hilo de interfaz. */
@@ -458,14 +435,14 @@ public final class StatementSection extends VBox {
         };
         busy = true;
         updateState();
-        showStatus(message, false);
+        showStatus(step, message, false);
         task.setOnSucceeded(event -> {
             onSuccess.accept(task.getValue());
             busy = false;
             updateState();
         });
         task.setOnFailed(event -> {
-            showStatus(failureMessage, true);
+            showStatus(step, failureMessage, true);
             LOGGER.error("STATEMENT_PROCESSING_ERROR | {}", failureMessage, task.getException());
             busy = false;
             updateState();
@@ -479,9 +456,11 @@ public final class StatementSection extends VBox {
     private void updateState() {
         boolean hasPdf = selectedPdf != null;
         boolean hasText = !text.getText().isBlank();
-        selectButton.setDisable(busy);
+        selectPDFButton.setDisable(busy);
         changeFolderButton.setDisable(busy);
+        filterChangeFolderButton.setDisable(busy);
         openFolderButton.setDisable(busy);
+        filterOpenFolderButton.setDisable(busy);
         extractButton.setDisable(busy || !hasPdf);
         filterButton.setDisable(busy || !hasText);
         progress.setVisible(busy);
@@ -497,9 +476,11 @@ public final class StatementSection extends VBox {
      * Muestra un mensaje de estado o un error recuperable.
      *
      * @param message mensaje visible
+     * @param step panel al que pertenece el mensaje
      * @param error indica si debe resaltarse como error
      */
-    private void showStatus(String message, boolean error) {
+    private void showStatus(int step, String message, boolean error) {
+        Label status = statuses.get(step);
         status.setText(message);
         status.pseudoClassStateChanged(ERROR, error);
     }

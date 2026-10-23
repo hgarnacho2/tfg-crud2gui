@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.crud2gui.javamodelextractor.ProjectParserTest" time="2.905" tests="15" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.crud2gui.javamodelextractor.ProjectParserTest" time="1.549" tests="15" errors="0" skipped="0" failures="0">
   <properties>
-    <property name="java.specification.version" value="25"/>
+    <property name="java.specification.version" value="21"/>
     <property name="sun.cpu.isalist" value="amd64"/>
     <property name="sun.jnu.encoding" value="Cp1252"/>
     <property name="java.class.path" value="C:\Users\hgarnacho\Documents\UNED\TFG\tfg-crud2gui\modules\java-model-extractor\target\test-classes;C:\Users\hgarnacho\Documents\UNED\TFG\tfg-crud2gui\modules\java-model-extractor\target\classes;C:\Users\hgarnacho\Documents\UNED\TFG\tfg-crud2gui\modules\model\target\classes;C:\Users\hgarnacho\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.17.2\jackson-databind-2.17.2.jar;C:\Users\hgarnacho\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.17.2\jackson-annotations-2.17.2.jar;C:\Users\hgarnacho\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.17.2\jackson-core-2.17.2.jar;C:\Users\hgarnacho\.m2\repository\com\github\javaparser\javaparser-core\3.26.2\javaparser-core-3.26.2.jar;C:\Users\hgarnacho\.m2\repository\org\junit\jupiter\junit-jupiter\5.10.3\junit-jupiter-5.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.3\junit-jupiter-api-5.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\hgarnacho\.m2\repository\org\junit\platform\junit-platform-commons\1.10.3\junit-platform-commons-1.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\hgarnacho\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.3\junit-jupiter-params-5.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.3\junit-jupiter-engine-5.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\junit\platform\junit-platform-engine\1.10.3\junit-platform-engine-1.10.3.jar;"/>
-    <property name="java.vm.vendor" value="Microsoft"/>
+    <property name="java.vm.vendor" value="Eclipse Adoptium"/>
     <property name="sun.arch.data.model" value="64"/>
     <property name="user.variant" value=""/>
-    <property name="java.vendor.url" value="https://www.microsoft.com"/>
+    <property name="java.vendor.url" value="https://adoptium.net/"/>
     <property name="user.timezone" value="Europe/Madrid"/>
     <property name="os.name" value="Windows 11"/>
-    <property name="java.vm.specification.version" value="25"/>
+    <property name="java.vm.specification.version" value="21"/>
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="ES"/>
-    <property name="sun.boot.library.path" value="C:\Users\hgarnacho\.jdk\jdk-25.0.2\bin"/>
-    <property name="sun.java.command" value="C:\Users\hgarnacho\AppData\Local\Temp\surefire15929582143394230150\surefirebooter-20261022113302967_15.jar C:\Users\hgarnacho\AppData\Local\Temp\surefire15929582143394230150 2026-10-22T11-32-35_653-jvmRun1 surefire-20261022113302967_13tmp surefire_4-20261022113302967_14tmp"/>
+    <property name="sun.boot.library.path" value="C:\Users\hgarnacho\AppData\Local\Programs\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin"/>
+    <property name="sun.java.command" value="C:\Users\hgarnacho\AppData\Local\Temp\surefire18219140255401049564\surefirebooter-20261023125722165_23.jar C:\Users\hgarnacho\AppData\Local\Temp\surefire18219140255401049564 2026-10-23T12-56-52_692-jvmRun1 surefire-20261023125722165_21tmp surefire_5-20261023125722165_22tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="C:\Users\hgarnacho\Documents\UNED\TFG\tfg-crud2gui\modules\java-model-extractor\target\test-classes;C:\Users\hgarnacho\Documents\UNED\TFG\tfg-crud2gui\modules\java-model-extractor\target\classes;C:\Users\hgarnacho\Documents\UNED\TFG\tfg-crud2gui\modules\model\target\classes;C:\Users\hgarnacho\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.17.2\jackson-databind-2.17.2.jar;C:\Users\hgarnacho\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.17.2\jackson-annotations-2.17.2.jar;C:\Users\hgarnacho\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.17.2\jackson-core-2.17.2.jar;C:\Users\hgarnacho\.m2\repository\com\github\javaparser\javaparser-core\3.26.2\javaparser-core-3.26.2.jar;C:\Users\hgarnacho\.m2\repository\org\junit\jupiter\junit-jupiter\5.10.3\junit-jupiter-5.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.3\junit-jupiter-api-5.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\hgarnacho\.m2\repository\org\junit\platform\junit-platform-commons\1.10.3\junit-platform-commons-1.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\hgarnacho\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.3\junit-jupiter-params-5.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.3\junit-jupiter-engine-5.10.3.jar;C:\Users\hgarnacho\.m2\repository\org\junit\platform\junit-platform-engine\1.10.3\junit-platform-engine-1.10.3.jar;"/>
     <property name="sun.cpu.endian" value="little"/>
     <property name="user.home" value="C:\Users\hgarnacho"/>
     <property name="user.language" value="es"/>
     <property name="java.specification.vendor" value="Oracle Corporation"/>
-    <property name="java.version.date" value="2026-01-20"/>
-    <property name="java.home" value="C:\Users\hgarnacho\.jdk\jdk-25.0.2"/>
+    <property name="java.version.date" value="2026-04-21"/>
+    <property name="java.home" value="C:\Users\hgarnacho\AppData\Local\Programs\Eclipse Adoptium\jdk-21.0.11.10-hotspot"/>
     <property name="file.separator" value="\"/>
     <property name="basedir" value="C:\Users\hgarnacho\Documents\UNED\TFG\tfg-crud2gui\modules\java-model-extractor"/>
     <property name="java.vm.compressedOopsMode" value="Zero based"/>
     <property name="line.separator" value="&#10;"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
-    <property name="surefire.real.class.path" value="C:\Users\hgarnacho\AppData\Local\Temp\surefire15929582143394230150\surefirebooter-20261022113302967_15.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\hgarnacho\AppData\Local\Temp\surefire18219140255401049564\surefirebooter-20261023125722165_23.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
-    <property name="java.runtime.version" value="25.0.2+10-LTS"/>
+    <property name="java.runtime.version" value="21.0.11+10-LTS"/>
     <property name="user.name" value="hgarnacho"/>
     <property name="stdout.encoding" value="Cp1252"/>
     <property name="path.separator" value=";"/>
@@ -41,38 +41,37 @@
     <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
     <property name="file.encoding" value="UTF-8"/>
     <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
-    <property name="java.vendor.version" value="Microsoft-13053607"/>
+    <property name="java.vendor.version" value="Temurin-21.0.11+10"/>
     <property name="localRepository" value="C:\Users\hgarnacho\.m2\repository"/>
-    <property name="java.vendor.url.bug" value="https://github.com/microsoft/openjdk/issues"/>
+    <property name="java.vendor.url.bug" value="https://github.com/adoptium/adoptium-support/issues"/>
     <property name="java.io.tmpdir" value="C:\Users\HGARNA~1\AppData\Local\Temp\"/>
-    <property name="java.version" value="25.0.2"/>
+    <property name="java.version" value="21.0.11"/>
     <property name="user.dir" value="C:\Users\hgarnacho\Documents\UNED\TFG\tfg-crud2gui\modules\java-model-extractor"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
     <property name="sun.os.patch.level" value=""/>
     <property name="native.encoding" value="Cp1252"/>
-    <property name="java.library.path" value="C:\Users\hgarnacho\.jdk\jdk-25.0.2\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Users\hgarnacho\.jdk\jdk-25.0.2\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\Microsoft VS Code\bin;C:\Program Files\dotnet\;C:\Program Files\Rancher Desktop\resources\resources\win32\bin\;C:\Program Files\Rancher Desktop\resources\resources\win32\docker-cli-plugins\;C:\Program Files\Rancher Desktop\resources\resources\linux\bin\;C:\Program Files\Rancher Desktop\resources\resources\linux\docker-cli-plugins\;C:\Users\hgarnacho\AppData\Local\Programs\Python\Python312\Scripts\;C:\Users\hgarnacho\AppData\Local\Programs\Python\Python312\;C:\Users\hgarnacho\AppData\Local\Programs\Python\Launcher\;C:\Users\hgarnacho\AppData\Local\Programs\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin;C:\Users\hgarnacho\AppData\Local\Microsoft\WindowsApps;C:\Users\hgarnacho\AppData\Local\Microsoft\WinGet\Packages\Schniz.fnm_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\Users\hgarnacho\AppData\Local\Programs\Antigravity\bin;C:\Users\hgarnacho\mvn\apache-maven-3.9.16\bin;C:\Users\hgarnacho\AppData\Local\Microsoft\WinGet\Packages\FiloSottile.mkcert_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\Users\hgarnacho\AppData\Local\Programs\Git\cmd;c:\Program Files\Microsoft VS Code\16507d91be\resources\app\node_modules.asar.unpacked\@vscode\ripgrep-universal\bin\win32-x64;."/>
+    <property name="java.library.path" value="C:\Users\hgarnacho\AppData\Local\Programs\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Users\hgarnacho\AppData\Local\fnm_multishells\64552_1792743843942;C:\Users\hgarnacho\bin;C:\Users\hgarnacho\AppData\Local\Programs\Git\mingw64\bin;C:\Users\hgarnacho\AppData\Local\Programs\Git\usr\local\bin;C:\Users\hgarnacho\AppData\Local\Programs\Git\usr\bin;C:\Users\hgarnacho\AppData\Local\Programs\Git\usr\bin;C:\Users\hgarnacho\AppData\Local\Programs\Git\mingw64\bin;C:\Users\hgarnacho\AppData\Local\Programs\Git\usr\bin;C:\Users\hgarnacho\bin;C:\Users\hgarnacho\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand;C:\Users\hgarnacho\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0;C:\WINDOWS\System32\OpenSSH;C:\Program Files\Microsoft VS Code\bin;C:\Program Files\dotnet;C:\Program Files\Rancher Desktop\resources\resources\win32\bin;C:\Program Files\Rancher Desktop\resources\resources\win32\docker-cli-plugins;C:\Program Files\Rancher Desktop\resources\resources\linux\bin;C:\Program Files\Rancher Desktop\resources\resources\linux\docker-cli-plugins;C:\Users\hgarnacho\AppData\Local\Programs\Python\Python312\Scripts;C:\Users\hgarnacho\AppData\Local\Programs\Python\Python312;C:\Users\hgarnacho\AppData\Local\Programs\Python\Launcher;C:\Users\hgarnacho\AppData\Local\Programs\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin;C:\Users\hgarnacho\AppData\Local\Microsoft\WindowsApps;C:\Users\hgarnacho\AppData\Local\Microsoft\WinGet\Packages\Schniz.fnm_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\Users\hgarnacho\AppData\Local\Programs\Antigravity\bin;C:\Users\hgarnacho\mvn\apache-maven-3.9.16\bin;C:\Users\hgarnacho\AppData\Local\Microsoft\WinGet\Packages\FiloSottile.mkcert_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\Users\hgarnacho\AppData\Local\Programs\Git\cmd;C:\Users\hgarnacho\.vscode\extensions\vscjava.vscode-java-debug-0.60.0\bundled\scripts\noConfigScripts;C:\Users\hgarnacho\AppData\Local\Programs\Git\usr\bin\vendor_perl;C:\Users\hgarnacho\AppData\Local\Programs\Git\usr\bin\core_perl;."/>
     <property name="java.vm.info" value="mixed mode, sharing"/>
     <property name="stderr.encoding" value="Cp1252"/>
-    <property name="java.vendor" value="Microsoft"/>
-    <property name="java.vm.version" value="25.0.2+10-LTS"/>
-    <property name="stdin.encoding" value="Cp1252"/>
+    <property name="java.vendor" value="Eclipse Adoptium"/>
+    <property name="java.vm.version" value="21.0.11+10-LTS"/>
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
-    <property name="java.class.version" value="69.0"/>
+    <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="tipoDelProyectoResueltoEnCampo" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.062"/>
-  <testcase name="detectaGestorasEnProyectosEstructuralmenteDistintos" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.238"/>
-  <testcase name="encuentraTodosLosTiposEIgnoraTarget" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.008"/>
-  <testcase name="calculaRelacionesUmlConEvidencias" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.187"/>
-  <testcase name="enumConstantes" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.005"/>
+  <testcase name="tipoDelProyectoResueltoEnCampo" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.027"/>
+  <testcase name="detectaGestorasEnProyectosEstructuralmenteDistintos" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.071"/>
+  <testcase name="encuentraTodosLosTiposEIgnoraTarget" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.002"/>
+  <testcase name="calculaRelacionesUmlConEvidencias" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.061"/>
+  <testcase name="enumConstantes" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.003"/>
   <testcase name="detectaMain" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.002"/>
-  <testcase name="herenciaEInterfaz" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.006"/>
-  <testcase name="genericosYArrays" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.007"/>
-  <testcase name="enumObligatorioEnConstructorEsAsociacionDeMultiplicidadUno" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.242"/>
-  <testcase name="tiposInternosYRecords" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.006"/>
-  <testcase name="claseAbstractaConJavadoc" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.003"/>
-  <testcase name="ficherosConErroresGeneranAvisoSinAbortar" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.033"/>
-  <testcase name="cargaPesosYTerminosDesdeConfiguracionExterna" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.182"/>
-  <testcase name="paquetePorDefectoYPracticaRedSocial" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.001"/>
-  <testcase name="managerRegressionYOverrideManual" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.144"/>
+  <testcase name="herenciaEInterfaz" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.004"/>
+  <testcase name="genericosYArrays" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.003"/>
+  <testcase name="enumObligatorioEnConstructorEsAsociacionDeMultiplicidadUno" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.109"/>
+  <testcase name="tiposInternosYRecords" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.002"/>
+  <testcase name="claseAbstractaConJavadoc" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.002"/>
+  <testcase name="ficherosConErroresGeneranAvisoSinAbortar" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.018"/>
+  <testcase name="cargaPesosYTerminosDesdeConfiguracionExterna" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.153"/>
+  <testcase name="paquetePorDefectoYPracticaRedSocial" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.002"/>
+  <testcase name="managerRegressionYOverrideManual" classname="com.crud2gui.javamodelextractor.ProjectParserTest" time="0.118"/>
 </testsuite>

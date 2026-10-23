@@ -131,7 +131,7 @@ class UiComponentsTest {
                 }
                 assertEquals(dashboard instanceof TeacherDashboardView ? 5 : 4, buttons.size());
                 if (dashboard instanceof TeacherDashboardView) {
-                    assertEquals("Enunciados", buttons.get(buttons.size() - 1).getText());
+                    assertEquals("Enunciado", buttons.get(buttons.size() - 1).getText());
                 }
                 ScrollPane content = (ScrollPane) dashboard.getCenter();
                 java.util.Map<Button, Node> visited = new java.util.LinkedHashMap<>();
@@ -145,7 +145,7 @@ class UiComponentsTest {
                     assertTrue(button.getPseudoClassStates().contains(javafx.css.PseudoClass.getPseudoClass("selected")));
                     assertEquals(Color.web("#1b5b50"), button.getBackground().getFills().get(0).getFill());
                     assertEquals(dashboard instanceof TeacherDashboardView
-                                    && !"Enunciados".equals(button.getText()) ? 1 : 0,
+                                    && !"Enunciado".equals(button.getText()) ? 1 : 0,
                             page.lookupAll(".section-header-action").size());
                     visited.put(button, page);
                 }
