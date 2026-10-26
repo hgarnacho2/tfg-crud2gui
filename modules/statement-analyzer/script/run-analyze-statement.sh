@@ -88,8 +88,8 @@ else
 fi
 
 if [ -z "${3:-}" ]; then
-    echo "No se ha indicado prompt, se usará 'src/test/resources/prompts/prompt-v4.txt' por defecto."
-    PROMPT="src/test/resources/prompts/prompt-v4.txt"
+    echo "No se ha indicado prompt, se usará 'src/test/resources/prompts/prompt-v5.txt' por defecto."
+    PROMPT="src/test/resources/prompts/prompt-v5.txt"
 else
     PROMPT="$3"
 fi
