@@ -3,6 +3,8 @@ package com.crud2gui.desktop.teacher.sections;
 import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
+import com.crud2gui.model.ModelIO;
+import com.crud2gui.model.ProjectModel;
 import com.crud2gui.statementanalyzer.client.ModelClient;
 import com.crud2gui.statementanalyzer.client.ModelClientProvider;
 import com.crud2gui.statementanalyzer.model.AnalysisResult;
@@ -10,11 +12,13 @@ import com.crud2gui.statementanalyzer.model.ModelClients;
 import com.crud2gui.statementanalyzer.model.GenerationOptions;
 import com.crud2gui.statementanalyzer.model.ModelInfo;
 import com.crud2gui.statementanalyzer.prompt.StatementAnalyzer;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -90,6 +94,8 @@ public final class ModelFromStatementSection extends Section {
             "", List.of("statement-file-path", "model-generation-output-path"), true);
         private final TextArea generatedModel = UiComponents.textArea(
             false, false, 20, List.of("model-json-result"));
+        private final ClassDiagramView classDiagram = new ClassDiagramView();
+        private final ScrollPane diagramScroll = new ScrollPane(classDiagram);
         private boolean generationBusy;
     private final List<Button> steps;
     private final List<VBox> panels;
@@ -230,12 +236,27 @@ public final class ModelFromStatementSection extends Section {
             VBox.setVgrow(generatedModel, Priority.ALWAYS);
             VBox.setVgrow(generationContent, Priority.ALWAYS);
             VBox generationPanel = UiComponents.surface(generationContent);
+            classDiagram.setId("model-statement-class-diagram-view");
+            diagramScroll.setId("model-statement-class-diagram-scroll");
+            diagramScroll.setPannable(true);
+            diagramScroll.setFitToWidth(false);
+            diagramScroll.setFitToHeight(false);
+            diagramScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+            diagramScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+            diagramScroll.setMinHeight(0);
+            VBox diagramContent = new VBox(14,
+                UiComponents.panelHeading("Diagrama de clases UML",
+                    "La clase gestora se sitúa en el centro; las relaciones enlazan las clases del modelo."),
+                diagramScroll);
+            VBox.setVgrow(diagramScroll, Priority.ALWAYS);
+            VBox.setVgrow(diagramContent, Priority.ALWAYS);
+            VBox diagramPanel = UiComponents.surface(diagramContent);
         panels = List.of(
                 statementPanel,
             promptPanel,
             llmPanel,
                 generationPanel,
-                placeholderPanel("Diagrama de clases", "La visualización del diagrama se implementará en un siguiente paso."));
+                diagramPanel);
 
         steps = List.of(
                 UiComponents.stepButton(0, "SELECCIONAR TEXTO", "Enunciado filtrado", this::showStep),
@@ -333,6 +354,14 @@ public final class ModelFromStatementSection extends Section {
             panels.get(i).setVisible(i == index);
             panels.get(i).setManaged(i == index);
             steps.get(i).pseudoClassStateChanged(SELECTED, i == index);
+        }
+        if (index == 4) {
+            Platform.runLater(() -> {
+                diagramScroll.applyCss();
+                diagramScroll.layout();
+                diagramScroll.setHvalue(diagramScroll.getHmin());
+                diagramScroll.setVvalue((diagramScroll.getVmin() + diagramScroll.getVmax()) / 2);
+            });
         }
     }
 
@@ -456,6 +485,7 @@ public final class ModelFromStatementSection extends Section {
         generatedModel.clear();
         generatedModel.setVisible(false);
         generatedModel.setManaged(false);
+        classDiagram.setModel(null);
         generationOutputPath.setText("");
         showStatus(generationStatus, "", false);
     }
@@ -485,15 +515,19 @@ public final class ModelFromStatementSection extends Section {
             AnalysisResult result = new StatementAnalyzer(client)
                     .analyze(model.id(), prompt, statement, GenerationOptions.defaults());
             String prettyJson = result.prettyJson();
+                ProjectModel projectModel = ModelIO.fromJson(prettyJson);
             result.writeTo(resultPath);
-            return new GeneratedModel(result, prettyJson, resultPath.toAbsolutePath().normalize());
+                return new GeneratedModel(result, projectModel, prettyJson,
+                    resultPath.toAbsolutePath().normalize());
         }, result -> {
             generatedModel.setText(result.prettyJson());
             generatedModel.positionCaret(0);
             generatedModel.setVisible(true);
             generatedModel.setManaged(true);
+            classDiagram.setModel(result.projectModel());
             generationOutputPath.setText("Resultado: " + result.outputPath());
             showStatus(generationStatus, successSummary(result.analysis().response()), false);
+            steps.get(3).pseudoClassStateChanged(COMPLETED, true);
             steps.get(4).setDisable(false);
         }, failure -> {
             logger.error("MODEL_STATEMENT_GENERATION_ERROR | No se pudo generar el modelo.", failure);
@@ -576,7 +610,8 @@ public final class ModelFromStatementSection extends Section {
         outputFolderLabel.setText(outputFolder.toString());
     }
 
-    private record GeneratedModel(AnalysisResult analysis, String prettyJson, Path outputPath) { }
+    private record GeneratedModel(AnalysisResult analysis, ProjectModel projectModel,
+                                  String prettyJson, Path outputPath) { }
 
     private record AvailableModels(ModelClient client, List<ModelInfo> models) { }
 }

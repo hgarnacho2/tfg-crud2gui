@@ -7,9 +7,11 @@ import com.crud2gui.statementanalyzer.model.ModelInfo;
 import com.crud2gui.statementanalyzer.model.ModelResponse;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.Priority;
@@ -37,7 +39,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ModelFromStatementSectionTest {
 
-    private static final String MODEL_JSON = "{\"classes\":[{\"name\":\"Usuario\"}]}";
+        private static final String MODEL_JSON = """
+                        {
+                            "schemaVersion": "1.0",
+                            "expectedManagerId": "PlataformaCompraVenta",
+                            "source": {"root": null, "generatedAt": null, "filesParsed": 0, "warnings": []},
+                            "types": [
+                                {"id": "PlataformaCompraVenta", "name": "PlataformaCompraVenta", "packageName": "",
+                                 "kind": "CLASS", "fields": [], "constructors": [], "methods": []},
+                                {"id": "Usuario", "name": "Usuario", "packageName": "", "kind": "CLASS",
+                                 "fields": [{"name": "email", "type": {"name": "String", "projectType": false,
+                                 "arguments": [], "arrayDimensions": 0}, "visibility": "PRIVATE", "modifiers": [],
+                                 "initializedInline": false}], "constructors": [],
+                                 "methods": [{"name": "getEmail", "returnType": {"name": "String", "projectType": false,
+                                 "arguments": [], "arrayDimensions": 0}, "visibility": "PUBLIC", "modifiers": [],
+                                 "parameters": [], "hasBody": true}]},
+                                {"id": "Producto", "name": "Producto", "packageName": "", "kind": "CLASS",
+                                 "fields": [], "constructors": [], "methods": []}
+                            ],
+                            "relations": [
+                                {"kind": "COMPOSITION", "from": "PlataformaCompraVenta", "to": "Usuario",
+                                 "via": "usuarios", "multiplicity": "0..*", "confidence": "HIGH"},
+                                {"kind": "COMPOSITION", "from": "Usuario", "to": "Producto",
+                                 "via": "productos", "multiplicity": "0..*", "confidence": "HIGH"}
+                            ],
+                            "analysis": null,
+                            "layout": null
+                        }
+                        """;
 
     private static final class FakeProvider implements ModelClientProvider {
         private final AtomicReference<String> prompt = new AtomicReference<>();
@@ -229,6 +258,35 @@ class ModelFromStatementSectionTest {
             assertFalse(((Button) section.lookup("#statement-step-5")).isDisabled());
             assertEquals("Instrucciones para inferir clases.", provider.prompt.get());
             assertEquals("Texto del enunciado para el modelo.", provider.statement.get());
+                ((Button) section.lookup("#statement-step-5")).fire();
+                StackPane panelHost = (StackPane) section.getChildren().get(2);
+                VBox diagramPanel = (VBox) panelHost.getChildren().get(4);
+                VBox diagramContent = (VBox) diagramPanel.getChildren().get(0);
+                ScrollPane diagramScroll = (ScrollPane) diagramContent.getChildren().get(1);
+                ClassDiagramView diagram = (ClassDiagramView) diagramScroll.getContent();
+                assertEquals(3, diagram.lookupAll(".uml-class-card").size());
+                assertEquals(1, diagram.lookupAll(".uml-manager-card").size());
+                assertEquals("PlataformaCompraVenta", diagram.getModel().expectedManagerId());
+                assertEquals(2, diagram.getModel().relations().size());
+                    diagram.applyCss();
+                    diagram.resize(diagram.getPrefWidth(), diagram.getPrefHeight());
+                    diagram.layout();
+                        List<Node> classCards = diagram.lookupAll(".uml-class-card").stream().toList();
+                    var managerCard = diagram.getChildren().stream()
+                        .filter(node -> node.getStyleClass().contains("uml-manager-card"))
+                        .findFirst().orElseThrow();
+                            assertTrue(managerCard.getLayoutX() + managerCard.getBoundsInParent().getWidth() / 2
+                                < diagram.getWidth() / 2);
+                            assertTrue(classCards.get(0).getLayoutX() < classCards.get(1).getLayoutX());
+                            assertTrue(classCards.get(1).getLayoutX() < classCards.get(2).getLayoutX());
+                    assertTrue(diagram.lookupAll(".uml-member-line").size() >= 2);
+                        for (int first = 0; first < classCards.size(); first++) {
+                        assertTrue(classCards.get(first).getOnMouseDragged() != null);
+                        for (int second = first + 1; second < classCards.size(); second++) {
+                            assertFalse(classCards.get(first).getBoundsInParent()
+                                .intersects(classCards.get(second).getBoundsInParent()));
+                        }
+                        }
             return null;
         });
     }
