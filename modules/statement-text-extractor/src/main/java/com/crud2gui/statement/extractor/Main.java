@@ -21,7 +21,7 @@ public class Main {
     private static final boolean DEFAULT_FILTER_ENABLED_VALUE = false;
     private static final String FILTER_CONFIG_PATH_NAME = "STATEMENT_FILTER_CONFIG_PATH";
     private static final String DEFAULT_FILTER_CONFIG_PATH =
-            "modules/statement-text-extractor/config/statement-filter.json";
+            "modules/statement-text-extractor/config/statement-filter-rules.json";
 
     /**
      * Procesa un fichero PDF y genera el texto extraído y, opcionalmente, el

@@ -1,0 +1,3 @@
+com.crud2gui.statementanalyzer.client.GeminiClientProvider
+com.crud2gui.statementanalyzer.client.GroqClientProvider
+com.crud2gui.statementanalyzer.client.OllamaClientProvider

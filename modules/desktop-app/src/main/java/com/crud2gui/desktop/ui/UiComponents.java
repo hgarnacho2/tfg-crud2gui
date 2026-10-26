@@ -9,6 +9,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -20,10 +21,17 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ProgressIndicator;
 
 import java.util.List;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import javafx.beans.property.ObjectProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Factorias de controles y composiciones visuales reutilizables de la aplicacion.
@@ -35,12 +43,79 @@ import javafx.beans.property.ObjectProperty;
  */
 public final class UiComponents {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UiComponents.class);
+
+    /**
+     * Resuelve la ruta de un archivo cuando se solicita su consulta.
+     */
+    @FunctionalInterface
+    public interface FilePathSupplier {
+        /**
+         * Obtiene la ruta actual sin conservar una resolución anterior.
+         *
+         * @return ruta no nula del archivo que se desea mostrar
+         * @throws IOException si no se puede resolver el archivo
+         * @throws InvalidPathException si la ruta configurada no es válida
+         */
+        Path get() throws IOException;
+    }
+
     public enum Direction {
         UP, DOWN, LEFT, RIGHT
     }
 
     /** Impide instanciar esta clase de utilidades con metodos estaticos. */
     private UiComponents() {
+    }
+
+    /**
+     * Crea un visor desplegable de archivos UTF-8, cerrado y de solo lectura.
+     * Resuelve y lee el archivo en cada apertura; no interpreta ni valida su formato.
+     * Ante errores de ruta o lectura, oculta el texto, muestra el mensaje indicado
+     * y registra la excepción. Una apertura posterior permite recuperarse del error.
+     *
+     * @param id identificador del panel; sus hijos usan los sufijos
+     *           {@code -path}, {@code -content} y {@code -error}
+     * @param title título del desplegable
+     * @param pathSupplier proveedor de la ruta, evaluado al abrir en el hilo de JavaFX
+     * @param errorMessage mensaje visible cuando no se puede leer el archivo
+     * @return desplegable con ruta, visor sin ajuste de líneas y mensaje de error
+     */
+    public static TitledPane fileContentPane(String id, String title,
+            FilePathSupplier pathSupplier, String errorMessage) {
+        Objects.requireNonNull(pathSupplier, "pathSupplier");
+        TextArea content = textArea(false, false, 18, List.of("file-content-text"));
+        content.setId(id + "-content");
+        Label source = label("", List.of("file-content-path"));
+        source.setId(id + "-path");
+        Label error = statusLabel(id + "-error");
+        error.pseudoClassStateChanged(PseudoClass.getPseudoClass("error"), true);
+        TitledPane pane = new TitledPane(title, new VBox(10, source, content, error));
+        pane.setId(id);
+        pane.getStyleClass().add("file-content");
+        pane.setExpanded(false);
+        pane.expandedProperty().addListener((observable, previous, expanded) -> {
+            if (!expanded) {
+                return;
+            }
+            content.clear();
+            source.setText("");
+            error.setText("");
+            try {
+                Path path = pathSupplier.get();
+                content.setText(Files.readString(path, StandardCharsets.UTF_8));
+                content.positionCaret(0);
+                source.setText(path.toString());
+                content.setVisible(true);
+                content.setManaged(true);
+            } catch (IOException | InvalidPathException | SecurityException exception) {
+                content.setVisible(false);
+                content.setManaged(false);
+                error.setText(errorMessage);
+                LOGGER.error("FILE_CONTENT_READ_ERROR | No se pudo leer el archivo del visor {}.", id, exception);
+            }
+        });
+        return pane;
     }
 
     /**
@@ -84,6 +159,21 @@ public final class UiComponents {
         Label subtitle = mutedText(subtitleText);
         subtitle.getStyleClass().add("panel-subtitle");
         return new VBox(spacing, title, subtitle);
+    }
+
+    /**
+     * Crea los controles de destino que permanecen dentro de su panel.
+     *
+     * @param nameLabel nombre del archivo de salida con insignia TXT
+     * @param folderLabel ruta completa del archivo de salida
+     * @param changeButton botón para cambiar el destino
+     * @return selector de carpeta del panel
+     */
+    public static VBox outputSettings(Label nameLabel, Label folderLabel, Button changeButton) {
+        folderLabel.setMaxWidth(Double.MAX_VALUE);
+        VBox card = vBox(List.of("statement-file-card"), nameLabel, folderLabel);
+        card.pseudoClassStateChanged(PseudoClass.getPseudoClass("selected"), true);
+        return vBox(List.of("statement-output-settings"), card, changeButton);
     }
 
     /**
@@ -253,6 +343,37 @@ public final class UiComponents {
     }
 
     /**
+     * Crea una etiqueta con ocultación opcional cuando no contiene texto.
+     *
+     * @param text texto que muestra la etiqueta
+     * @param styleClasses clases CSS adicionales
+     * @param hideWhenEmpty si la etiqueta debe ocultarse y dejar de reservar espacio al vaciarse;
+     *                      en ese caso, visible y managed quedan vinculadas
+     * @return etiqueta con el texto, los estilos y el comportamiento indicados
+     */
+    public static Label label(String text, List<String> styleClasses, boolean hideWhenEmpty) {
+        Label label = label(text, styleClasses);
+        if (hideWhenEmpty) {
+            label.visibleProperty().bind(label.textProperty().isNotEmpty());
+            label.managedProperty().bind(label.visibleProperty());
+        }
+        return label;
+    }
+
+    /**
+     * Crea un mensaje de panel que no reserva espacio mientras está vacío.
+     *
+     * @param id identificador de la etiqueta
+     * @return etiqueta inicialmente vacía, con estilo de estado y ancho máximo disponible
+     */
+    public static Label statusLabel(String id) {
+        Label label = label("", List.of("text-muted", "status-message"), true);
+        label.setId(id);
+        label.setMaxWidth(Double.MAX_VALUE);
+        return label;
+    }
+
+    /**
      * Crea una etiqueta con gráfico que puede ocupar el ancho disponible.
      *
      * @param text texto de la etiqueta
@@ -318,12 +439,16 @@ public final class UiComponents {
     public static Button stepButton(int index, String title, String description, IntConsumer onSelect) {
         Objects.requireNonNull(onSelect, "onSelect");
         Label number = label(Integer.toString(index + 1), List.of("statement-step-number"));
+        Label titleLabel = label(title, List.of("statement-step-title"));
+        Label descriptionLabel = label(description, List.of("statement-step-description"));
+        titleLabel.setMaxWidth(Double.MAX_VALUE);
+        descriptionLabel.setMaxWidth(Double.MAX_VALUE);
         VBox labels = vBox(List.of("statement-step-labels"),
-                label(title, List.of("statement-step-title")),
-                label(description, List.of("statement-step-description")));
+                titleLabel, descriptionLabel);
         labels.setMinWidth(0);
+        labels.setMaxWidth(Double.MAX_VALUE);
         labels.setMaxHeight(Region.USE_PREF_SIZE);
-        HBox graphic = new HBox(12, number, labels);
+        HBox graphic = new HBox(8, number, labels);
         graphic.getStyleClass().add("statement-step-graphic");
         graphic.setMaxHeight(Region.USE_PREF_SIZE);
         Button button = new Button();

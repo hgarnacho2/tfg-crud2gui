@@ -1,11 +1,13 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.desktop.ui.PdfPreview;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -23,6 +25,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +48,149 @@ class StatementSectionTest {
         }
         started.get(10, TimeUnit.SECONDS);
         Platform.setImplicitExit(false);
+    }
+
+    @Test
+    void appliesJsonRulesReloadsChangesAndRejectsInvalidOrMissingConfiguration() throws Exception {
+        Path pdf = createPdf("custom-rules.pdf", "Antes\nInicio\nContenido\nFin\nDespues", false);
+        Path config = directory.resolve("statement-filter-rules.json");
+        String rules = """
+                {
+                  "sectionRules": [
+                    {"heading": "Inicio", "action": "START"},
+                    {"heading": "Fin", "action": "STOP"}
+                  ],
+                  "maxConsecutiveBlankLines": 2,
+                  "removePageNumbers": true
+                }
+                """;
+        Files.writeString(config, rules);
+        String previous = System.getProperty("STATEMENT_FILTER_CONFIG_PATH");
+        System.setProperty("STATEMENT_FILTER_CONFIG_PATH", config.toString());
+        try {
+            Controls controls = onFx(() -> controls(new AtomicReference<>(pdf.toFile())));
+            onFx(() -> {
+                controls.select().fire();
+                return null;
+            });
+            extract(controls);
+            onFx(() -> {
+                controls.step(3).fire();
+                return null;
+            });
+            runOperation(controls, controls.filter());
+            Path output = directory.resolve("custom-rules-filtrado.txt");
+            assertEquals("Inicio\nContenido\n", Files.readString(output));
+            onFx(() -> {
+                assertTrue(controls.step(3).getPseudoClassStates()
+                        .contains(PseudoClass.getPseudoClass("completed")));
+                return null;
+            });
+            Files.writeString(config, rules.replace("\"Inicio\"", "\"Contenido\""));
+            runOperation(controls, controls.filter());
+            String lastResult = Files.readString(output);
+            assertEquals("Contenido\n", lastResult);
+
+            for (String invalid : List.of("{invalid", rules.replace("\"START\"", "\"IGNORE\""))) {
+                Files.writeString(config, invalid);
+                runOperation(controls, controls.filter());
+                assertEquals(lastResult, Files.readString(output));
+                onFx(() -> {
+                    assertEquals("", controls.filtered().getText());
+                    assertTrue(controls.status().getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
+                    assertTrue(controls.status().getText().contains("statement-filter-rules.json"));
+                    assertFalse(controls.step(3).getPseudoClassStates()
+                            .contains(PseudoClass.getPseudoClass("completed")));
+                    return null;
+                });
+            }
+            Files.delete(config);
+            Files.delete(output);
+            runOperation(controls, controls.filter());
+            assertFalse(Files.exists(output));
+            onFx(() -> {
+                assertTrue(controls.status().getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
+                assertFalse(controls.filter().isDisabled());
+                return null;
+            });
+        } finally {
+            if (previous == null) {
+                System.clearProperty("STATEMENT_FILTER_CONFIG_PATH");
+            } else {
+                System.setProperty("STATEMENT_FILTER_CONFIG_PATH", previous);
+            }
+        }
+    }
+
+    @Test
+    void expandsConfigurationAsReadOnlyJsonAndReloadsAfterChanges() throws Exception {
+        Path config = directory.resolve("statement-filter-rules.json");
+        String original = "{\n  \"removePageNumbers\": true\n}";
+        Files.writeString(config, original);
+        onFx(() -> {
+            String previous = System.getProperty("STATEMENT_FILTER_CONFIG_PATH");
+            System.setProperty("STATEMENT_FILTER_CONFIG_PATH", config.toString());
+            try {
+                Controls controls = controls(new AtomicReference<>());
+                TitledPane pane = (TitledPane) controls.section().lookup("#statement-filter-config");
+                assertFalse(pane.isExpanded());
+                TextArea content = (TextArea) pane.getContent().lookup("#statement-filter-config-content");
+                assertEquals("", content.getText());
+                assertFalse(content.isEditable());
+                assertFalse(content.isWrapText());
+                pane.setExpanded(true);
+                assertEquals(original, content.getText());
+                assertEquals(config.toString(),
+                        ((Label) pane.getContent().lookup("#statement-filter-config-path")).getText());
+                assertFalse(pane.getContent().lookup("#statement-filter-config-error").isManaged());
+                pane.setExpanded(false);
+                String updated = "{\n  \"removePageNumbers\": false\n}";
+                Files.writeString(config, updated);
+                pane.setExpanded(true);
+                assertEquals(updated, content.getText());
+                assertTrue(content.isManaged());
+            } finally {
+                if (previous == null) {
+                    System.clearProperty("STATEMENT_FILTER_CONFIG_PATH");
+                } else {
+                    System.setProperty("STATEMENT_FILTER_CONFIG_PATH", previous);
+                }
+            }
+            return null;
+        });
+    }
+
+    @Test
+    void reportsMissingConfigurationAndRecoversOnNextExpansion() throws Exception {
+        Path config = directory.resolve("missing.json");
+        onFx(() -> {
+            String previous = System.getProperty("STATEMENT_FILTER_CONFIG_PATH");
+            System.setProperty("STATEMENT_FILTER_CONFIG_PATH", config.toString());
+            try {
+                Controls controls = controls(new AtomicReference<>());
+                TitledPane pane = (TitledPane) controls.section().lookup("#statement-filter-config");
+                pane.setExpanded(true);
+                Label error = (Label) pane.getContent().lookup("#statement-filter-config-error");
+                TextArea content = (TextArea) pane.getContent().lookup("#statement-filter-config-content");
+                assertTrue(error.isManaged());
+                assertTrue(error.getText().contains("No se pudo leer"));
+                assertFalse(content.isManaged());
+                assertEquals("", content.getText());
+                pane.setExpanded(false);
+                Files.writeString(config, "{}");
+                pane.setExpanded(true);
+                assertEquals("{}", content.getText());
+                assertTrue(content.isManaged());
+                assertFalse(error.isManaged());
+            } finally {
+                if (previous == null) {
+                    System.clearProperty("STATEMENT_FILTER_CONFIG_PATH");
+                } else {
+                    System.setProperty("STATEMENT_FILTER_CONFIG_PATH", previous);
+                }
+            }
+            return null;
+        });
     }
 
     @Test
@@ -138,6 +284,24 @@ class StatementSectionTest {
             controls.select().fire();
             assertEquals("", ((Label) controls.section().lookup("#statement-extraction-status")).getText());
             assertEquals("", ((Label) controls.section().lookup("#statement-filter-status")).getText());
+            return null;
+        });
+    }
+
+    @Test
+    void rendersPdfBadgeAsNeutralDocumentLabel() throws Exception {
+        onFx(() -> {
+            Controls controls = controls(new AtomicReference<>());
+            Label badge = (Label) controls.section().lookup(".statement-pdf-badge");
+            assertEquals("PDF", badge.getText());
+            assertEquals(javafx.scene.paint.Color.web("#f8faf9"),
+                    badge.getBackground().getFills().get(0).getFill());
+            assertEquals(javafx.scene.paint.Color.web("#52675d"), badge.getTextFill());
+            assertEquals(javafx.scene.paint.Color.web("#b7c9c2"),
+                    badge.getBorder().getStrokes().get(0).getTopStroke());
+            assertEquals(new javafx.geometry.Insets(4, 6, 4, 6), badge.getPadding());
+            assertNotEquals(controls.select().getBackground().getFills().get(0).getFill(),
+                    badge.getBackground().getFills().get(0).getFill());
             return null;
         });
     }
@@ -379,7 +543,7 @@ class StatementSectionTest {
             section.applyCss();
             return new Controls(section, (Button) section.lookup(".statement-select"),
                     (Button) section.lookup(".statement-extract"), (Button) section.lookup(".statement-filter"),
-                    (TextArea) section.lookup("#statement-raw-text"), (Label) section.lookup(".statement-status"),
+                    (TextArea) section.lookup("#statement-raw-text"), (Label) section.lookup(".status-message"),
                     (TextArea) section.lookup(".statement-filtered-text"));
         });
         onFx(() -> {
@@ -491,10 +655,10 @@ class StatementSectionTest {
         awaitPreview(preview, () -> preview.load(pdf));
         onFx(() -> {
             assertEquals("Página 1 de 2 · 100 %",
-                    ((Label) preview.lookup(".statement-preview-page")).getText());
+                    ((Label) preview.lookup(".pdf-preview-page")).getText());
             assertTrue(((Button) preview.lookup(".preview-previous")).isDisabled());
             assertFalse(((Button) preview.lookup(".preview-next")).isDisabled());
-            var image = (javafx.scene.image.ImageView) preview.lookup(".statement-preview-image");
+            var image = (javafx.scene.image.ImageView) preview.lookup(".pdf-preview-image");
             assertEquals(900, image.getImage().getWidth(), 1);
             assertEquals(900, image.getFitWidth(), 0.1);
             assertFullPageHeight(preview);
@@ -503,15 +667,15 @@ class StatementSectionTest {
         awaitPreview(preview, () -> ((Button) preview.lookup(".preview-next")).fire());
         onFx(() -> {
             assertEquals("Página 2 de 2 · 100 %",
-                    ((Label) preview.lookup(".statement-preview-page")).getText());
+                    ((Label) preview.lookup(".pdf-preview-page")).getText());
             assertTrue(((Button) preview.lookup(".preview-next")).isDisabled());
             return null;
         });
         awaitPreview(preview, () -> ((Button) preview.lookup(".preview-zoom-in")).fire());
         onFx(() -> {
             assertEquals("Página 2 de 2 · 125 %",
-                    ((Label) preview.lookup(".statement-preview-page")).getText());
-            assertEquals(1125, ((javafx.scene.image.ImageView) preview.lookup(".statement-preview-image"))
+                    ((Label) preview.lookup(".pdf-preview-page")).getText());
+            assertEquals(1125, ((javafx.scene.image.ImageView) preview.lookup(".pdf-preview-image"))
                     .getFitWidth(), 0.1);
             assertFullPageHeight(preview);
             return null;
@@ -520,7 +684,7 @@ class StatementSectionTest {
         awaitPreview(preview, () -> preview.load(replacement));
         onFx(() -> {
             assertEquals("Página 1 de 1 · 100 %",
-                    ((Label) preview.lookup(".statement-preview-page")).getText());
+                    ((Label) preview.lookup(".pdf-preview-page")).getText());
             assertTrue(((Button) preview.lookup(".preview-previous")).isDisabled());
             assertTrue(((Button) preview.lookup(".preview-next")).isDisabled());
             return null;
@@ -533,7 +697,7 @@ class StatementSectionTest {
     private static void awaitPreview(PdfPreview preview, Runnable action) throws Exception {
         CompletableFuture<Void> loaded = onFx(() -> {
             CompletableFuture<Void> result = new CompletableFuture<>();
-            var image = (javafx.scene.image.ImageView) preview.lookup(".statement-preview-image");
+            var image = (javafx.scene.image.ImageView) preview.lookup(".pdf-preview-image");
             javafx.beans.value.ChangeListener<javafx.scene.image.Image> listener =
                     new javafx.beans.value.ChangeListener<>() {
                         @Override
@@ -557,8 +721,8 @@ class StatementSectionTest {
         preview.applyCss();
         preview.resize(960, preview.prefHeight(960));
         preview.layout();
-        var viewport = (javafx.scene.control.ScrollPane) preview.lookup(".statement-preview-viewport");
-        var image = (javafx.scene.image.ImageView) preview.lookup(".statement-preview-image");
+        var viewport = (javafx.scene.control.ScrollPane) preview.lookup(".pdf-preview-viewport");
+        var image = (javafx.scene.image.ImageView) preview.lookup(".pdf-preview-image");
         double pageHeight = image.getBoundsInLocal().getHeight();
         assertTrue(pageHeight > 460);
         assertTrue(viewport.getPrefViewportHeight() >= pageHeight + 36);
@@ -575,7 +739,7 @@ class StatementSectionTest {
         });
         CompletableFuture<Void> failed = onFx(() -> {
             CompletableFuture<Void> result = new CompletableFuture<>();
-            Label status = (Label) preview.lookup(".statement-preview-status");
+            Label status = (Label) preview.lookup(".pdf-preview-status");
             status.textProperty().addListener((observable, previous, current) -> {
                 if (current.startsWith("No se pudo previsualizar")) {
                     result.complete(null);
@@ -586,7 +750,7 @@ class StatementSectionTest {
         });
         failed.get(15, TimeUnit.SECONDS);
         onFx(() -> {
-            assertNull(((javafx.scene.image.ImageView) preview.lookup(".statement-preview-image")).getImage());
+            assertNull(((javafx.scene.image.ImageView) preview.lookup(".pdf-preview-image")).getImage());
             assertTrue(((Button) preview.lookup(".preview-next")).isDisabled());
             assertTrue(((Button) preview.lookup(".preview-zoom-in")).isDisabled());
             return null;
@@ -598,9 +762,9 @@ class StatementSectionTest {
             preview.load(second);
         });
         onFx(() -> {
-            assertEquals("", ((Label) preview.lookup(".statement-preview-status")).getText());
+            assertEquals("", ((Label) preview.lookup(".pdf-preview-status")).getText());
             assertEquals("Página 1 de 1 · 100 %",
-                    ((Label) preview.lookup(".statement-preview-page")).getText());
+                    ((Label) preview.lookup(".pdf-preview-page")).getText());
             return null;
         });
     }
@@ -695,7 +859,7 @@ class StatementSectionTest {
         section.applyCss();
         return new Controls(section, (Button) section.lookup(".statement-select"),
                 (Button) section.lookup(".statement-extract"), (Button) section.lookup(".statement-filter"),
-                (TextArea) section.lookup("#statement-raw-text"), (Label) section.lookup(".statement-status"),
+                (TextArea) section.lookup("#statement-raw-text"), (Label) section.lookup(".status-message"),
                 (TextArea) section.lookup(".statement-filtered-text"));
     }
 

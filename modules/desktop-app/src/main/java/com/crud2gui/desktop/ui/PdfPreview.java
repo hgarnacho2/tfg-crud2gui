@@ -1,6 +1,5 @@
-package com.crud2gui.desktop.teacher.sections;
+package com.crud2gui.desktop.ui;
 
-import com.crud2gui.desktop.ui.UiComponents;
 import javafx.concurrent.Task;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.Button;
@@ -25,11 +24,11 @@ import java.nio.file.Path;
 import java.util.List;
 
 /** Previsualización local de una página PDF, sin selección de texto ni archivos abiertos persistentes. */
-final class PdfPreview extends VBox {
+public final class PdfPreview extends VBox {
     private static final Logger LOGGER = LoggerFactory.getLogger(PdfPreview.class);
     private final ImageView image = new ImageView();
     private final Label status = UiComponents.mutedText("");
-    private final Label pageLabel = UiComponents.label("", List.of("statement-preview-page"));
+    private final Label pageLabel = UiComponents.label("", List.of("pdf-preview-page"));
     private final Button previous;
     private final Button next;
     private final Button zoomOut;
@@ -41,10 +40,10 @@ final class PdfPreview extends VBox {
     private Task<RenderedPage> pending;
 
     /** Construye el visor con desplazamiento, navegación y zoom acotado. */
-    PdfPreview() {
+    public PdfPreview() {
         super(12);
-        getStyleClass().add("statement-preview");
-        status.getStyleClass().add("statement-preview-status");
+        getStyleClass().add("pdf-preview");
+        status.getStyleClass().add("pdf-preview-status");
         previous = UiComponents.actionButton("Anterior", List.of("preview-previous"), () -> {
             page--;
             render();
@@ -64,12 +63,12 @@ final class PdfPreview extends VBox {
         zoomOut.setAccessibleText("Reducir zoom");
         zoomIn.setAccessibleText("Ampliar zoom");
         HBox toolbar = new HBox(10, previous, pageLabel, next, zoomOut, zoomIn);
-        toolbar.getStyleClass().add("statement-preview-toolbar");
+        toolbar.getStyleClass().add("pdf-preview-toolbar");
         image.setPreserveRatio(true);
         image.setSmooth(true);
-        image.getStyleClass().add("statement-preview-image");
+        image.getStyleClass().add("pdf-preview-image");
         StackPane paper = new StackPane(image);
-        paper.getStyleClass().add("statement-preview-paper");
+        paper.getStyleClass().add("pdf-preview-paper");
         ScrollPane viewport = new ScrollPane(paper);
         viewport.prefViewportHeightProperty().bind(Bindings.createDoubleBinding(
                 () -> image.getBoundsInLocal().getHeight()
@@ -77,7 +76,7 @@ final class PdfPreview extends VBox {
                 image.boundsInLocalProperty(), paper.paddingProperty()));
         viewport.setMinHeight(Region.USE_PREF_SIZE);
         viewport.setFitToWidth(true);
-        viewport.getStyleClass().add("statement-preview-viewport");
+        viewport.getStyleClass().add("pdf-preview-viewport");
         getChildren().addAll(toolbar, status, viewport);
         setVisible(false);
         managedProperty().bind(visibleProperty());
@@ -89,7 +88,7 @@ final class PdfPreview extends VBox {
      *
      * @param path documento local seleccionado
      */
-    void load(Path path) {
+    public void load(Path path) {
         pdf = path;
         page = 0;
         pages = 0;

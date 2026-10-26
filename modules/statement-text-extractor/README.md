@@ -30,7 +30,7 @@ El módulo incorpora un gestor de configuración jerárquico a través de la cla
 
 ### Variables de configuración disponibles (en `.env.public`):
 * **`FILTER_STATEMENT_TEXT`** (`true` / `false`): Activa o desactiva el paso de filtrado durante la ejecución de `Main`.
-* **`STATEMENT_FILTER_CONFIG_PATH`**: Ruta al JSON de reglas. Por defecto apunta a `modules/statement-text-extractor/config/statement-filter.json`, relativa a la raíz del proyecto. Puede sustituirse con una variable de entorno o una propiedad Java `-DSTATEMENT_FILTER_CONFIG_PATH=...`.
+* **`STATEMENT_FILTER_CONFIG_PATH`**: Ruta al JSON de reglas. Por defecto apunta a `modules/statement-text-extractor/config/statement-filter-rules.json`, relativa a la raíz del proyecto. Puede sustituirse con una variable de entorno o una propiedad Java `-DSTATEMENT_FILTER_CONFIG_PATH=...`.
 * **`DOTENV_DEBUG`** (`true` / `false`): Activa o desactiva de forma parametrizada las trazas de depuración detalladas de la carga de configuración en la consola (también controlable mediante variable de entorno del S.O. o propiedad del sistema `-DDOTENV_DEBUG=true`).
 
 `Main` carga el JSON indicado cuando el filtrado está activado. Para cambiar las reglas habituales basta con editar el fichero JSON; no es necesario modificar código Java.
@@ -108,7 +108,7 @@ Modelo de configuración independiente de la interfaz. Cada regla asocia un tít
 Las secciones sin regla explícita se incluyen por defecto. `StatementFilterConfig.defaults()` proporciona las reglas usadas para los ejemplos UNED.
 
 ### Configuración JSON
-El fichero predeterminado se encuentra en `config/statement-filter.json`. Sus reglas asocian un título con una acción; los títulos se comparan sin distinguir mayúsculas, tildes ni numeración inicial. Ejemplo:
+El fichero predeterminado se encuentra en `config/statement-filter-rules.json`. Sus reglas asocian un título con una acción; los títulos se comparan sin distinguir mayúsculas, tildes ni numeración inicial. Ejemplo:
 
 ```json
 {
@@ -125,7 +125,7 @@ El fichero predeterminado se encuentra en `config/statement-filter.json`. Sus re
 `Main` carga el JSON automáticamente al ejecutar `run.sh` si `FILTER_STATEMENT_TEXT=true`. Desde otro componente Java también se puede cargar la configuración explícitamente:
 
 ```java
-Path configPath = Path.of("statement-filter.json");
+Path configPath = Path.of("statement-filter-rules.json");
 StatementFilterConfig config = StatementFilterConfigJson.read(configPath);
 StatementFilter.Result result = StatementFilter.filterFile(input, output, config);
 ```

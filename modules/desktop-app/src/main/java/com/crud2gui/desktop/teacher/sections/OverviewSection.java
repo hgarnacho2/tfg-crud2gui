@@ -3,11 +3,10 @@ package com.crud2gui.desktop.teacher.sections;
 import com.crud2gui.desktop.teacher.TeacherPracticeData;
 import com.crud2gui.desktop.teacher.TeacherPracticeData.PracticeItem;
 import com.crud2gui.desktop.ui.UiComponents;
+import com.crud2gui.desktop.ui.Section;
 import javafx.collections.ListChangeListener;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -15,18 +14,16 @@ import javafx.scene.layout.VBox;
 import java.util.List;
 
 /** Página de resumen de la actividad docente. */
-public final class OverviewSection extends VBox {
+public final class OverviewSection extends Section {
     private final TeacherPracticeData data;
 
     /** Crea el resumen y lo mantiene actualizado al cambiar las prácticas compartidas. */
     public OverviewSection(TeacherPracticeData data) {
-        super(20);
+        super("DOCENCIA", "Panel docente", "Estado de tus prácticas y actividad reciente.",
+                UiComponents.actionButton("Nueva práctica", List.of("section-header-action"),
+                        data::showNewPracticeDialog));
         this.data = data;
-        setPadding(new Insets(32, 38, 36, 38));
-        Button newPractice = UiComponents.actionButton(
-                "Nueva práctica", List.of("section-header-action"), data::showNewPracticeDialog);
-        getChildren().addAll(UiComponents.sectionHeader("DOCENCIA", "Panel docente",
-                "Estado de tus prácticas y actividad reciente.", newPractice), createContent());
+        getChildren().add(createContent());
         data.practices().addListener((ListChangeListener<PracticeItem>) change ->
                 getChildren().set(1, createContent()));
     }

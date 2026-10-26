@@ -2,6 +2,8 @@ package com.crud2gui.desktop.teacher;
 
 import com.crud2gui.authenticator.AuthenticatedUser;
 import com.crud2gui.desktop.teacher.sections.ModelsSection;
+import com.crud2gui.desktop.teacher.sections.ModelFromStatementSection;
+import com.crud2gui.desktop.teacher.sections.ModelFromCodeSection;
 import com.crud2gui.desktop.teacher.sections.OverviewSection;
 import com.crud2gui.desktop.teacher.sections.PracticesSection;
 import com.crud2gui.desktop.teacher.sections.ReviewsSection;
@@ -27,7 +29,9 @@ public final class TeacherDashboardView extends BorderPane {
         PRACTICES("Prácticas"),
         REVIEWS("Revisiones"),
         MODELS("Modelos"),
-        STATEMENT("Enunciado");
+        STATEMENT("Enunciado"),
+        MODEL_FROM_STATEMENT("Enunciado >> Modelo"),
+        MODEL_FROM_CODE("Código >> Modelo");
 
         private final String label;
 
@@ -68,6 +72,7 @@ public final class TeacherDashboardView extends BorderPane {
     }
 
     private void showSection(TeacherSection section) {
+        scroll.setFitToHeight(section == TeacherSection.MODEL_FROM_STATEMENT);
         scroll.setContent(pages.computeIfAbsent(section, this::createPage));
     }
 
@@ -78,6 +83,8 @@ public final class TeacherDashboardView extends BorderPane {
             case REVIEWS -> new ReviewsSection(practices);
             case MODELS -> new ModelsSection(practices);
             case STATEMENT -> new StatementSection();
+            case MODEL_FROM_STATEMENT -> new ModelFromStatementSection();
+            case MODEL_FROM_CODE -> new ModelFromCodeSection();
         };
     }
 }

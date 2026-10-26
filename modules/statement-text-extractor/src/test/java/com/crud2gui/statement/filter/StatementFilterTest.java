@@ -102,7 +102,7 @@ class StatementFilterTest {
     @Test
     void savesAndLoadsConfigurationAsJson(@TempDir Path tmp) throws Exception {
         StatementFilterConfig config = StatementFilterConfig.defaults();
-        Path jsonFile = tmp.resolve("settings/statement-filter.json");
+        Path jsonFile = tmp.resolve("settings/statement-filter-rules.json");
 
         StatementFilterConfigJson.write(config, jsonFile);
 

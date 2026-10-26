@@ -13,6 +13,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
@@ -21,7 +23,11 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.InvalidPathException;
 import java.util.Objects;
 import java.net.URI;
 import java.util.List;
@@ -32,6 +38,66 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UiComponentsTest {
+
+    @Test
+    void fileContentPaneResolvesEachOpeningAndRecoversWithoutStatementStyles(@TempDir Path directory)
+            throws Exception {
+        Path first = directory.resolve("first.txt");
+        Path second = directory.resolve("second.txt");
+        Files.writeString(first, "Texto UTF-8: información");
+        Files.writeString(second, "Segundo archivo");
+        AtomicInteger mode = new AtomicInteger();
+        AtomicInteger resolutions = new AtomicInteger();
+        onJavaFxThread(() -> {
+            TitledPane pane = UiComponents.fileContentPane("file-viewer", "Consultar archivo", () -> {
+                resolutions.incrementAndGet();
+                return switch (mode.get()) {
+                    case 1 -> second;
+                    case 2 -> directory.resolve("missing.txt");
+                    case 4 -> throw new InvalidPathException("invalid", "Ruta de prueba");
+                    default -> first;
+                };
+            }, "No se pudo consultar el archivo.");
+            styledScene(new VBox(pane));
+            pane.applyCss();
+            assertFalse(pane.isExpanded());
+            assertEquals(0, resolutions.get());
+            TextArea content = (TextArea) pane.lookup("#file-viewer-content");
+            Label source = (Label) pane.lookup("#file-viewer-path");
+            Label error = (Label) pane.lookup("#file-viewer-error");
+            assertFalse(content.isEditable());
+            assertFalse(content.isWrapText());
+            assertTrue(pane.getStyleClass().contains("file-content"));
+            assertTrue(content.getStyleClass().contains("file-content-text"));
+            assertTrue(source.getStyleClass().contains("file-content-path"));
+            assertTrue(error.getStyleClass().contains("status-message"));
+            assertTrue(pane.lookupAll("*").stream().flatMap(node -> node.getStyleClass().stream())
+                    .noneMatch(style -> style.startsWith("statement-")));
+            for (int scenario = 0; scenario < 6; scenario++) {
+                mode.set(scenario);
+                pane.setExpanded(true);
+                assertEquals(scenario + 1, resolutions.get());
+                boolean failed = scenario == 2 || scenario == 4;
+                assertEquals(!failed, content.isVisible());
+                assertEquals(!failed, content.isManaged());
+                assertEquals(failed, error.isManaged());
+                if (failed) {
+                    assertEquals("", content.getText());
+                    assertEquals("", source.getText());
+                    assertEquals("No se pudo consultar el archivo.", error.getText());
+                    assertTrue(error.getPseudoClassStates().contains(Section.ERROR));
+                } else {
+                    assertEquals(scenario == 1 ? "Segundo archivo" : "Texto UTF-8: información",
+                            content.getText());
+                    assertEquals((scenario == 1 ? second : first).toString(), source.getText());
+                    assertEquals(0, content.getCaretPosition());
+                    assertEquals("", error.getText());
+                }
+                pane.setExpanded(false);
+                assertEquals(scenario + 1, resolutions.get());
+            }
+        });
+    }
 
     @Test
     void updatesCachedTeacherPagesWhenPracticeDataChanges() throws Exception {
@@ -129,7 +195,7 @@ class UiComponentsTest {
                     assertEquals(15, button.getFont().getSize(), 0.01);
                     assertTrue(button.getFont().getStyle().contains("Bold"));
                 }
-                assertEquals(dashboard instanceof TeacherDashboardView ? 5 : 4, buttons.size());
+                assertEquals(dashboard instanceof TeacherDashboardView ? 6 : 4, buttons.size());
                 if (dashboard instanceof TeacherDashboardView) {
                     assertEquals("Enunciado", buttons.get(buttons.size() - 1).getText());
                 }
@@ -140,12 +206,15 @@ class UiComponentsTest {
                     dashboard.applyCss();
                     Node page = content.getContent();
                     assertNotNull(page.lookup(".section-breadcrumb"));
-                    assertInstanceOf(VBox.class, page);
+                    assertInstanceOf(Section.class, page);
+                    assertEquals(20, ((Section) page).getSpacing(), 0.01);
+                    assertNotNull(((Section) page).getChildren().get(0).lookup(".section-title"));
                     assertEquals(new Insets(32, 38, 36, 38), ((VBox) page).getPadding());
                     assertTrue(button.getPseudoClassStates().contains(javafx.css.PseudoClass.getPseudoClass("selected")));
                     assertEquals(Color.web("#1b5b50"), button.getBackground().getFills().get(0).getFill());
                     assertEquals(dashboard instanceof TeacherDashboardView
-                                    && !"Enunciado".equals(button.getText()) ? 1 : 0,
+                                    && !"Enunciado".equals(button.getText())
+                                    && !"Modelo desde enunciado".equals(button.getText()) ? 1 : 0,
                             page.lookupAll(".section-header-action").size());
                     visited.put(button, page);
                 }
@@ -165,6 +234,96 @@ class UiComponentsTest {
                     assertFalse(buttons.get(0).getPseudoClassStates().contains(javafx.css.PseudoClass.getPseudoClass("selected")));
                 }
             }
+        });
+    }
+
+    @Test
+    void createsSectionsWithCommonLayoutAndOptionalHeaderAction() throws Exception {
+        onJavaFxThread(() -> {
+            AtomicInteger clicks = new AtomicInteger();
+            Button action = UiComponents.actionButton("Acción", List.of(), clicks::incrementAndGet);
+            for (Section section : List.of(
+                    new Section("PRUEBA", "Título", "Descripción") {},
+                    new Section("PRUEBA", "Título", "Descripción", action) {})) {
+                Label content = new Label("Contenido");
+                assertEquals(section.getClass().getName(), section.logger.getName());
+                section.getChildren().add(content);
+                styledScene(section);
+                section.applyCss();
+                assertEquals(20, section.getSpacing(), 0.01);
+                assertEquals(new Insets(32, 38, 36, 38), section.getPadding());
+                assertEquals(2, section.getChildren().size());
+                assertSame(content, section.getChildren().get(1));
+                assertEquals("Título", ((Label) section.lookup(".section-title")).getText());
+                assertEquals("Descripción", ((Label) section.lookup(".section-subtitle")).getText());
+                assertEquals("CRUD2GUI  /  PRUEBA",
+                        ((Label) section.lookup(".section-breadcrumb")).getText());
+            }
+            action.fire();
+            assertEquals(1, clicks.get());
+        });
+    }
+
+    @Test
+    void sectionTasksDeliverResultsAndAlwaysFinishOnJavaFxThread() throws Exception {
+        for (int scenario = 0; scenario < 3; scenario++) {
+            int mode = scenario;
+            CompletableFuture<Void> finished = new CompletableFuture<>();
+            AtomicInteger successes = new AtomicInteger();
+            AtomicInteger failures = new AtomicInteger();
+            AtomicInteger cleanups = new AtomicInteger();
+            onJavaFxThread(() -> {
+                Section section = new Section("PRUEBA", "Tareas", "Ejecución") {};
+                section.runTask(() -> {
+                    assertFalse(Platform.isFxApplicationThread());
+                    if (mode == 1) {
+                        throw new java.io.IOException("Fallo de prueba");
+                    }
+                    return "Resultado";
+                }, result -> {
+                    assertTrue(Platform.isFxApplicationThread());
+                    assertEquals("Resultado", result);
+                    successes.incrementAndGet();
+                    if (mode == 2) {
+                        throw new IllegalStateException("Fallo al presentar");
+                    }
+                }, failure -> {
+                    assertTrue(Platform.isFxApplicationThread());
+                    if (mode == 1) {
+                        assertInstanceOf(java.io.IOException.class, failure);
+                    } else {
+                        assertInstanceOf(IllegalStateException.class, failure);
+                    }
+                    failures.incrementAndGet();
+                }, () -> {
+                    cleanups.incrementAndGet();
+                    if (Platform.isFxApplicationThread()) {
+                        finished.complete(null);
+                    } else {
+                        finished.completeExceptionally(new AssertionError("Limpieza fuera de JavaFX"));
+                    }
+                });
+            });
+            finished.get(10, TimeUnit.SECONDS);
+            assertEquals(mode == 1 ? 0 : 1, successes.get());
+            assertEquals(mode == 0 ? 0 : 1, failures.get());
+            assertEquals(1, cleanups.get());
+        }
+    }
+
+    @Test
+    void sectionStatusUpdatesTextAndClearsErrorState() throws Exception {
+        onJavaFxThread(() -> {
+            Section section = new Section("PRUEBA", "Estado", "Mensajes") {};
+            Label status = UiComponents.statusLabel("test-status");
+            section.showStatus(status, "Error de prueba", true);
+            assertEquals("Error de prueba", status.getText());
+            assertTrue(status.getPseudoClassStates().contains(Section.ERROR));
+            section.showStatus(status, "Correcto", false);
+            assertFalse(status.getPseudoClassStates().contains(Section.ERROR));
+            assertEquals("Correcto", status.getText());
+            section.showStatus(status, "", false);
+            assertFalse(status.isManaged());
         });
     }
 
@@ -482,6 +641,41 @@ class UiComponentsTest {
             assertEquals(22, visible.getMaxHeight());
             assertTrue(visible.isVisible());
             assertTrue(visible.isManaged());
+        });
+    }
+
+    @Test
+    void hidesEmptyLabelsOnlyWhenRequested() throws Exception {
+        onJavaFxThread(() -> {
+            Label label = UiComponents.label("", List.of("custom-label"), true);
+            assertTrue(label.getStyleClass().contains("custom-label"));
+            assertTrue(label.visibleProperty().isBound());
+            assertTrue(label.managedProperty().isBound());
+            assertFalse(label.isVisible());
+            assertFalse(label.isManaged());
+            label.setText("Resultado");
+            assertTrue(label.isVisible());
+            assertTrue(label.isManaged());
+            label.setText("");
+            assertFalse(label.isVisible());
+            assertFalse(label.isManaged());
+            label.setText(null);
+            assertFalse(label.isVisible());
+            assertFalse(label.isManaged());
+
+            Label populated = UiComponents.label("Inicial", List.of(), true);
+            assertTrue(populated.isVisible());
+            assertTrue(populated.isManaged());
+            for (Label plain : List.of(
+                    UiComponents.label("", List.of()),
+                    UiComponents.label("", List.of(), false))) {
+                assertTrue(plain.isVisible());
+                assertTrue(plain.isManaged());
+                assertFalse(plain.visibleProperty().isBound());
+                assertFalse(plain.managedProperty().isBound());
+                plain.setVisible(false);
+                assertTrue(plain.isManaged());
+            }
         });
     }
 

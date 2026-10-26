@@ -1,14 +1,14 @@
 package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.desktop.ui.UiComponents;
+import com.crud2gui.desktop.ui.Section;
+import com.crud2gui.desktop.ui.FileDialogs;
+import com.crud2gui.desktop.ui.PdfPreview;
+import com.crud2gui.common.DotEnv;
 import com.crud2gui.statement.extractor.StatementExtractor;
 import com.crud2gui.statement.filter.StatementFilter;
-import javafx.concurrent.Task;
-import javafx.css.PseudoClass;
-import javafx.geometry.Insets;
+import com.crud2gui.statement.filter.StatementFilterConfigJson;
 import javafx.scene.control.Button;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextArea;
@@ -17,10 +17,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
-import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.awt.Desktop;
@@ -28,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.InvalidPathException;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.function.Function;
@@ -36,13 +34,25 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.concurrent.Callable;
 
-/** Flujo ordenado de selección, extracción y filtrado de un enunciado local. */
-public final class StatementSection extends VBox {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatementSection.class);
-    private static final PseudoClass ERROR = PseudoClass.getPseudoClass("error");
-    private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
-    private static final PseudoClass COMPLETED = PseudoClass.getPseudoClass("completed");
+/**
+ * Sección docente que permite seleccionar y previsualizar un PDF, extraer su texto
+ * y filtrarlo mediante las reglas de un archivo JSON externo.
+ *
+ * <p>Organiza el flujo en tres paneles: selección (índice 0), extracción (índice 1)
+ * y filtrado (índice 2). Cada panel conserva su propio mensaje de estado. La
+ * selección de otro documento invalida los resultados anteriores y la extracción
+ * vuelve a invalidar el filtrado.</p>
+ *
+ * <p>Los resultados se muestran en visores de solo lectura y se guardan en UTF-8
+ * en la carpeta de salida elegida, previa confirmación si el destino ya existe.
+ * El filtro carga {@code statement-filter-rules.json} en cada ejecución mediante
+ * la ruta resuelta por {@link #filterConfigurationPath()}.</p>
+ *
+ * <p>La construcción y las operaciones de interfaz deben realizarse en el hilo
+ * de JavaFX. La extracción, el filtrado, la escritura y la apertura del explorador
+ * se ejecutan mediante tareas auxiliares; el visor PDF gestiona su propia carga.</p>
+ */
+public final class StatementSection extends Section {
 
     private final Button selectPDFButton;
     private final Button extractButton;
@@ -63,18 +73,18 @@ public final class StatementSection extends VBox {
     private final Predicate<Path> confirmOverwrite;
     private final Label filename = UiComponents.labelWithGraphic("Ningún PDF seleccionado.",
             List.of("statement-file-name"),
-            UiComponents.label("PDF", List.of("statement-file-badge")), 12);
+            UiComponents.label("PDF", List.of("statement-file-badge", "statement-pdf-badge")), 12);
     private final Label filePath = UiComponents.label("Selecciona un documento para comenzar.",
             List.of("statement-file-path"));
     private final VBox fileCard = UiComponents.vBox(List.of("statement-file-card"), filename, filePath);
     private final PdfPreview pdfPreview = new PdfPreview();
     private final List<Label> statuses = List.of(
-            statusLabel("statement-selection-status"),
-            statusLabel("statement-extraction-status"),
-            statusLabel("statement-filter-status"));
+            UiComponents.statusLabel("statement-selection-status"),
+            UiComponents.statusLabel("statement-extraction-status"),
+            UiComponents.statusLabel("statement-filter-status"));
     private final ProgressIndicator progress =
             UiComponents.progressIndicator(false, List.of("statement-progress"), true);
-    private final TextArea text =
+    private final TextArea extractedText =
             UiComponents.textArea(false, true, 16, List.of("statement-text"));
     private final TextArea filteredText =
             UiComponents.textArea(false, true, 16, List.of("statement-text", "statement-filtered-text"));
@@ -87,33 +97,45 @@ public final class StatementSection extends VBox {
     private boolean filterCompleted;
     private int currentStep;
 
-    /** Crea el flujo y utiliza el selector de archivos del sistema. */
+    /**
+     * Construye los tres paneles con los diálogos de selección de PDF,
+     * carpeta y confirmación de sobrescritura. Inicialmente solo está habilitado
+     * el paso de selección y no se carga ningún documento.
+     */
     public StatementSection() {
-        this(StatementSection::choosePdf);
+        this(owner -> FileDialogs.chooseFile(owner, "Seleccionar enunciado PDF",
+                new FileChooser.ExtensionFilter("Documentos PDF", "*.pdf", "*.PDF")));
     }
 
     /**
      * Crea la vista con un selector sustituible en pruebas de la interfaz.
      *
-     * @param chooseFile selector que devuelve el PDF o null al cancelar
+     * @param chooseFile selector que recibe la ventana propietaria, o {@code null}
+     *                   si la sección aún no tiene ventana, y devuelve el PDF
+     *                   seleccionado o {@code null} al cancelar
      */
     StatementSection(Function<Window, File> chooseFile) {
-        this(chooseFile, StatementSection::chooseOutputFolder, StatementSection::confirmOverwrite);
+        this(chooseFile, (owner, current) -> FileDialogs.chooseDirectory(
+                owner, current, "Carpeta de salida de los enunciados"), FileDialogs::confirmOverwrite);
     }
 
     /**
-     * Permite probar los destinos y confirmaciones sin abrir diálogos nativos.
+     * Construye la interfaz con selectores y confirmación sustituibles para poder
+     * probar el flujo sin abrir diálogos interactivos.
      *
-     * @param chooseFile selector del PDF
-     * @param chooseFolder selector del destino, o null al cancelar
-     * @param confirmOverwrite confirmación antes de reemplazar un archivo existente
+     * @param chooseFile función que recibe la ventana propietaria, posiblemente
+     *                   {@code null}, y devuelve un PDF o {@code null} al cancelar
+     * @param chooseFolder función que recibe la ventana propietaria y la carpeta
+     *                     actual, y devuelve el nuevo destino o {@code null} al cancelar
+     * @param confirmOverwrite predicado que recibe la ruta de un archivo existente
+     *                         y devuelve {@code true} únicamente si se autoriza reemplazarlo
      */
     StatementSection(Function<Window, File> chooseFile, BiFunction<Window, Path, File> chooseFolder,
                      Predicate<Path> confirmOverwrite) {
-        super(20);
+        super("ENUNCIADO", "Enunciado",
+                "Extracción de información del enunciado paso a paso: selecciona el PDF, extrae el texto y aplica el filtro para optimizar el texto obtenido.");
         this.chooseFolder = chooseFolder;
         this.confirmOverwrite = confirmOverwrite;
-        setPadding(new Insets(32, 38, 36, 38));
         selectPDFButton = UiComponents.actionButton("Seleccionar PDF", List.of("statement-select"), () -> {
             File file = chooseFile.apply(getScene() == null ? null : getScene().getWindow());
             if (file != null) {
@@ -130,7 +152,7 @@ public final class StatementSection extends VBox {
                 List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
         filterOpenFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
                 List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
-        text.setId("statement-raw-text");
+        extractedText.setId("statement-raw-text");
         filePath.setMaxWidth(Double.MAX_VALUE);
 
 
@@ -139,19 +161,26 @@ public final class StatementSection extends VBox {
                 UiComponents.panelHeading("Seleccionar PDF",
                         "En el primer paso, se selecciona el documento PDF que contiene el enunciado de la práctica.",
                         17, 8),
-//                UiComponents.mutedText("Pulsa el botón para seleccionar un PDF local. Después podrás continuar con la extracción del texto."),
                 selectPDFButton, fileCard, pdfPreview, statuses.get(0)));
         VBox extractionPanel = UiComponents.surface(new VBox(14,
                 UiComponents.panelHeading("Extraer texto", "Una vez seleccionado el PDF, se extrae el contenido como texto plano."),
-                outputSettings(outputFilename, outputFolderLabel, changeFolderButton),
-                UiComponents.mutedText("Extrae el contenido del documento. El resultado se mostrará aquí."),
-                extractButton, text, statuses.get(1), openFolderButton));
+                UiComponents.panelHeading("Salida", "Se generará un fichero de texto plano con el contenido extraído en la carpeta de salida seleccionada."),
+                UiComponents.outputSettings(outputFilename, outputFolderLabel, changeFolderButton),
+                UiComponents.panelHeading("Iniciar el proceso", "El resultado se mostrará en el visor y se generará un archivo físico en la carpeta de salida."),
+                extractButton, extractedText, statuses.get(1), openFolderButton));
         VBox filterPanel = UiComponents.surface(new VBox(14,
                 UiComponents.panelHeading("Filtrar texto", "Antes de trabajar con un LLM que analice el contenido del enunciado, se aplica un filtro para optimizar el texto obtenido."),
-                outputSettings(filterOutputFilename, filterOutputFolderLabel, filterChangeFolderButton),
-                UiComponents.mutedText("Usa las reglas predeterminadas: desde «Introducción» hasta "
-                        + "«Fechas y normas de entrega», omitiendo «Requisitos previos» y números de página. "
-                        + "Si no se reconoce la estructura, se conserva el texto original."),
+                UiComponents.panelHeading("Salida", "Se generará un fichero de texto plano con el contenido filtrado en la carpeta de salida."),
+                UiComponents.outputSettings(filterOutputFilename, filterOutputFolderLabel, filterChangeFolderButton),
+                UiComponents.panelHeading("Reglas de filtrado",
+                        "Las reglas de filtrado aplicadas son las definidas en el archivo de configuración statement-filter-rules.json."),
+                UiComponents.fileContentPane("statement-filter-config", "Ver statement-filter-rules.json",
+                        StatementSection::filterConfigurationPath,
+                        "No se pudo leer statement-filter-rules.json. Comprueba la ruta "
+                                + "STATEMENT_FILTER_CONFIG_PATH y los permisos del archivo."),
+                UiComponents.mutedText("El archivo de reglas se lee en cada filtrado. "
+                        + "Si no se reconoce la estructura definida, se conserva el texto original."),
+                UiComponents.panelHeading("Iniciar el proceso", "Tomando como referencia el fichero generado en el paso anterior, se aplicará el filtro al texto extraído. El resultado se mostrará en el visor y se generará un archivo físico en la carpeta de salida."),
                 filterButton, filteredText, statuses.get(2), filterOpenFolderButton));
         panels = List.of(pdfPanel, extractionPanel, filterPanel);
 
@@ -167,42 +196,45 @@ public final class StatementSection extends VBox {
         flow.getStyleClass().add("statement-flow");
         flow.setMaxHeight(Region.USE_PREF_SIZE);
         panelHost.getChildren().addAll(panels);
-        getChildren().addAll(UiComponents.sectionHeader("ENUNCIADO", "Enunciado",
-                "Extracción de información del enunciado paso a paso: selecciona el PDF, extrae el texto y aplica el filtro para optimizar el texto obtenido."),
-                flow, panelHost, progress);
+        getChildren().addAll(flow, panelHost, progress);
         showStep(0);
         updateState();
     }
 
-    /** Crea un mensaje de panel que no reserva espacio mientras está vacío. */
-    private static Label statusLabel(String id) {
-        Label label = UiComponents.label("", List.of("text-muted", "statement-status"));
-        label.setId(id);
-        label.setMaxWidth(Double.MAX_VALUE);
-        label.visibleProperty().bind(label.textProperty().isNotEmpty());
-        label.managedProperty().bind(label.visibleProperty());
-        return label;
-    }
-
     /**
-     * Crea los controles de destino que permanecen dentro de su panel.
+     * Resuelve la ruta del JSON utilizado tanto por la consulta como por el filtrado.
      *
-     * @param nameLabel nombre del archivo de salida con insignia TXT
-     * @param folderLabel ruta completa del archivo de salida
-     * @param changeButton botón para cambiar el destino
-     * @return selector de carpeta del panel
+     * <p>Obtiene {@code STATEMENT_FILTER_CONFIG_PATH} mediante {@link DotEnv};
+     * si no está configurada, usa la ruta del módulo extractor. Las rutas relativas
+     * se buscan desde el directorio de ejecución y, después, desde sus antecesores.
+     * Una ruta absoluta se devuelve normalizada sin comprobar aquí su existencia.</p>
+     *
+     * @return ruta absoluta y normalizada del archivo de reglas
+     * @throws IOException si no se encuentra el archivo indicado por una ruta relativa
+     * @throws InvalidPathException si el valor configurado no es una ruta válida
      */
-    private static VBox outputSettings(Label nameLabel, Label folderLabel, Button changeButton) {
-        folderLabel.setMaxWidth(Double.MAX_VALUE);
-        VBox card = UiComponents.vBox(List.of("statement-file-card"), nameLabel, folderLabel);
-        card.pseudoClassStateChanged(SELECTED, true);
-        return UiComponents.vBox(List.of("statement-output-settings"), card, changeButton);
+    private static Path filterConfigurationPath() throws IOException {
+        Path path = Path.of(DotEnv.getStringVar("STATEMENT_FILTER_CONFIG_PATH",
+                "modules/statement-text-extractor/config/statement-filter-rules.json"));
+        if (path.isAbsolute()) {
+            return path.normalize();
+        }
+        Path directory = Path.of("").toAbsolutePath().normalize();
+        while (directory != null) {
+            Path candidate = directory.resolve(path).normalize();
+            if (Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+            directory = directory.getParent();
+        }
+        throw new IOException("No se encuentra el fichero de configuración JSON: " + path);
     }
 
     /**
      * Muestra únicamente el panel del paso elegido sin ejecutar su acción.
      *
-     * @param index posición del paso habilitado
+     * @param index índice del panel que se muestra: 0 para selección, 1 para
+     *              extracción o 2 para filtrado; el botón llamante controla su habilitación
      */
     private void showStep(int index) {
         currentStep = index;
@@ -214,9 +246,12 @@ public final class StatementSection extends VBox {
     }
 
     /**
-     * Conserva el PDF elegido e invalida cualquier resultado del documento anterior.
+     * Conserva el PDF elegido, establece su carpeta como destino inicial y limpia
+     * los resultados de extracción y filtrado del documento anterior.
+     * Actualiza las tarjetas, vuelve al primer panel e inicia la previsualización.
      *
-     * @param file archivo elegido en el selector
+     * @param file PDF seleccionado, no nulo; su lectura se comprueba al previsualizarlo
+     *             o extraerlo, no durante esta asignación
      */
     private void selectPdf(File file) {
         selectedPdf = file.toPath().toAbsolutePath().normalize();
@@ -225,8 +260,7 @@ public final class StatementSection extends VBox {
         filename.setText(file.getName());
         filePath.setText(file.getAbsolutePath());
         fileCard.pseudoClassStateChanged(SELECTED, true);
-        text.clear();
-        statuses.get(1).setText("");
+        resetExtract();
         resetFilter();
         updateState();
         showStep(0);
@@ -235,35 +269,10 @@ public final class StatementSection extends VBox {
     }
 
     /**
-     * Abre el selector nativo limitado a archivos PDF.
-     *
-     * @param owner ventana propietaria del selector
-     * @return archivo seleccionado o null si se cancela
+     * Solicita una carpeta de salida y actualiza los destinos previstos de ambos TXT.
+     * Cancelar conserva la carpeta actual. Elegir otra carpeta no mueve los archivos
+     * ya generados ni vuelve a ejecutar la extracción o el filtrado.
      */
-    private static File choosePdf(Window owner) {
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle("Seleccionar enunciado PDF");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Documentos PDF", "*.pdf", "*.PDF"));
-        return chooser.showOpenDialog(owner);
-    }
-
-    /**
-     * Abre el selector de destino en la carpeta actualmente elegida.
-     *
-     * @param owner ventana propietaria
-     * @param current carpeta de salida actual
-     * @return carpeta seleccionada, o null al cancelar
-     */
-    private static File chooseOutputFolder(Window owner, Path current) {
-        DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle("Carpeta de salida de los enunciados");
-        if (Files.isDirectory(current)) {
-            chooser.setInitialDirectory(current.toFile());
-        }
-        return chooser.showDialog(owner);
-    }
-
-    /** Cambia el destino de las siguientes operaciones sin mover archivos ya generados. */
     private void changeOutputFolder() {
         File folder = chooseFolder.apply(getScene() == null ? null : getScene().getWindow(), outputFolder);
         if (folder != null) {
@@ -273,7 +282,11 @@ public final class StatementSection extends VBox {
         }
     }
 
-    /** Abre el destino en el explorador del sistema y comunica cualquier error. */
+    /**
+     * Captura la carpeta actual y solicita abrirla en el explorador mediante una
+     * tarea auxiliar. Comprueba que exista y que el sistema admita la apertura;
+     * comunica el resultado o el error en el panel desde el que se solicitó.
+     */
     private void openOutputFolder() {
         Path folder = outputFolder;
         int step = currentStep;
@@ -291,7 +304,11 @@ public final class StatementSection extends VBox {
                 "No se pudo abrir la carpeta de salida: " + folder);
     }
 
-    /** Muestra el destino y los nombres que se utilizarán en las próximas operaciones. */
+    /**
+     * Actualiza las etiquetas de nombre y ruta de las dos tarjetas de salida a partir
+     * del PDF y la carpeta actuales. Describe destinos previstos, no garantiza que
+     * los archivos existan ni modifica archivos en disco.
+     */
     private void updateOutputFolderLabel() {
         Path extractedPath = outputPath(false);
         Path filteredPath = outputPath(true);
@@ -304,8 +321,11 @@ public final class StatementSection extends VBox {
     /**
      * Calcula el nombre del resultado a partir del PDF original.
      *
-     * @param filtered indica si se genera el resultado filtrado
-     * @return ruta absoluta del TXT
+     * <p>Requiere un PDF seleccionado y una carpeta de salida asignada.</p>
+     *
+     * @param filtered {@code true} para añadir {@code -filtrado.txt};
+     *                 {@code false} para utilizar únicamente la extensión {@code .txt}
+     * @return ruta absoluta del TXT en la carpeta de salida actual, sin crearlo
      */
     private Path outputPath(boolean filtered) {
         String name = selectedPdf.getFileName().toString();
@@ -315,25 +335,13 @@ public final class StatementSection extends VBox {
     }
 
     /**
-     * Solicita permiso para sobrescribir, sin dar por aceptado el cierre del diálogo.
+     * Comprueba si el destino existe y, en ese caso, solicita autorización para
+     * reemplazarlo. Si se rechaza, muestra la cancelación en el panel indicado.
+     * No crea ni escribe el archivo: captura el destino y el permiso para la tarea.
      *
-     * @param path archivo existente
-     * @return true solo si se confirma el reemplazo
-     */
-    private static boolean confirmOverwrite(Path path) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                "El archivo ya existe:\n" + path + "\n\n¿Quieres reemplazarlo?",
-                ButtonType.YES, ButtonType.NO);
-        alert.setTitle("Confirmar sobrescritura");
-        alert.setHeaderText("Reemplazar archivo de salida");
-        return alert.showAndWait().filter(ButtonType.YES::equals).isPresent();
-    }
-
-    /**
-     * Comprueba el destino y pide confirmación antes de iniciar el procesamiento.
-     *
-     * @param path destino del resultado
-     * @return destino autorizado, o null si se cancela
+     * @param path ruta del archivo que se pretende generar
+     * @param step índice del panel que recibe el mensaje de cancelación (0, 1 o 2)
+     * @return destino y permiso de sobrescritura, o {@code null} si se rechaza el reemplazo
      */
     private OutputFile prepareOutput(Path path, int step) {
         boolean exists = Files.exists(path);
@@ -345,25 +353,33 @@ public final class StatementSection extends VBox {
     }
 
     /**
-     * Guarda en UTF-8; no reemplaza archivos aparecidos después de comprobar el destino.
+     * Escribe el resultado en UTF-8 sin crear directorios padre. Si se autorizó
+     * sobrescribir, trunca el archivo existente; en caso contrario exige crear uno
+     * nuevo, evitando reemplazar un archivo aparecido después de la comprobación.
      *
-     * @param output destino y permiso de sobrescritura
-     * @param content resultado que se debe persistir
-     * @throws IOException si el destino no permite escribir el archivo
+     * @param output ruta de destino y autorización de sobrescritura capturadas previamente
+     * @param content texto que se debe guardar
+     * @throws IOException si no puede escribirse el destino, por ejemplo por permisos,
+     *                     ausencia de su carpeta o conflicto con el modo de creación
      */
     private static void writeOutput(OutputFile output, String content) throws IOException {
         Files.writeString(output.path(), content, StandardCharsets.UTF_8, StandardOpenOption.WRITE,
                 output.overwrite() ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW);
     }
 
-    /** Extrae el PDF en un hilo auxiliar y presenta el resultado en el hilo de JavaFX. */
+    /**
+     * Prepara el destino y extrae el PDF seleccionado en una tarea auxiliar.
+     * Tras autorizar la operación, limpia la extracción y el filtrado anteriores.
+     * Solo guarda un TXT si obtiene texto no vacío; presenta el resultado en JavaFX
+     * o informa de la ausencia de texto extraíble, de errores de lectura o de escritura.
+     */
     private void extractText() {
         OutputFile output = prepareOutput(outputPath(false), 1);
         if (output == null) {
             return;
         }
         Path pdf = selectedPdf;
-        text.clear();
+        resetExtract();
         resetFilter();
         runTask(1, () -> {
             String result = StatementExtractor.extractText(pdf);
@@ -376,24 +392,31 @@ public final class StatementSection extends VBox {
                 showStatus(1, "El PDF no contiene texto extraíble. Si está escaneado, necesita OCR.", true);
                 return;
             }
-            text.setText(result);
-            text.positionCaret(0);
+            extractedText.setText(result);
+            extractedText.positionCaret(0);
             showStatus(1, "Texto extraído correctamente. Ya puedes continuar al paso 3: Filtrar texto."
                     + "\nArchivo generado: " + output.path(), false);
         }, "No se pudo extraer el texto. Comprueba que el PDF sea válido, legible "
                 + "y no esté protegido con contraseña, y que puedas escribir en el destino: " + output.path());
     }
 
-    /** Ejecuta el filtro existente sin modificar el texto original extraído. */
+    /**
+     * Filtra el texto del visor de extracción sin modificarlo y guarda el TXT resultante.
+     * Carga y valida las reglas JSON en cada ejecución; si esa carga falla, la tarea
+     * termina con error antes de escribir, sin recurrir a reglas predeterminadas.
+     * Si no reconoce la estructura, guarda el texto original y muestra una advertencia,
+     * sin marcar el paso como completado.
+     */
     private void filterText() {
         OutputFile output = prepareOutput(outputPath(true), 2);
         if (output == null) {
             return;
         }
-        String original = text.getText();
+        String original = extractedText.getText();
         resetFilter();
         runTask(2, () -> {
-            StatementFilter.Result result = StatementFilter.filter(original);
+            var config = StatementFilterConfigJson.read(filterConfigurationPath());
+            StatementFilter.Result result = StatementFilter.filter(original, config);
             writeOutput(output, result.text());
             return result;
         }, "Filtrando texto…\nArchivo de salida: " + output.path(), result -> {
@@ -404,10 +427,25 @@ public final class StatementSection extends VBox {
                     : "No se ha reconocido la estructura del enunciado. Se conserva el texto original sin filtrar.")
                     + "\nArchivo generado: " + output.path(),
                     !filterCompleted);
-        }, "No se pudo filtrar o guardar el texto. Comprueba el destino: " + output.path());
+        }, "No se pudo filtrar o guardar el texto. Comprueba statement-filter-rules.json "
+                + "(ruta STATEMENT_FILTER_CONFIG_PATH, permisos y reglas válidas) y el destino: " + output.path());
     }
 
-    /** Invalida el resultado del filtro cuando cambia su entrada o se vuelve a ejecutar. */
+    /**
+     * Limpia el visor de extracción y su mensaje. No elimina archivos ni reinicia
+     * el filtrado; el llamante debe invocar {@link #resetFilter()} y actualizar el
+     * estado de los controles cuando corresponda.
+     */
+    private void resetExtract() {
+        extractedText.clear();
+        statuses.get(1).setText("");
+    }
+
+    /**
+     * Limpia el visor y el mensaje del filtro y retira su marca de finalización.
+     * No modifica el texto extraído ni elimina el TXT generado anteriormente.
+     * La actualización visual de botones y marcas corresponde a {@link #updateState()}.
+     */
     private void resetFilter() {
         filteredText.clear();
         statuses.get(2).setText("");
@@ -416,46 +454,37 @@ public final class StatementSection extends VBox {
 
     /**
      * Ejecuta una operación en segundo plano y comunica su resultado en JavaFX.
+     * Bloquea los controles durante la ejecución y muestra el progreso en el panel
+     * indicado. Utiliza un hilo daemon por operación. Los manejadores de éxito y
+     * fallo se ejecutan en el hilo de JavaFX; los fallos de la tarea se registran.
      *
      * @param <T> tipo del resultado
-     * @param step panel al que pertenece la operación y sus mensajes
-     * @param operation operación local que puede fallar
+     * @param step índice del panel al que pertenece la operación (0, 1 o 2)
+     * @param operation trabajo ejecutado fuera de JavaFX; no debe modificar controles
      * @param message mensaje durante la ejecución
-     * @param onSuccess presentación del resultado
+     * @param onSuccess presentación del resultado en JavaFX
      * @param failureMessage mensaje recuperable en caso de error
      */
     private <T> void runTask(int step, Callable<T> operation, String message, Consumer<T> onSuccess,
                             String failureMessage) {
-        Task<T> task = new Task<>() {
-            /** Ejecuta la operación fuera del hilo de interfaz. */
-            @Override
-            protected T call() throws Exception {
-                return operation.call();
-            }
-        };
         busy = true;
         updateState();
         showStatus(step, message, false);
-        task.setOnSucceeded(event -> {
-            onSuccess.accept(task.getValue());
+        runTask(operation, onSuccess, failure -> showStatus(step, failureMessage, true), () -> {
             busy = false;
             updateState();
         });
-        task.setOnFailed(event -> {
-            showStatus(step, failureMessage, true);
-            LOGGER.error("STATEMENT_PROCESSING_ERROR | {}", failureMessage, task.getException());
-            busy = false;
-            updateState();
-        });
-        Thread worker = new Thread(task, "statement-processing");
-        worker.setDaemon(true);
-        worker.start();
     }
 
-    /** Sincroniza el bloqueo, el progreso y las marcas de pasos completados. */
+    /**
+     * Sincroniza los controles con el estado actual: bloquea acciones durante una tarea,
+     * exige un PDF para extraer y texto no vacío para filtrar, y muestra el progreso.
+     * Actualiza las marcas de selección, extracción y filtrado completados a partir
+     * del documento, el visor de extracción y el reconocimiento de la estructura.
+     */
     private void updateState() {
         boolean hasPdf = selectedPdf != null;
-        boolean hasText = !text.getText().isBlank();
+        boolean hasText = !extractedText.getText().isBlank();
         selectPDFButton.setDisable(busy);
         changeFolderButton.setDisable(busy);
         filterChangeFolderButton.setDisable(busy);
@@ -475,16 +504,21 @@ public final class StatementSection extends VBox {
     /**
      * Muestra un mensaje de estado o un error recuperable.
      *
-     * @param message mensaje visible
-     * @param step panel al que pertenece el mensaje
-     * @param error indica si debe resaltarse como error
+     * @param step índice del panel que recibe el mensaje (0, 1 o 2)
+     * @param message texto que sustituye al mensaje anterior; vacío para ocultar la etiqueta
+     * @param error {@code true} para activar el estilo de error; {@code false} para retirarlo
      */
     private void showStatus(int step, String message, boolean error) {
-        Label status = statuses.get(step);
-        status.setText(message);
-        status.pseudoClassStateChanged(ERROR, error);
+        showStatus(statuses.get(step), message, error);
     }
 
-    /** Destino capturado antes del trabajo asíncrono y permiso explícito de reemplazo. */
+    /**
+     * Destino inmutable capturado antes del trabajo asíncrono junto con el permiso
+     * de reemplazo obtenido durante la preparación.
+     *
+     * @param path ruta del archivo que la tarea escribirá
+     * @param overwrite {@code true} si el archivo existía y se autorizó reemplazarlo;
+     *                  {@code false} si debe crearse sin sobrescribir
+     */
     private record OutputFile(Path path, boolean overwrite) { }
 }
