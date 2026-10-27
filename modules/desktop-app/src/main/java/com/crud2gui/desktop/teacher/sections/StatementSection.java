@@ -167,7 +167,7 @@ public final class StatementSection extends Section {
                 UiComponents.panelHeading("Salida", "Se generará un fichero de texto plano con el contenido extraído en la carpeta de salida seleccionada."),
                 UiComponents.outputSettings(outputFilename, outputFolderLabel, changeFolderButton),
                 UiComponents.panelHeading("Iniciar el proceso", "El resultado se mostrará en el visor y se generará un archivo físico en la carpeta de salida."),
-                extractButton, extractedText, statuses.get(1), openFolderButton));
+                extractButton, extractedText, openFolderButton, statuses.get(1)));
         VBox filterPanel = UiComponents.surface(new VBox(14,
                 UiComponents.panelHeading("Filtrar texto", "Antes de trabajar con un LLM que analice el contenido del enunciado, se aplica un filtro para optimizar el texto obtenido."),
                 UiComponents.panelHeading("Salida", "Se generará un fichero de texto plano con el contenido filtrado en la carpeta de salida."),
@@ -181,7 +181,7 @@ public final class StatementSection extends Section {
                 UiComponents.mutedText("El archivo de reglas se lee en cada filtrado. "
                         + "Si no se reconoce la estructura definida, se conserva el texto original."),
                 UiComponents.panelHeading("Iniciar el proceso", "Tomando como referencia el fichero generado en el paso anterior, se aplicará el filtro al texto extraído. El resultado se mostrará en el visor y se generará un archivo físico en la carpeta de salida."),
-                filterButton, filteredText, statuses.get(2), filterOpenFolderButton));
+                filterButton, filteredText, filterOpenFolderButton, statuses.get(2)));
         panels = List.of(pdfPanel, extractionPanel, filterPanel);
 
 
@@ -195,6 +195,7 @@ public final class StatementSection extends Section {
                 UiComponents.arrowConnector(UiComponents.Direction.RIGHT), steps.get(2));
         flow.getStyleClass().add("statement-flow");
         flow.setMaxHeight(Region.USE_PREF_SIZE);
+        flow.setMaxWidth(Region.USE_PREF_SIZE);
         panelHost.getChildren().addAll(panels);
         getChildren().addAll(flow, panelHost, progress);
         showStep(0);
@@ -265,7 +266,7 @@ public final class StatementSection extends Section {
         updateState();
         showStep(0);
         pdfPreview.load(selectedPdf);
-        showStatus(0, "PDF seleccionado. Pulsa «Extraer texto» para continuar.", false);
+        showStatus(0, "PDF seleccionado. Puedes continuar con el paso 2: Extraer texto.", false);
     }
 
     /**
@@ -394,7 +395,7 @@ public final class StatementSection extends Section {
             }
             extractedText.setText(result);
             extractedText.positionCaret(0);
-            showStatus(1, "Texto extraído correctamente. Ya puedes continuar al paso 3: Filtrar texto."
+            showStatus(1, "Texto extraído correctamente. Puedes continuar con el paso 3: Filtrar texto."
                     + "\nArchivo generado: " + output.path(), false);
         }, "No se pudo extraer el texto. Comprueba que el PDF sea válido, legible "
                 + "y no esté protegido con contraseña, y que puedas escribir en el destino: " + output.path());
@@ -423,7 +424,7 @@ public final class StatementSection extends Section {
             filteredText.setText(result.text());
             filteredText.positionCaret(0);
             filterCompleted = result.structureRecognized();
-            showStatus(2, (filterCompleted ? "Texto filtrado correctamente."
+            showStatus(2, (filterCompleted ? "Texto filtrado correctamente. Flujo completado."
                     : "No se ha reconocido la estructura del enunciado. Se conserva el texto original sin filtrar.")
                     + "\nArchivo generado: " + output.path(),
                     !filterCompleted);

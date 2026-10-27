@@ -14,10 +14,18 @@ import java.util.List;
  * @param annotations       anotaciones del atributo
  * @param javadoc           documentacion, o {@code null} si no tiene
  * @param location          posicion en el codigo fuente
+ * @param optional          {@code true} si el enunciado marca este atributo como opcional
  */
 public record FieldInfo(String name, TypeRef type, Visibility visibility, List<Modifier> modifiers,
                         boolean initializedInline, List<AnnotationInfo> annotations,
-                        JavadocInfo javadoc, Location location) {
+                        JavadocInfo javadoc, Location location, boolean optional) {
+
+    /** Mantiene compatibilidad con llamadas que no especifican opcionalidad. */
+    public FieldInfo(String name, TypeRef type, Visibility visibility, List<Modifier> modifiers,
+                     boolean initializedInline, List<AnnotationInfo> annotations,
+                     JavadocInfo javadoc, Location location) {
+        this(name, type, visibility, modifiers, initializedInline, annotations, javadoc, location, false);
+    }
 
     /**
      * Normaliza las listas: {@code null} se convierte en una lista vacia inmutable.

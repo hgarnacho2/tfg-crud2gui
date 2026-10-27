@@ -247,11 +247,16 @@ class StatementSectionTest {
                 assertTrue(button.getParent() == extractionStatus.getParent()
                         || button.getParent() == filterStatus.getParent());
                 var siblings = button.getParent().getChildrenUnmodifiable();
-                assertTrue(siblings.indexOf(button) > siblings.indexOf(
+                assertTrue(siblings.indexOf(button) < siblings.indexOf(
                         button.getParent() == extractionStatus.getParent() ? extractionStatus : filterStatus));
+            }
+            for (Label label : List.of(selectionStatus, extractionStatus, filterStatus)) {
+                var siblings = label.getParent().getChildrenUnmodifiable();
+                assertSame(label, siblings.get(siblings.size() - 1));
             }
             controls.select().fire();
             assertTrue(selectionStatus.getText().startsWith("PDF seleccionado"));
+            assertTrue(selectionStatus.getText().contains("Puedes continuar con el paso 2: Extraer texto."));
             assertTrue(selectionStatus.isManaged());
             assertEquals("", extractionStatus.getText());
             return null;
@@ -260,6 +265,7 @@ class StatementSectionTest {
         onFx(() -> {
             Label extractionStatus = (Label) controls.section().lookup("#statement-extraction-status");
             assertTrue(extractionStatus.getText().contains("Archivo generado:"));
+            assertTrue(extractionStatus.getText().contains("Puedes continuar con el paso 3: Filtrar texto."));
             assertTrue(extractionStatus.getText().contains("panel-status.txt"));
             controls.step(1).fire();
             assertTrue(controls.status().getText().startsWith("PDF seleccionado"));

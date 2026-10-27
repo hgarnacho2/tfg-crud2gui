@@ -49,7 +49,7 @@ public final class ModelFromStatementSection extends Section {
     private final Function<Window, File> choosePromptFile;
         private final Label selectedTextName = UiComponents.labelWithGraphic(
             "Ningún texto filtrado seleccionado.", List.of("statement-file-name"),
-            UiComponents.label("TXT", List.of("statement-file-badge")), 12);
+            UiComponents.label("TXT", List.of("statement-file-badge", "statement-neutral-badge")), 12);
         private final Label selectedFile = UiComponents.label(
             "Selecciona el fichero de texto filtrado para comenzar.", List.of("statement-file-path"));
         private final VBox selectedTextCard =
@@ -59,7 +59,7 @@ public final class ModelFromStatementSection extends Section {
     private final Label status = UiComponents.statusLabel("model-statement-status");
         private final Label selectedPromptName = UiComponents.labelWithGraphic(
             "Ningún prompt seleccionado.", List.of("statement-file-name"),
-            UiComponents.label("TXT", List.of("statement-file-badge")), 12);
+            UiComponents.label("TXT", List.of("statement-file-badge", "statement-neutral-badge")), 12);
         private final Label selectedPromptFile = UiComponents.label(
             "Selecciona el fichero con las instrucciones para inferir el modelo.",
             List.of("statement-file-path"));
@@ -90,6 +90,7 @@ public final class ModelFromStatementSection extends Section {
         private final Button generateModelButton = UiComponents.actionButton(
             "Obtener modelo", List.of("statement-select"), this::generateModel);
         private final Label generationStatus = UiComponents.statusLabel("model-statement-generation-status");
+        private final Label diagramStatus = UiComponents.statusLabel("model-statement-diagram-status");
         private final Label generationOutputPath = UiComponents.label(
             "", List.of("statement-file-path", "model-generation-output-path"), true);
         private final TextArea generatedModel = UiComponents.textArea(
@@ -146,6 +147,8 @@ public final class ModelFromStatementSection extends Section {
         selectedTextCard.setId("model-statement-text-card");
         selectedFile.setId("model-statement-source");
         statementText.setId("model-statement-text");
+        statementText.setVisible(false);
+        statementText.setManaged(false);
         Button selectPromptButton = UiComponents.actionButton("Seleccionar prompt",
                 List.of("statement-select"), this::selectPromptFile);
         selectPromptButton.setId("model-statement-select-prompt");
@@ -204,6 +207,10 @@ public final class ModelFromStatementSection extends Section {
         VBox.setVgrow(statementText, Priority.ALWAYS);
         VBox.setVgrow(statementContent, Priority.ALWAYS);
         VBox statementPanel = UiComponents.surface(statementContent);
+        statementPanel.maxHeightProperty().bind(javafx.beans.binding.Bindings
+                .when(statementText.managedProperty())
+                .then(Double.MAX_VALUE).otherwise(Region.USE_PREF_SIZE));
+        StackPane.setAlignment(statementPanel, javafx.geometry.Pos.TOP_LEFT);
         VBox promptContent = new VBox(14,
             UiComponents.panelHeading("Seleccionar prompt",
                 "Selecciona el fichero de texto con las instrucciones para inferir el modelo."),
@@ -231,8 +238,8 @@ public final class ModelFromStatementSection extends Section {
                     "Envía el prompt y el enunciado al cliente seleccionado."),
                 requestSummary, UiComponents.outputSettings(outputFilename, outputFolderLabel,
                     changeOutputFolderButton),
-                generateModelButton, generationStatus, generationOutputPath,
-                openOutputFolderButton, generatedModel);
+                generateModelButton, generationOutputPath,
+                openOutputFolderButton, generatedModel, generationStatus);
             VBox.setVgrow(generatedModel, Priority.ALWAYS);
             VBox.setVgrow(generationContent, Priority.ALWAYS);
             VBox generationPanel = UiComponents.surface(generationContent);
@@ -247,7 +254,7 @@ public final class ModelFromStatementSection extends Section {
             VBox diagramContent = new VBox(14,
                 UiComponents.panelHeading("Diagrama de clases UML",
                     "La clase gestora se sitúa en el centro; las relaciones enlazan las clases del modelo."),
-                diagramScroll);
+                diagramScroll, diagramStatus);
             VBox.setVgrow(diagramScroll, Priority.ALWAYS);
             VBox.setVgrow(diagramContent, Priority.ALWAYS);
             VBox diagramPanel = UiComponents.surface(diagramContent);
@@ -273,6 +280,7 @@ public final class ModelFromStatementSection extends Section {
         flow.getStyleClass().add("statement-flow");
         flow.getStyleClass().add("model-statement-flow");
         flow.setMaxHeight(Region.USE_PREF_SIZE);
+        flow.setMaxWidth(Region.USE_PREF_SIZE);
         StackPane panelHost = new StackPane();
         panelHost.getChildren().addAll(panels);
         VBox.setVgrow(panelHost, Priority.ALWAYS);
@@ -374,12 +382,15 @@ public final class ModelFromStatementSection extends Section {
             String text = Files.readString(file.toPath(), StandardCharsets.UTF_8);
             statementText.setText(text);
             statementText.positionCaret(0);
+            statementText.setVisible(true);
+            statementText.setManaged(true);
             selectedTextName.setText(file.getName());
             selectedFile.setText(file.getAbsolutePath());
             selectedTextCard.pseudoClassStateChanged(SELECTED, true);
             updateRequestSummary();
             invalidateGeneratedModel();
-            showStatus(status, "Texto del enunciado cargado correctamente.", false);
+            showStatus(status, "Texto del enunciado cargado correctamente. "
+                    + "Puedes continuar con el paso 2: Seleccionar prompt.", false);
             steps.get(0).pseudoClassStateChanged(COMPLETED, true);
             steps.get(1).setDisable(false);
         } catch (IOException | SecurityException exception) {
@@ -403,7 +414,8 @@ public final class ModelFromStatementSection extends Section {
             selectedPromptCard.pseudoClassStateChanged(SELECTED, true);
             updateRequestSummary();
             invalidateGeneratedModel();
-            showStatus(promptStatus, "Prompt cargado correctamente.", false);
+            showStatus(promptStatus, "Prompt cargado correctamente. "
+                    + "Puedes continuar con el paso 3: Seleccionar LLM.", false);
             steps.get(1).pseudoClassStateChanged(COMPLETED, true);
             steps.get(2).setDisable(false);
         } catch (IOException | SecurityException exception) {
@@ -464,8 +476,9 @@ public final class ModelFromStatementSection extends Section {
         invalidateGeneratedModel();
         generateModelButton.setDisable(!selected || generationBusy);
         if (selected) {
-            showStatus(modelStatus, "Cliente: " + provider.displayName()
-                + " | Modelo: " + model.displayName() + ".", false);
+            showStatus(modelStatus, "Modelo de lenguaje seleccionado. "
+                    + "Puedes continuar con el paso 4: Obtener modelo.\nCliente: " + provider.displayName()
+                    + " | Modelo: " + model.displayName() + ".", false);
         }
     }
 
@@ -486,6 +499,7 @@ public final class ModelFromStatementSection extends Section {
         generatedModel.setVisible(false);
         generatedModel.setManaged(false);
         classDiagram.setModel(null);
+        showStatus(diagramStatus, "", false);
         generationOutputPath.setText("");
         showStatus(generationStatus, "", false);
     }
@@ -525,6 +539,7 @@ public final class ModelFromStatementSection extends Section {
             generatedModel.setVisible(true);
             generatedModel.setManaged(true);
             classDiagram.setModel(result.projectModel());
+            showStatus(diagramStatus, "Diagrama de clases generado correctamente. Flujo completado.", false);
             generationOutputPath.setText("Resultado: " + result.outputPath());
             showStatus(generationStatus, successSummary(result.analysis().response()), false);
             steps.get(3).pseudoClassStateChanged(COMPLETED, true);
@@ -555,7 +570,8 @@ public final class ModelFromStatementSection extends Section {
 
     private String successSummary(com.crud2gui.statementanalyzer.model.ModelResponse response) {
         double seconds = response.elapsed().toMillis() / 1000.0;
-        return "Análisis completado. Modelo: " + response.provider() + "/" + response.model()
+        return "Análisis completado. Puedes continuar con el paso 5: Diagrama de clases.\nModelo: "
+                + response.provider() + "/" + response.model()
                 + " | " + String.format(Locale.getDefault(), "%.1f", seconds) + " s"
                 + " | tokens entrada/salida: " + tokenCount(response.inputTokens())
                 + "/" + tokenCount(response.outputTokens())

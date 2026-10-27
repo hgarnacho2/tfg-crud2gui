@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.crud2gui.javamodelextractor.ProjectParserTest
--------------------------------------------------------------------------------
-Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.549 s -- in com.crud2gui.javamodelextractor.ProjectParserTest

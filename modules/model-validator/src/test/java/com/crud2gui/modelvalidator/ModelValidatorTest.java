@@ -105,6 +105,30 @@ class ModelValidatorTest {
     }
 
     @Test
+    void acceptsStructuredOptionalTypesFieldsAndMethodsWithoutWarnings() {
+        TypeInfo expectedWithOptionalMembers = new TypeInfo("Owner", "Owner", "", TypeKind.CLASS,
+                Visibility.PUBLIC, List.of(), null, null, List.of(), List.of(), List.of(), null, null,
+                false, List.of(new FieldInfo("note", typeRef("String", false), Visibility.PRIVATE,
+                        List.of(), false, List.of(), null, null, true)), List.of(),
+                List.of(new MethodInfo("find", typeRef("String", false), Visibility.PUBLIC, List.of(),
+                        List.of(), List.of(), List.of(), true, null, null, true)), List.of(), false);
+        TypeInfo optionalType = new TypeInfo("OptionalType", "OptionalType", "", TypeKind.CLASS,
+                Visibility.PUBLIC, List.of(), null, null, List.of(), List.of(), List.of(), null, null,
+                false, List.of(), List.of(), List.of(), List.of(), true);
+        ProjectModel expected = model(List.of(expectedWithOptionalMembers, optionalType),
+                List.of(), List.of(), null);
+        ProjectModel actual = model(List.of(
+                type("Owner", "", TypeKind.CLASS, List.of(), List.of(), List.of(), false)),
+                List.of(), List.of(), null);
+
+        ModelValidator.Result result = ModelValidator.validate(expected, actual);
+
+        assertTrue(result.isValid());
+        assertFalse(result.findings().stream().anyMatch(f -> f.code().equals("MISSING_TYPE")
+                || f.code().equals("MISSING_FIELD") || f.code().equals("MISSING_METHOD")));
+    }
+
+    @Test
     void keepsNonOwnershipRelationKindMismatchAsStructuralError() {
         List<TypeInfo> types = List.of(
                 type("Child", "", TypeKind.CLASS, List.of(), List.of(), List.of(), false),

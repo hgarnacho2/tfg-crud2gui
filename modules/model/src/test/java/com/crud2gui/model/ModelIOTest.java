@@ -53,6 +53,32 @@ class ModelIOTest {
         assertTrue(model.relations().isEmpty());
     }
 
+    /** Lee y conserva marcas de opcionalidad, manteniendo false para modelos anteriores al campo. */
+    @Test
+    void conservaOpcionalidadYAdmiteJsonAnterior() throws Exception {
+        ProjectModel optionalModel = ModelIO.fromJson("""
+                {
+                  "schemaVersion":"1.0",
+                  "types":[{
+                    "id":"Opcional","name":"Opcional","kind":"CLASS","optional":true,
+                    "fields":[{"name":"dato","optional":true}],
+                    "methods":[{"name":"accion","optional":true}]
+                  }],
+                  "relations":[]
+                }
+                """);
+
+        TypeInfo optionalType = optionalModel.types().get(0);
+        assertTrue(optionalType.optional());
+        assertTrue(optionalType.fields().get(0).optional());
+        assertTrue(optionalType.methods().get(0).optional());
+        assertEquals(optionalModel, ModelIO.fromJson(ModelIO.toJson(optionalModel)));
+        ProjectModel oldModel = ModelIO.fromJson("""
+                {"schemaVersion":"1.0","types":[{"id":"Antiguo","kind":"CLASS"}],"relations":[]}
+                """);
+        assertFalse(oldModel.types().get(0).optional());
+    }
+
     /** Un fichero con otra version mayor del esquema se rechaza. */
     @Test
     void rechazaVersionMayorIncompatible() throws Exception {

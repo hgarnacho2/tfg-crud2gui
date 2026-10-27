@@ -8,6 +8,7 @@ import com.crud2gui.statementanalyzer.model.ModelResponse;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -48,12 +49,13 @@ class ModelFromStatementSectionTest {
                                 {"id": "PlataformaCompraVenta", "name": "PlataformaCompraVenta", "packageName": "",
                                  "kind": "CLASS", "fields": [], "constructors": [], "methods": []},
                                 {"id": "Usuario", "name": "Usuario", "packageName": "", "kind": "CLASS",
+                                 "optional": true,
                                  "fields": [{"name": "email", "type": {"name": "String", "projectType": false,
                                  "arguments": [], "arrayDimensions": 0}, "visibility": "PRIVATE", "modifiers": [],
-                                 "initializedInline": false}], "constructors": [],
+                                 "initializedInline": false, "optional": true}], "constructors": [],
                                  "methods": [{"name": "getEmail", "returnType": {"name": "String", "projectType": false,
                                  "arguments": [], "arrayDimensions": 0}, "visibility": "PUBLIC", "modifiers": [],
-                                 "parameters": [], "hasBody": true}]},
+                                 "parameters": [], "hasBody": true, "optional": true}]},
                                 {"id": "Producto", "name": "Producto", "packageName": "", "kind": "CLASS",
                                  "fields": [], "constructors": [], "methods": []}
                             ],
@@ -136,6 +138,7 @@ class ModelFromStatementSectionTest {
             Label source = (Label) section.lookup("#model-statement-source");
             Label selectedTextName = (Label) section.lookup("#model-statement-text-card .statement-file-name");
             Label selectedTextBadge = (Label) selectedTextName.getGraphic();
+            assertTrue(selectedTextBadge.getStyleClass().contains("statement-neutral-badge"));
             Label status = (Label) section.lookup("#model-statement-status");
             TextArea prompt = (TextArea) section.lookup("#model-statement-prompt-text");
             Label promptSource = (Label) section.lookup("#model-statement-prompt-source");
@@ -148,10 +151,35 @@ class ModelFromStatementSectionTest {
             Button openOutputFolder = (Button) section.lookup("#model-statement-open-output-folder");
             StackPane panelHost = (StackPane) section.getChildren().get(2);
             assertEquals(5, panelHost.getChildren().size());
+            String[] statusIds = {"model-statement-status", "model-statement-prompt-status",
+                    "model-statement-llm-status", "model-statement-generation-status",
+                    "model-statement-diagram-status"};
+            for (int index = 0; index < statusIds.length; index++) {
+                VBox content = (VBox) ((VBox) panelHost.getChildren().get(index)).getChildren().get(0);
+                assertEquals(section.lookup("#" + statusIds[index]),
+                        content.getChildren().get(content.getChildren().size() - 1));
+            }
             assertEquals(Region.USE_PREF_SIZE, section.getMinHeight());
             assertEquals(Priority.ALWAYS, VBox.getVgrow(panelHost));
             assertEquals(Priority.ALWAYS, VBox.getVgrow(text));
             assertFalse(text.isEditable());
+            assertFalse(text.isVisible());
+            assertFalse(text.isManaged());
+            StackPane root = new StackPane(section);
+            new Scene(root, 1200, 1000);
+            root.resize(1200, 1000);
+            root.applyCss();
+            root.layout();
+            javafx.scene.layout.HBox flow = (javafx.scene.layout.HBox) section.getChildren().get(1);
+            root.resize(2200, 1000);
+            root.layout();
+            assertEquals(flow.prefWidth(-1), flow.getWidth(), 1);
+            assertTrue(flow.getWidth() < section.getWidth() - section.getInsets().getLeft()
+                    - section.getInsets().getRight());
+            VBox statementPanel = (VBox) panelHost.getChildren().get(0);
+            assertEquals(statementPanel.prefHeight(statementPanel.getWidth()), statementPanel.getHeight(), 1);
+            assertEquals(0, statementPanel.getLayoutY(), 1);
+            assertTrue(statementPanel.getHeight() < panelHost.getHeight() / 2);
                 assertEquals(List.of("gemini", "groq", "ollama"), providers.getItems().stream()
                     .map(ModelClientProvider.class::cast).map(ModelClientProvider::id).toList());
                 assertTrue(models.isDisabled());
@@ -171,12 +199,17 @@ class ModelFromStatementSectionTest {
 
             ((Button) section.lookup("#model-statement-select-text")).fire();
             assertEquals("Texto filtrado del enunciado.", text.getText());
+            assertTrue(text.isVisible());
+            assertTrue(text.isManaged());
+            root.layout();
+            assertEquals(panelHost.getHeight(), statementPanel.getHeight(), 1);
                 assertEquals(textFile.getFileName().toString(), selectedTextName.getText());
                 assertEquals("TXT", selectedTextBadge.getText());
             assertEquals(textFile.toAbsolutePath().toString(), source.getText());
                 assertTrue(section.lookup("#model-statement-text-card").getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("selected")));
             assertTrue(status.getText().contains("cargado correctamente"));
+            assertTrue(status.getText().contains("Puedes continuar con el paso 2: Seleccionar prompt."));
             assertFalse(((Button) section.lookup("#statement-step-2")).isDisabled());
             assertTrue(((Button) section.lookup("#statement-step-1")).getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("completed")));
@@ -200,10 +233,31 @@ class ModelFromStatementSectionTest {
                 assertTrue(section.lookup("#model-statement-prompt-card").getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("selected")));
             assertTrue(promptStatus.getText().contains("cargado correctamente"));
+            assertTrue(promptStatus.getText().contains("Puedes continuar con el paso 3: Seleccionar LLM."));
             assertFalse(((Button) section.lookup("#statement-step-3")).isDisabled());
             assertTrue(((Button) section.lookup("#statement-step-4")).isDisabled());
             assertTrue(((Button) section.lookup("#statement-step-2")).getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("completed")));
+            return null;
+        });
+    }
+
+    @Test
+    void keepsStatementViewerHiddenWhenSelectionIsCancelledOrReadingFails() throws Exception {
+        AtomicReference<File> selected = new AtomicReference<>();
+        onFx(() -> {
+            ModelFromStatementSection section = new ModelFromStatementSection(owner -> selected.get());
+            TextArea text = (TextArea) section.lookup("#model-statement-text");
+            Button select = (Button) section.lookup("#model-statement-select-text");
+            select.fire();
+            assertFalse(text.isVisible());
+            assertFalse(text.isManaged());
+            selected.set(directory.resolve("inexistente.txt").toFile());
+            select.fire();
+            assertFalse(text.isVisible());
+            assertFalse(text.isManaged());
+            assertTrue(((Label) section.lookup("#model-statement-status")).getText()
+                    .contains("No se pudo leer"));
             return null;
         });
     }
@@ -234,6 +288,8 @@ class ModelFromStatementSectionTest {
         awaitStatus(modelStatus, "1 modelos");
         onFx(() -> {
             ((ComboBox<?>) section.lookup("#model-statement-model")).getSelectionModel().select(0);
+            assertTrue(((Label) section.lookup("#model-statement-llm-status")).getText()
+                    .contains("Puedes continuar con el paso 4: Obtener modelo."));
             ((Button) section.lookup("#statement-step-4")).fire();
             assertEquals("Cliente simulado",
                     ((Label) section.lookup("#model-statement-request-provider")).getText());
@@ -252,6 +308,9 @@ class ModelFromStatementSectionTest {
             TextArea result = (TextArea) section.lookup("#model-statement-generated-json");
             Label output = (Label) section.lookup(".model-generation-output-path");
             assertTrue(result.getText().contains("\"name\" : \"Usuario\""));
+            assertTrue(generationStatus.getText().contains("Puedes continuar con el paso 5: Diagrama de clases."));
+            assertEquals("Diagrama de clases generado correctamente. Flujo completado.",
+                    ((Label) section.lookup("#model-statement-diagram-status")).getText());
             Path outputPath = Path.of(output.getText().substring("Resultado: ".length()));
             assertTrue(outputPath.startsWith(selectedOutputDirectory.toAbsolutePath().normalize()));
             assertTrue(Files.isRegularFile(outputPath));
@@ -266,8 +325,18 @@ class ModelFromStatementSectionTest {
                 ClassDiagramView diagram = (ClassDiagramView) diagramScroll.getContent();
                 assertEquals(3, diagram.lookupAll(".uml-class-card").size());
                 assertEquals(1, diagram.lookupAll(".uml-manager-card").size());
+                assertTrue(diagram.lookupAll(".uml-package-name").isEmpty());
                 assertEquals("PlataformaCompraVenta", diagram.getModel().expectedManagerId());
                 assertEquals(2, diagram.getModel().relations().size());
+                assertTrue(diagram.lookupAll(".uml-stereotype").stream()
+                        .map(node -> ((Label) node).getText())
+                        .anyMatch(text -> text.equals("<<opcional>> <<class>>")));
+                assertTrue(diagram.lookupAll(".uml-member-line").stream()
+                        .map(node -> ((Label) node).getText())
+                        .anyMatch(text -> text.contains("email : String «opcional»")));
+                assertTrue(diagram.lookupAll(".uml-member-line").stream()
+                        .map(node -> ((Label) node).getText())
+                        .anyMatch(text -> text.contains("getEmail() : String «opcional»")));
                     diagram.applyCss();
                     diagram.resize(diagram.getPrefWidth(), diagram.getPrefHeight());
                     diagram.layout();

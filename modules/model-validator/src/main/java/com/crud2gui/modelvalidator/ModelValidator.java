@@ -69,9 +69,15 @@ public final class ModelValidator {
         Objects.requireNonNull(options, "options");
 
         List<Finding> findings = new ArrayList<>();
-        Set<String> optionalTypes = optionalTypes(expected.source());
-        Set<String> optionalFields = optionalFields(expected.source());
-        Set<String> optionalMethods = optionalMethods(expected.source());
+        Set<String> optionalTypes = new HashSet<>(optionalTypes(expected.source()));
+        expected.types().stream().filter(TypeInfo::optional)
+                .map(type -> typeKey(type.id())).forEach(optionalTypes::add);
+        Set<String> optionalFields = new HashSet<>(optionalFields(expected.source()));
+        expected.types().forEach(type -> type.fields().stream().filter(field -> field.optional())
+                .map(field -> fieldKey(type.name(), field.name())).forEach(optionalFields::add));
+        Set<String> optionalMethods = new HashSet<>(optionalMethods(expected.source()));
+        expected.types().forEach(type -> type.methods().stream().filter(MethodInfo::optional)
+                .map(method -> methodKey(type.name(), methodSignature(method))).forEach(optionalMethods::add));
         Set<String> unspecifiedFieldNames = unspecifiedFieldNames(expected.source());
         Map<String, TypeInfo> expectedTypes = indexTypes(expected.types(), "expected", findings);
         List<CollectionOperationRequirement> collectionOperations =

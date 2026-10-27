@@ -1,6 +1,5 @@
 package com.crud2gui.desktop.teacher.sections;
 
-import com.crud2gui.model.ConstructorInfo;
 import com.crud2gui.model.MethodInfo;
 import com.crud2gui.model.Modifier;
 import com.crud2gui.model.ProjectModel;
@@ -31,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /** Vista desplazable del diagrama UML del modelo inferido. */
 public final class ClassDiagramView extends Pane {
@@ -46,6 +46,8 @@ public final class ClassDiagramView extends Pane {
     private final Map<String, Point2D> draggedCenters = new HashMap<>();
     private final Map<String, Integer> layers = new HashMap<>();
     private ProjectModel model;
+    private List<TypeInfo> diagramTypes = List.of();
+    private List<Relation> diagramRelations = List.of();
     private String managerTypeId;
 
     public ClassDiagramView() {
@@ -57,29 +59,41 @@ public final class ClassDiagramView extends Pane {
 
     /** Sustituye el modelo dibujado y reconstruye sus tarjetas y relaciones. */
     public void setModel(ProjectModel model) {
+        String detectedManagerId = model == null || model.analysis() == null
+                || model.analysis().managerClass() == null
+                ? null : model.analysis().managerClass().id();
+        String selectedManagerId = model == null || model.expectedManagerId() == null
+                ? detectedManagerId : model.expectedManagerId();
+        setModel(model, selectedManagerId);
+    }
+
+    /** Sustituye el modelo dibujado y fija la clase gestora que debe resaltarse. */
+    public void setModel(ProjectModel model, String selectedManagerId) {
         this.model = model;
         cards.clear();
         centers.clear();
         draggedCenters.clear();
         layers.clear();
         getChildren().setAll(relationships);
-        managerTypeId = null;
-        if (model == null || model.types().isEmpty()) {
+        diagramTypes = model == null ? List.of() : model.types().stream()
+                .filter(type -> !type.hasMainMethod())
+                .toList();
+        Set<String> visibleTypeIds = diagramTypes.stream()
+                .map(TypeInfo::id)
+                .collect(java.util.stream.Collectors.toSet());
+        diagramRelations = filterDiagramRelations(model, visibleTypeIds);
+        managerTypeId = visibleTypeIds.contains(selectedManagerId) ? selectedManagerId : null;
+        if (diagramTypes.isEmpty()) {
             setMinSize(1000, 700);
             setPrefSize(1500, 1000);
             requestLayout();
             return;
         }
 
-        managerTypeId = model.types().stream()
-                .filter(type -> Objects.equals(type.id(), model.expectedManagerId()))
-                .map(TypeInfo::id)
-                .findFirst()
-            .orElse(null);
-        layers.putAll(calculateLayers(model, managerTypeId));
+        layers.putAll(calculateLayers(diagramTypes, diagramRelations, managerTypeId));
         int cardIndex = 0;
-        for (TypeInfo type : orderedTypes(model)) {
-            boolean manager = Objects.equals(type.id(), model.expectedManagerId());
+        for (TypeInfo type : orderedTypes()) {
+            boolean manager = Objects.equals(type.id(), managerTypeId);
             VBox card = createCard(type, manager);
             card.setId("uml-class-card-" + cardIndex++);
             enableDragging(card, type.id());
@@ -94,66 +108,68 @@ public final class ClassDiagramView extends Pane {
         return model;
     }
 
-    private List<TypeInfo> orderedTypes(ProjectModel model) {
-        return model.types().stream()
+    static List<Relation> filterDiagramRelations(ProjectModel model, Set<String> visibleTypeIds) {
+        if (model == null) {
+            return List.of();
+        }
+        Map<String, TypeInfo> typesById = model.types().stream()
+                .collect(java.util.stream.Collectors.toMap(TypeInfo::id, type -> type));
+        return model.relations().stream()
+                .filter(relation -> visibleTypeIds.contains(relation.from())
+                        && visibleTypeIds.contains(relation.to()))
+                .filter(relation -> {
+                    TypeInfo from = typesById.get(relation.from());
+                    TypeInfo to = typesById.get(relation.to());
+                    return relation.kind() != RelationKind.DEPENDENCY
+                            || (from.kind() != TypeKind.ENUM && to.kind() != TypeKind.ENUM);
+                })
+                .toList();
+    }
+
+    private List<TypeInfo> orderedTypes() {
+        return diagramTypes.stream()
                 .sorted(Comparator.comparingInt((TypeInfo type) -> layers.getOrDefault(type.id(), 0))
                         .thenComparing(type -> type.name() == null ? type.id() : type.name(),
                                 String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
-    private static Map<String, Integer> calculateLayers(ProjectModel model, String managerId) {
-        Map<String, List<String>> outgoing = new LinkedHashMap<>();
-        Map<String, Integer> incoming = new HashMap<>();
-        for (TypeInfo type : model.types()) {
-            outgoing.put(type.id(), new ArrayList<>());
-            incoming.put(type.id(), 0);
+    private static Map<String, Integer> calculateLayers(
+            List<TypeInfo> types, List<Relation> relations, String managerId) {
+        Map<String, List<String>> adjacent = new LinkedHashMap<>();
+        for (TypeInfo type : types) {
+            adjacent.put(type.id(), new ArrayList<>());
         }
-        for (Relation relation : model.relations()) {
+        for (Relation relation : relations) {
             if (relation.from() == null || relation.to() == null
-                    || !outgoing.containsKey(relation.from()) || !outgoing.containsKey(relation.to())) {
+                    || relation.kind() == RelationKind.DEPENDENCY
+                    || !adjacent.containsKey(relation.from()) || !adjacent.containsKey(relation.to())) {
                 continue;
             }
-            String source = relation.from();
-            String target = relation.to();
-            if (relation.kind() == RelationKind.INHERITANCE || relation.kind() == RelationKind.REALIZATION) {
-                source = relation.to();
-                target = relation.from();
-            }
-            outgoing.get(source).add(target);
-            incoming.compute(target, (id, count) -> count + 1);
+            adjacent.get(relation.from()).add(relation.to());
+            adjacent.get(relation.to()).add(relation.from());
         }
 
         Map<String, Integer> result = new HashMap<>();
-        List<String> queue = new ArrayList<>();
         if (managerId != null) {
             result.put(managerId, 0);
-            queue.add(managerId);
+            propagateLayers(new ArrayList<>(List.of(managerId)), adjacent, result);
         }
-        for (TypeInfo type : model.types()) {
-            if (incoming.getOrDefault(type.id(), 0) == 0 && !result.containsKey(type.id())) {
-                result.put(type.id(), 0);
-                queue.add(type.id());
-            }
-        }
-        propagateLayers(queue, outgoing, result);
-        for (TypeInfo type : model.types()) {
+        for (TypeInfo type : types) {
             if (!result.containsKey(type.id())) {
                 result.put(type.id(), 0);
-                queue.add(type.id());
-                propagateLayers(queue, outgoing, result);
+                propagateLayers(new ArrayList<>(List.of(type.id())), adjacent, result);
             }
         }
         return result;
     }
 
-    private static void propagateLayers(List<String> queue, Map<String, List<String>> outgoing,
+    private static void propagateLayers(List<String> queue, Map<String, List<String>> adjacent,
                                         Map<String, Integer> layers) {
         ArrayDeque<String> pending = new ArrayDeque<>(queue);
-        queue.clear();
         while (!pending.isEmpty()) {
             String source = pending.removeFirst();
-            for (String target : outgoing.getOrDefault(source, List.of())) {
+            for (String target : adjacent.getOrDefault(source, List.of())) {
                 if (!layers.containsKey(target)) {
                     layers.put(target, layers.get(source) + 1);
                     pending.addLast(target);
@@ -183,10 +199,12 @@ public final class ClassDiagramView extends Pane {
         if (type.modifiers().contains(Modifier.ABSTRACT)) {
             name.getStyleClass().add("uml-abstract-name");
         }
-        Label packageName = new Label(type.packageName() == null || type.packageName().isBlank()
-                ? "Paquete por defecto" : type.packageName());
-        packageName.getStyleClass().add("uml-package-name");
-        title.getChildren().addAll(stereotype, name, packageName);
+        title.getChildren().addAll(stereotype, name);
+        if (type.packageName() != null && !type.packageName().isBlank()) {
+            Label packageName = new Label(type.packageName());
+            packageName.getStyleClass().add("uml-package-name");
+            title.getChildren().add(packageName);
+        }
         header.getChildren().add(title);
         if (manager) {
             Label badge = new Label("GESTORA");
@@ -201,7 +219,7 @@ public final class ClassDiagramView extends Pane {
         }
         card.getChildren().add(section("Atributos", type.fields().stream()
                 .map(field -> visibilitySymbol(field.visibility()) + modifierPrefix(field.modifiers())
-                        + field.name() + " : " + display(field.type()))
+                        + field.name() + " : " + display(field.type()) + optionalSuffix(field.optional()))
                 .toList()));
         card.getChildren().add(new Separator());
         card.getChildren().add(section("Constructores", constructorLines(type)));
@@ -211,10 +229,11 @@ public final class ClassDiagramView extends Pane {
     }
 
     private static String stereotype(TypeInfo type) {
+        String optionalPrefix = type.optional() ? "<<opcional>> " : "";
         if (type.modifiers().contains(Modifier.ABSTRACT)) {
-            return "<<abstract class>>";
+            return optionalPrefix + "<<abstract class>>";
         }
-        return switch (type.kind()) {
+        return optionalPrefix + switch (type.kind()) {
             case INTERFACE -> "<<interface>>";
             case ENUM -> "<<enumeration>>";
             case RECORD -> "<<record>>";
@@ -256,7 +275,12 @@ public final class ClassDiagramView extends Pane {
     private static List<String> methodLines(List<MethodInfo> methods) {
         return methods.stream().map(method -> visibilitySymbol(method.visibility())
                 + modifierPrefix(method.modifiers()) + method.name()
-                + "(" + parameters(method.parameters()) + ") : " + display(method.returnType())).toList();
+                + "(" + parameters(method.parameters()) + ") : " + display(method.returnType())
+                + optionalSuffix(method.optional())).toList();
+    }
+
+    private static String optionalSuffix(boolean optional) {
+        return optional ? " «opcional»" : "";
     }
 
     private static String parameters(List<com.crud2gui.model.ParameterInfo> parameters) {
@@ -331,7 +355,7 @@ public final class ClassDiagramView extends Pane {
 
     private Map<Integer, List<String>> idsByLayer() {
         Map<Integer, List<String>> columns = new java.util.TreeMap<>();
-        for (TypeInfo type : orderedTypes(model)) {
+        for (TypeInfo type : orderedTypes()) {
             columns.computeIfAbsent(layers.getOrDefault(type.id(), 0), ignored -> new ArrayList<>())
                     .add(type.id());
         }
@@ -398,7 +422,7 @@ public final class ClassDiagramView extends Pane {
         GraphicsContext graphics = relationships.getGraphicsContext2D();
         graphics.clearRect(0, 0, width, height);
         graphics.setFont(Font.font("Segoe UI", 12));
-        for (Relation relation : model.relations()) {
+        for (Relation relation : diagramRelations) {
             Point2D fromCenter = centers.get(relation.from());
             Point2D toCenter = centers.get(relation.to());
             VBox fromCard = cards.get(relation.from());

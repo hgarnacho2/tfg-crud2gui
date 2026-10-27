@@ -8,7 +8,11 @@ Desde la raiz del repositorio, ejecuta:
 modules/desktop-app/script/run.sh
 ```
 
-Por defecto, el script instala `common-utils`, `authenticator`, `statement-text-extractor` y `desktop-app` antes de arrancar, para usar siempre las versiones actuales. Usa `--no-install` solo cuando los snapshots actuales ya estén instalados en Maven. Opciones:
+Por defecto, el script compila e instala `desktop-app` y todas sus dependencias del reactor
+(incluidos el modelo y los extractores) antes de arrancar, para usar las versiones actuales.
+No ejecuta `clean`: en Windows puede fallar al borrar archivos de `target` que otro proceso
+tenga abiertos. Los errores de compilacion o instalacion detienen el arranque.
+Usa `--no-install` solo cuando los snapshots actuales ya estén instalados en Maven. Opciones:
 
 ```bash
 modules/desktop-app/script/run.sh --no-install
@@ -87,8 +91,10 @@ los borradores nuevos sin descartar las instancias de las paginas.
 `teacher/sections/StatementSection` muestra tres tarjetas numeradas conectadas por flechas:
 **Seleccionar PDF → Extraer texto → Filtrar texto**. Las tarjetas abren el panel del paso
 sin ejecutar su accion y resaltan el paso activo y los completados.
-Las tarjetas tienen una altura uniforme de 76 px y el flujo un ancho maximo de 860 px,
-para mantener una cabecera compacta incluso en ventanas grandes.
+Las tarjetas tienen una altura uniforme de 76 px. En las tres secciones con pasos,
+el flujo conserva su ancho preferido, alineado a la izquierda, sin estirarse en
+ventanas grandes. Cada tarjeta tiene un ancho preferido de 260 px; los flujos con
+mas pasos ocupan el ancho correspondiente a su numero de tarjetas.
 
 Inicialmente solo esta disponible el primero. Elegir un PDF habilita el segundo paso,
 pero mantiene abierto el primero para previsualizar el documento. El visor local usa PDFBox
@@ -125,3 +131,31 @@ La configuracion de salida aparece dentro de los pasos 2 y 3, justo despues de s
 subtitulo; el paso 1 se dedica al PDF. El boton secundario «Cambiar carpeta de salida»
 permite modificar el destino. Debajo del mensaje final, «Abrir carpeta de salida»
 abre ese destino en el explorador del sistema y comunica los errores de apertura.
+
+### Visor del texto del enunciado
+
+Los pasos de Enunciado, Modelo desde enunciado y Modelo desde codigo muestran su estado
+al pie del panel. Al completar un paso, el mensaje confirma la accion e indica
+«Puedes continuar con el paso X: Nombre del paso». El ultimo paso indica «Flujo completado».
+Los detalles de archivos generados, avisos y estadisticas se conservan debajo de esa indicacion.
+
+En «Enunciado >> Modelo», el visor inferior permanece oculto y no ocupa espacio hasta
+que se selecciona y carga correctamente un fichero de texto. Cancelar o un error de
+lectura conserva la previsualizacion anterior, si la habia.
+El panel inicial queda compacto y alineado arriba; al cargar el texto aprovecha la
+altura disponible para el visor.
+
+### Seleccion de codigo del docente
+
+En «Codigo >> Modelo», una tarjeta compacta indica inicialmente que no hay carpeta
+seleccionada. El arbol y su estado de carga permanecen ocultos hasta seleccionar una
+carpeta valida; cancelar el selector conserva el estado anterior.
+El panel de seleccion tambien permanece compacto hasta seleccionar la carpeta.
+El arbol de la carpeta seleccionada ocupa la altura disponible
+y permite desplazarse con la rueda y las barras. Las carpetas permanecen expandidas;
+los elementos no se pueden seleccionar, abrir ni plegar.
+Los ficheros con extension `.java` se resaltan en verde y negrita.
+Tras cargar el contenido, un mensaje verde confirma la seleccion e indica que se puede
+continuar al paso 2: Obtener modelo.
+Las insignias TXT y FOLDER de las secciones de modelos usan el mismo estilo gris
+que la insignia PDF.

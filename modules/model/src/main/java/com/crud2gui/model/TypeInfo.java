@@ -24,6 +24,7 @@ import java.util.List;
  * @param constructors   constructores declarados
  * @param methods        metodos declarados
  * @param enumConstants  constantes, solo para enums
+ * @param optional       {@code true} si el enunciado marca este tipo como opcional
  */
 public record TypeInfo(String id, String name, String packageName, TypeKind kind,
                        Visibility visibility, List<Modifier> modifiers,
@@ -31,7 +32,21 @@ public record TypeInfo(String id, String name, String packageName, TypeKind kind
                        List<String> typeParameters, List<AnnotationInfo> annotations,
                        JavadocInfo javadoc, Location location, boolean hasMainMethod,
                        List<FieldInfo> fields, List<ConstructorInfo> constructors,
-                       List<MethodInfo> methods, List<EnumConstantInfo> enumConstants) {
+                       List<MethodInfo> methods, List<EnumConstantInfo> enumConstants,
+                       boolean optional) {
+
+    /** Mantiene compatibilidad con llamadas que no especifican opcionalidad. */
+    public TypeInfo(String id, String name, String packageName, TypeKind kind,
+                    Visibility visibility, List<Modifier> modifiers,
+                    String enclosingType, TypeRef superclass, List<TypeRef> interfaces,
+                    List<String> typeParameters, List<AnnotationInfo> annotations,
+                    JavadocInfo javadoc, Location location, boolean hasMainMethod,
+                    List<FieldInfo> fields, List<ConstructorInfo> constructors,
+                    List<MethodInfo> methods, List<EnumConstantInfo> enumConstants) {
+        this(id, name, packageName, kind, visibility, modifiers, enclosingType, superclass, interfaces,
+                typeParameters, annotations, javadoc, location, hasMainMethod, fields, constructors,
+                methods, enumConstants, false);
+    }
 
     /**
      * Normaliza las listas: {@code null} se convierte en una lista vacia inmutable.
