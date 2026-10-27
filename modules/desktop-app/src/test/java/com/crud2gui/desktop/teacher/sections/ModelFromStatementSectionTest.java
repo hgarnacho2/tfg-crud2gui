@@ -73,6 +73,7 @@ class ModelFromStatementSectionTest {
     private static final class FakeProvider implements ModelClientProvider {
         private final AtomicReference<String> prompt = new AtomicReference<>();
         private final AtomicReference<String> statement = new AtomicReference<>();
+        private final AtomicReference<String> answer = new AtomicReference<>(MODEL_JSON);
 
         @Override
         public String id() {
@@ -102,7 +103,7 @@ class ModelFromStatementSectionTest {
                                               GenerationOptions options) {
                     prompt.set(selectedPrompt);
                     statement.set(selectedStatement);
-                    return new ModelResponse("fake", model, MODEL_JSON, "STOP", 120, 35,
+                    return new ModelResponse("fake", model, answer.get(), "STOP", 120, 35,
                             Duration.ofMillis(250));
                 }
             };
@@ -225,8 +226,28 @@ class ModelFromStatementSectionTest {
 
             assertFalse(prompt.isEditable());
             assertEquals(Priority.ALWAYS, VBox.getVgrow(prompt));
+            assertFalse(prompt.isVisible());
+            assertFalse(prompt.isManaged());
+            root.layout();
+            VBox promptPanel = (VBox) panelHost.getChildren().get(1);
+            assertEquals(promptPanel.prefHeight(promptPanel.getWidth()), promptPanel.getHeight(), 1);
+            assertEquals(0, promptPanel.getLayoutY(), 1);
+            assertTrue(promptPanel.getHeight() < panelHost.getHeight() / 2);
             ((Button) section.lookup("#model-statement-select-prompt")).fire();
             assertEquals("Instrucciones para inferir el modelo.", prompt.getText());
+            assertTrue(prompt.isVisible());
+            assertTrue(prompt.isManaged());
+            root.layout();
+            assertEquals(panelHost.getHeight(), promptPanel.getHeight(), 1);
+            double promptHeight = prompt.getHeight();
+            root.resize(2200, 1200);
+            root.layout();
+            assertTrue(prompt.getHeight() > promptHeight + 150);
+            root.resize(2200, 800);
+            root.layout();
+            assertTrue(prompt.getHeight() < promptHeight - 150);
+            assertTrue(promptStatus.isVisible());
+            assertTrue(promptStatus.isManaged());
                 assertEquals(promptFile.getFileName().toString(), promptName.getText());
                 assertEquals("TXT", promptBadge.getText());
             assertEquals(promptFile.toAbsolutePath().toString(), promptSource.getText());
@@ -258,6 +279,43 @@ class ModelFromStatementSectionTest {
             assertFalse(text.isManaged());
             assertTrue(((Label) section.lookup("#model-statement-status")).getText()
                     .contains("No se pudo leer"));
+            return null;
+        });
+    }
+
+    @Test
+    void keepsPromptViewerHiddenWhenSelectionIsCancelledOrReadingFails() throws Exception {
+        AtomicReference<File> selected = new AtomicReference<>();
+        Path promptFile = directory.resolve("prompt.txt");
+        Files.writeString(promptFile, "Instrucciones del modelo.");
+        onFx(() -> {
+            ModelFromStatementSection section =
+                    new ModelFromStatementSection(owner -> null, owner -> selected.get());
+            TextArea prompt = (TextArea) section.lookup("#model-statement-prompt-text");
+            Button select = (Button) section.lookup("#model-statement-select-prompt");
+            Label status = (Label) section.lookup("#model-statement-prompt-status");
+            select.fire();
+            assertFalse(prompt.isVisible());
+            assertFalse(prompt.isManaged());
+            selected.set(directory.resolve("inexistente.txt").toFile());
+            select.fire();
+            assertFalse(prompt.isVisible());
+            assertFalse(prompt.isManaged());
+            assertTrue(status.getText().contains("No se pudo leer"));
+            selected.set(promptFile.toFile());
+            select.fire();
+            assertTrue(prompt.isVisible());
+            assertTrue(prompt.isManaged());
+            assertTrue(status.getText().contains("Puedes continuar con el paso 3: Seleccionar LLM."));
+            selected.set(null);
+            select.fire();
+            assertEquals("Instrucciones del modelo.", prompt.getText());
+            selected.set(directory.resolve("inexistente.txt").toFile());
+            select.fire();
+            assertEquals("Instrucciones del modelo.", prompt.getText());
+            assertTrue(prompt.isVisible());
+            assertTrue(prompt.isManaged());
+            assertTrue(status.getText().contains("No se pudo leer"));
             return null;
         });
     }
@@ -356,6 +414,105 @@ class ModelFromStatementSectionTest {
                                 .intersects(classCards.get(second).getBoundsInParent()));
                         }
                         }
+                ScrollPane pageScroll = new ScrollPane(section);
+                pageScroll.setFitToWidth(true);
+                pageScroll.setFitToHeight(true);
+                StackPane root = new StackPane(pageScroll);
+                new Scene(root, 1200, 650);
+                root.resize(1200, 650);
+                root.applyCss();
+                root.layout();
+                assertEquals(ScrollPane.ScrollBarPolicy.NEVER, diagramScroll.getVbarPolicy());
+                assertTrue(diagramScroll.getViewportBounds().getHeight() >= diagram.getPrefHeight() - 1);
+                assertTrue(section.getHeight() > pageScroll.getViewportBounds().getHeight());
+                assertTrue(classCards.stream().allMatch(card -> card.getBoundsInParent().getMaxY()
+                        <= diagramScroll.getViewportBounds().getHeight()));
+                double initialScroll = pageScroll.getVvalue();
+                diagram.fireEvent(new javafx.scene.input.ScrollEvent(
+                        javafx.scene.input.ScrollEvent.SCROLL, 20, 20, 20, 20,
+                        false, false, false, false, false, false,
+                        0, -120, 0, -120,
+                        javafx.scene.input.ScrollEvent.HorizontalTextScrollUnits.NONE, 0,
+                        javafx.scene.input.ScrollEvent.VerticalTextScrollUnits.NONE, 0, 0, null));
+                assertTrue(pageScroll.getVvalue() > initialScroll, "La rueda debe desplazar la pagina.");
+                pageScroll.setVvalue(1);
+                root.layout();
+                assertEquals(1, pageScroll.getVvalue());
+            return null;
+        });
+    }
+
+    @Test
+    void showsInvalidResponsesWithoutEnablingDiagramAndAllowsRetry() throws Exception {
+        Path textFile = directory.resolve("enunciado.txt");
+        Path promptFile = directory.resolve("prompt.txt");
+        Path outputDirectory = directory.resolve("output");
+        Files.writeString(textFile, "Texto del enunciado.");
+        Files.writeString(promptFile, "Instrucciones del modelo.");
+        FakeProvider provider = new FakeProvider();
+        ModelFromStatementSection section = onFx(() -> new ModelFromStatementSection(
+                owner -> textFile.toFile(), owner -> promptFile.toFile(),
+                (owner, current) -> null, List.of(provider), outputDirectory));
+        onFx(() -> {
+            ((Button) section.lookup("#model-statement-select-text")).fire();
+            ((Button) section.lookup("#model-statement-select-prompt")).fire();
+            @SuppressWarnings("unchecked")
+            ComboBox<ModelClientProvider> providers = (ComboBox<ModelClientProvider>)
+                    section.lookup("#model-statement-provider");
+            providers.setValue(provider);
+            providers.getOnAction().handle(new ActionEvent());
+            return null;
+        });
+        Label llmStatus = onFx(() -> (Label) section.lookup("#model-statement-llm-status"));
+        awaitStatus(llmStatus, "1 modelos");
+        onFx(() -> {
+            @SuppressWarnings("unchecked")
+            ComboBox<ModelInfo> models = (ComboBox<ModelInfo>) section.lookup("#model-statement-model");
+            models.getSelectionModel().selectFirst();
+            ((Button) section.lookup("#statement-step-4")).fire();
+            ((Button) section.lookup("#model-statement-generate-model")).fire();
+            return null;
+        });
+        Label status = onFx(() -> (Label) section.lookup("#model-statement-generation-status"));
+        awaitStatus(status, "Análisis completado");
+        for (String invalid : List.of("{\"types\":[{\"id\":\"A\"]}", "[1,2]", "{\"schemaVersion\":\"99.0\"}")) {
+            provider.answer.set(invalid);
+            onFx(() -> {
+                ((Button) section.lookup("#model-statement-generate-model")).fire();
+                assertTrue(section.lookup("#statement-step-5").isDisabled());
+                return null;
+            });
+            awaitStatus(status, "No se pudo obtener un JSON válido:");
+            onFx(() -> {
+                TextArea viewer = (TextArea) section.lookup("#model-statement-generated-json");
+                assertEquals(invalid, viewer.getText());
+                assertTrue(viewer.isVisible());
+                assertTrue(viewer.isManaged());
+                assertFalse(viewer.isEditable());
+                assertTrue(status.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
+                assertTrue(section.lookup("#statement-step-5").isDisabled());
+                assertFalse(section.lookup("#statement-step-4").getPseudoClassStates()
+                        .contains(PseudoClass.getPseudoClass("completed")));
+                assertEquals("", ((Label) section.lookup(".model-generation-output-path")).getText());
+                ScrollPane diagramScroll = (ScrollPane) section.lookup("#model-statement-class-diagram-scroll");
+                assertEquals(null, ((ClassDiagramView) diagramScroll.getContent()).getModel());
+                return null;
+            });
+        }
+        try (var files = Files.walk(outputDirectory)) {
+            assertEquals(1, files.filter(Files::isRegularFile).count());
+        }
+        provider.answer.set(MODEL_JSON);
+        onFx(() -> {
+            ((Button) section.lookup("#model-statement-generate-model")).fire();
+            return null;
+        });
+        awaitStatus(status, "Análisis completado");
+        onFx(() -> {
+            assertFalse(section.lookup("#statement-step-5").isDisabled());
+            assertFalse(status.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
+            assertTrue(((TextArea) section.lookup("#model-statement-generated-json")).getText()
+                    .contains("\"expectedManagerId\" : \"PlataformaCompraVenta\""));
             return null;
         });
     }

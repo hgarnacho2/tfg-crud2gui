@@ -100,34 +100,6 @@ class UiComponentsTest {
     }
 
     @Test
-    void updatesCachedTeacherPagesWhenPracticeDataChanges() throws Exception {
-        onJavaFxThread(() -> {
-            var data = new com.crud2gui.desktop.teacher.TeacherPracticeData(() -> {});
-            var overview = new com.crud2gui.desktop.teacher.sections.OverviewSection(data);
-            var practices = new com.crud2gui.desktop.teacher.sections.PracticesSection(data);
-            VBox root = new VBox(overview, practices);
-            styledScene(root);
-            root.applyCss();
-            var draft = new com.crud2gui.desktop.teacher.TeacherPracticeData.PracticeItem(
-                    "Prueba de borrador", "Curso de prueba", "0 grupos", "Borrador", "Creada ahora");
-            data.practices().add(0, draft);
-            root.applyCss();
-            for (VBox page : List.of(overview, practices)) {
-                assertTrue(page.lookupAll(".label").stream()
-                        .filter(Label.class::isInstance).map(Label.class::cast)
-                        .anyMatch(label -> "Prueba de borrador".equals(label.getText())));
-            }
-            data.practices().remove(draft);
-            root.applyCss();
-            for (VBox page : List.of(overview, practices)) {
-                assertFalse(page.lookupAll(".label").stream()
-                        .filter(Label.class::isInstance).map(Label.class::cast)
-                        .anyMatch(label -> "Prueba de borrador".equals(label.getText())));
-            }
-        });
-    }
-
-    @Test
     void createsSectionHeadersWithAndWithoutActionButton() throws Exception {
         onJavaFxThread(() -> {
             VBox plain = UiComponents.sectionHeader("Resumen", "Mi espacio", "Descripcion");

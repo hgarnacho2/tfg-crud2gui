@@ -7,6 +7,7 @@ import com.crud2gui.model.ModelIO;
 import com.crud2gui.model.ProjectModel;
 import com.crud2gui.statementanalyzer.client.ModelClient;
 import com.crud2gui.statementanalyzer.client.ModelClientProvider;
+import com.crud2gui.statementanalyzer.exception.InvalidModelOutputException;
 import com.crud2gui.statementanalyzer.model.AnalysisResult;
 import com.crud2gui.statementanalyzer.model.ModelClients;
 import com.crud2gui.statementanalyzer.model.GenerationOptions;
@@ -155,6 +156,8 @@ public final class ModelFromStatementSection extends Section {
         selectedPromptCard.setId("model-statement-prompt-card");
         selectedPromptFile.setId("model-statement-prompt-source");
         promptText.setId("model-statement-prompt-text");
+        promptText.setVisible(false);
+        promptText.setManaged(false);
         providerSelector.setId("model-statement-provider");
         styleSelector(providerSelector);
         providerSelector.setPromptText("Seleccionar cliente");
@@ -218,6 +221,10 @@ public final class ModelFromStatementSection extends Section {
         VBox.setVgrow(promptText, Priority.ALWAYS);
         VBox.setVgrow(promptContent, Priority.ALWAYS);
         VBox promptPanel = UiComponents.surface(promptContent);
+        promptPanel.maxHeightProperty().bind(javafx.beans.binding.Bindings
+                .when(promptText.managedProperty())
+                .then(Double.MAX_VALUE).otherwise(Region.USE_PREF_SIZE));
+        StackPane.setAlignment(promptPanel, javafx.geometry.Pos.TOP_LEFT);
         VBox llmPanel = UiComponents.surface(new VBox(14,
             UiComponents.panelHeading("Seleccionar LLM",
                 "Selecciona un proveedor y consulta los modelos disponibles."),
@@ -249,8 +256,10 @@ public final class ModelFromStatementSection extends Section {
             diagramScroll.setFitToWidth(false);
             diagramScroll.setFitToHeight(false);
             diagramScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-            diagramScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-            diagramScroll.setMinHeight(0);
+            diagramScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            diagramScroll.prefViewportHeightProperty().bind(classDiagram.prefHeightProperty());
+            diagramScroll.setMinHeight(Region.USE_PREF_SIZE);
+            diagramScroll.setMaxHeight(Region.USE_PREF_SIZE);
             VBox diagramContent = new VBox(14,
                 UiComponents.panelHeading("Diagrama de clases UML",
                     "La clase gestora se sitúa en el centro; las relaciones enlazan las clases del modelo."),
@@ -368,7 +377,7 @@ public final class ModelFromStatementSection extends Section {
                 diagramScroll.applyCss();
                 diagramScroll.layout();
                 diagramScroll.setHvalue(diagramScroll.getHmin());
-                diagramScroll.setVvalue((diagramScroll.getVmin() + diagramScroll.getVmax()) / 2);
+                diagramScroll.setVvalue(diagramScroll.getVmin());
             });
         }
     }
@@ -409,6 +418,8 @@ public final class ModelFromStatementSection extends Section {
             String text = Files.readString(file.toPath(), StandardCharsets.UTF_8);
             promptText.setText(text);
             promptText.positionCaret(0);
+            promptText.setVisible(true);
+            promptText.setManaged(true);
             selectedPromptName.setText(file.getName());
             selectedPromptFile.setText(file.getAbsolutePath());
             selectedPromptCard.pseudoClassStateChanged(SELECTED, true);
@@ -495,6 +506,7 @@ public final class ModelFromStatementSection extends Section {
 
     private void invalidateGeneratedModel() {
         steps.get(4).setDisable(true);
+        steps.get(3).pseudoClassStateChanged(COMPLETED, false);
         generatedModel.clear();
         generatedModel.setVisible(false);
         generatedModel.setManaged(false);
@@ -529,7 +541,12 @@ public final class ModelFromStatementSection extends Section {
             AnalysisResult result = new StatementAnalyzer(client)
                     .analyze(model.id(), prompt, statement, GenerationOptions.defaults());
             String prettyJson = result.prettyJson();
-                ProjectModel projectModel = ModelIO.fromJson(prettyJson);
+            ProjectModel projectModel;
+            try {
+                projectModel = ModelIO.fromJson(prettyJson);
+            } catch (IOException exception) {
+                throw new InvalidModelOutputException(exception.getMessage(), result.response(), exception);
+            }
             result.writeTo(resultPath);
                 return new GeneratedModel(result, projectModel, prettyJson,
                     resultPath.toAbsolutePath().normalize());
@@ -546,6 +563,12 @@ public final class ModelFromStatementSection extends Section {
             steps.get(4).setDisable(false);
         }, failure -> {
             logger.error("MODEL_STATEMENT_GENERATION_ERROR | No se pudo generar el modelo.", failure);
+            if (failure instanceof InvalidModelOutputException invalidOutput) {
+                generatedModel.setText(invalidOutput.rawText());
+                generatedModel.positionCaret(0);
+                generatedModel.setVisible(true);
+                generatedModel.setManaged(true);
+            }
             String detail = failure.getMessage() == null
                     ? failure.getClass().getSimpleName() : failure.getMessage();
             showStatus(generationStatus, "No se pudo obtener un JSON válido: " + detail, true);

@@ -144,8 +144,19 @@ que se selecciona y carga correctamente un fichero de texto. Cancelar o un error
 lectura conserva la previsualizacion anterior, si la habia.
 El panel inicial queda compacto y alineado arriba; al cargar el texto aprovecha la
 altura disponible para el visor.
+El paso «Seleccionar prompt» sigue el mismo comportamiento: visor oculto y panel
+compacto hasta cargar el fichero correctamente. Entonces el visor ocupa la altura
+disponible y la etiqueta inferior confirma que se puede continuar con el paso 3:
+Seleccionar LLM. Cancelar o un error de lectura conserva el prompt anterior, si lo habia.
+Si el LLM devuelve una respuesta con JSON incorrecto o incompatible con el modelo,
+el visor muestra el texto original sin modificarlo. La etiqueta inferior conserva
+el error y el paso del diagrama permanece bloqueado; esa respuesta no se guarda
+como un modelo valido. Se puede volver a pulsar «Obtener modelo» para reintentar.
 
 ### Seleccion de codigo del docente
+
+El panel docente comienza en «Enunciado»; las secciones «Resumen», «Practicas», «Revisiones» y «Modelos»
+se han retirado de su navegacion. El panel del estudiante no cambia.
 
 En «Codigo >> Modelo», una tarjeta compacta indica inicialmente que no hay carpeta
 seleccionada. El arbol y su estado de carga permanecen ocultos hasta seleccionar una
@@ -157,5 +168,17 @@ los elementos no se pueden seleccionar, abrir ni plegar.
 Los ficheros con extension `.java` se resaltan en verde y negrita.
 Tras cargar el contenido, un mensaje verde confirma la seleccion e indica que se puede
 continuar al paso 2: Obtener modelo.
+El paso «Obtener modelo» muestra la tarjeta de destino JSON y permite cambiar o abrir
+la carpeta de salida. Guarda cada resultado con fecha y hora, sin sobrescribir los
+anteriores; por defecto utiliza `modules/java-model-extractor/output`.
+El panel permanece compacto y alineado arriba hasta obtener y guardar el modelo.
+Entonces el visor JSON ocupa la altura disponible y el estado inferior indica la
+ruta guardada y que se puede continuar con el diagrama. Si falla la escritura, el
+paso no se completa y se muestra el error.
 Las insignias TXT y FOLDER de las secciones de modelos usan el mismo estilo gris
 que la insignia PDF.
+
+En ambos flujos de modelos, el visor del diagrama conserva la altura completa del
+modelo, sin ajustarla a la pantalla ni recortar las clases. Si supera la ventana,
+se utiliza el desplazamiento vertical general de la pagina, tambien con la rueda
+sobre el diagrama. El visor mantiene su desplazamiento horizontal cuando es necesario.

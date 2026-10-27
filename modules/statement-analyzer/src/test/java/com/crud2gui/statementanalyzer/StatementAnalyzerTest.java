@@ -56,6 +56,25 @@ class StatementAnalyzerTest {
     }
 
     @Test
+    void promptExampleIncludesTheExpectedManagerAndPreservesItInTheResult() throws Exception {
+        String prompt;
+        try (var resource = getClass().getResourceAsStream("/prompts/prompt-v5.txt")) {
+            assertTrue(resource != null, "Debe existir el prompt de referencia.");
+            prompt = new String(resource.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        String example = prompt.substring(prompt.indexOf("{\"schemaVersion\"")).strip();
+        AnalysisResult result = new StatementAnalyzer(new FakeClient(example))
+                .analyze("m", prompt, "Clase es la gestora del sistema.", GenerationOptions.defaults());
+        var json = result.json();
+        assertTrue(json.has("expectedManagerId"));
+        assertEquals("Clase", json.get("expectedManagerId").asText());
+        assertTrue(java.util.stream.StreamSupport.stream(json.get("types").spliterator(), false)
+                .anyMatch(type -> type.get("id").asText().equals(json.get("expectedManagerId").asText())));
+        assertEquals("Clase", new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree(result.prettyJson()).get("expectedManagerId").asText());
+    }
+
+    @Test
     void readsFilesNormalizesLineEndingsAndReturnsParsedJson(@TempDir Path dir) throws Exception {
         Path prompt = dir.resolve("prompt.txt");
         Path statement = dir.resolve("statement.txt");

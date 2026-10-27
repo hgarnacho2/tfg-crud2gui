@@ -95,7 +95,17 @@ class ModelFromCodeSectionTest {
                 }
                 """);
 
-        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection(owner -> directory.toFile()));
+        Path output = directory.resolve("resultados");
+        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection(owner -> directory.toFile(),
+                (owner, current) -> output.toFile(), directory.resolve("salida-inicial")));
+        StackPane root = onFx(() -> {
+            StackPane container = new StackPane(section);
+            new Scene(container, 1200, 1000);
+            container.resize(1200, 1000);
+            container.applyCss();
+            container.layout();
+            return container;
+        });
         onFx(() -> {
             ((Button) section.lookup("#model-code-select-folder")).fire();
             return null;
@@ -104,16 +114,43 @@ class ModelFromCodeSectionTest {
         onFx(() -> {
             assertFalse(((Button) section.lookup("#model-code-extract-model")).isDisabled());
             ((Button) section.lookup("#statement-step-2")).fire();
+            root.layout();
+            StackPane host = (StackPane) section.getChildren().get(2);
+            VBox panel = (VBox) host.getChildren().get(1);
+            assertEquals(panel.prefHeight(panel.getWidth()), panel.getHeight(), 1);
+            assertEquals(0, panel.getLayoutY(), 1);
+            assertTrue(panel.getHeight() < host.getHeight());
+            assertFalse(section.lookup("#model-code-generated-json").isManaged());
+            ((Button) section.lookup("#model-code-change-output-folder")).fire();
+            assertEquals(output.toAbsolutePath().toString(),
+                    ((Label) section.lookup("#model-code-output-folder")).getText());
             ((Button) section.lookup("#model-code-extract-model")).fire();
+            assertTrue(section.lookup("#model-code-change-output-folder").isDisabled());
             return null;
         });
 
         awaitStatus(section, "Modelo obtenido correctamente.");
+        try (var files = Files.list(output)) {
+            List<Path> results = files.toList();
+            assertEquals(1, results.size());
+            assertTrue(results.get(0).getFileName().toString().matches("modelo-codigo_\\d{8}_\\d{6}_\\d{3}\\.json"));
+            assertEquals(3, ModelIO.fromJson(Files.readString(results.get(0))).types().size());
+        }
         onFx(() -> {
             Label folderName = (Label) section.lookup(".statement-file-name");
             Label folderBadge = (Label) folderName.getGraphic();
             assertEquals("FOLDER", folderBadge.getText());
             TextArea json = (TextArea) section.lookup("#model-code-generated-json");
+            root.layout();
+            StackPane host = (StackPane) section.getChildren().get(2);
+            assertEquals(host.getHeight(), host.getChildren().get(1).getLayoutBounds().getHeight(), 1);
+            double height = json.getHeight();
+            root.resize(1200, 1200);
+            root.layout();
+            assertTrue(json.getHeight() > height + 150);
+            root.resize(1200, 800);
+            root.layout();
+            assertTrue(json.getHeight() < height - 150);
             assertTrue(json.getText().contains("\"schemaVersion\" : \"1.0\""));
             assertTrue(json.getText().contains("\"name\" : \"Producto\""));
             assertTrue(json.getText().contains("\"name\" : \"Lanzador\""));
@@ -154,13 +191,75 @@ class ModelFromCodeSectionTest {
                     .noneMatch("Lanzador"::equals));
             assertFalse(managerSelector.isVisible());
             assertFalse(((Button) section.lookup("#statement-step-2")).isDisabled());
+            root.getChildren().clear();
+            ScrollPane pageScroll = new ScrollPane(section);
+            pageScroll.setFitToWidth(true);
+            pageScroll.setFitToHeight(true);
+            root.getChildren().add(pageScroll);
+            root.resize(1200, 650);
+            root.applyCss();
+            root.layout();
+            ScrollPane diagramScroll = (ScrollPane) diagramContent.getChildren().get(3);
+            assertEquals(ScrollPane.ScrollBarPolicy.NEVER, diagramScroll.getVbarPolicy());
+            assertTrue(diagramScroll.getViewportBounds().getHeight() >= diagram.getPrefHeight() - 1);
+            assertTrue(section.getHeight() > pageScroll.getViewportBounds().getHeight());
+            assertTrue(diagram.getChildren().stream()
+                    .filter(node -> node.getStyleClass().contains("uml-class-card"))
+                    .allMatch(node -> node.getBoundsInParent().getMaxY()
+                            <= diagramScroll.getViewportBounds().getHeight()));
+            double initialScroll = pageScroll.getVvalue();
+            diagram.fireEvent(new ScrollEvent(
+                    ScrollEvent.SCROLL, 20, 20, 20, 20,
+                    false, false, false, false, false, false,
+                    0, -120, 0, -120,
+                    ScrollEvent.HorizontalTextScrollUnits.NONE, 0,
+                    ScrollEvent.VerticalTextScrollUnits.NONE, 0, 0, null));
+            assertTrue(pageScroll.getVvalue() > initialScroll, "La rueda debe desplazar la pagina.");
+            pageScroll.setVvalue(1);
+            root.layout();
+            assertEquals(1, pageScroll.getVvalue());
+            ((Button) section.lookup("#statement-step-2")).fire();
+            root.layout();
+            assertEquals(pageScroll.getViewportBounds().getHeight(), section.getHeight(), 1);
             return null;
         });
     }
 
     @Test
+    void reportsWriteFailureWithoutCompletingExtraction() throws Exception {
+        Files.writeString(directory.resolve("Producto.java"), "public class Producto {}");
+        Path invalidOutput = directory.resolve("no-es-carpeta");
+        Files.writeString(invalidOutput, "conservar");
+        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection(owner -> directory.toFile(),
+                (owner, current) -> null, invalidOutput));
+        onFx(() -> {
+            ((Button) section.lookup("#model-code-change-output-folder")).fire();
+            assertEquals(invalidOutput.toString(),
+                    ((Label) section.lookup("#model-code-output-folder")).getText());
+            ((Button) section.lookup("#model-code-select-folder")).fire();
+            return null;
+        });
+        awaitFolderTree(section);
+        onFx(() -> {
+            ((Button) section.lookup("#statement-step-2")).fire();
+            ((Button) section.lookup("#model-code-extract-model")).fire();
+            return null;
+        });
+        awaitStatus(section, "No se pudo obtener el modelo:");
+        onFx(() -> {
+            assertFalse(section.lookup("#model-code-generated-json").isVisible());
+            assertFalse(section.lookup("#model-code-generated-json").isManaged());
+            assertTrue(section.lookup("#statement-step-3").isDisabled());
+            assertFalse(section.lookup("#model-code-change-output-folder").isDisabled());
+            return null;
+        });
+        assertEquals("conservar", Files.readString(invalidOutput));
+    }
+
+    @Test
     void reportsWhenFolderHasNoJavaFiles() throws Exception {
-        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection(owner -> directory.toFile()));
+        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection(owner -> directory.toFile(),
+                (owner, current) -> null, directory.resolve("output")));
         onFx(() -> {
             ((Button) section.lookup("#model-code-select-folder")).fire();
             return null;
@@ -224,7 +323,8 @@ class ModelFromCodeSectionTest {
             Files.writeString(packageFolder.resolve("Clase" + index + ".java"), "class Clase" + index + " {}");
         }
 
-        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection(owner -> directory.toFile()));
+        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection(owner -> directory.toFile(),
+                (owner, current) -> null, directory.resolve("output")));
         onFx(() -> {
             ((Button) section.lookup("#model-code-select-folder")).fire();
             return null;
@@ -409,7 +509,8 @@ class ModelFromCodeSectionTest {
                 }
                 """);
 
-        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection(owner -> directory.toFile()));
+        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection(owner -> directory.toFile(),
+                (owner, current) -> null, directory.resolve("output")));
         onFx(() -> {
             ((Button) section.lookup("#model-code-select-folder")).fire();
             return null;

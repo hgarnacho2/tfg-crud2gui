@@ -28,6 +28,11 @@ import javafx.util.StringConverter;
 
 import java.io.File;
 import java.io.IOException;
+import java.awt.Desktop;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -36,11 +41,22 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.BiFunction;
 
 /** Sección para extraer un modelo de clases desde código fuente Java. */
 public final class ModelFromCodeSection extends Section {
 
     private final Function<Window, File> chooseCodeFolder;
+    private final BiFunction<Window, Path, File> chooseOutputFolder;
+    private Path outputFolder;
+    private final Label outputFilename = UiComponents.labelWithGraphic("Resultado JSON con fecha y hora",
+            List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
+    private final Label outputFolderLabel =
+            UiComponents.label("", List.of("statement-file-path", "statement-output-folder"));
+    private final Button changeOutputFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
+            List.of("statement-change-folder", "secondary-button"), this::changeOutputFolder);
+    private final Button openOutputFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
+            List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
     private final Button selectFolderButton =
             UiComponents.actionButton("Seleccionar carpeta", List.of("statement-select"),
                     this::selectFolder);
@@ -82,10 +98,23 @@ public final class ModelFromCodeSection extends Section {
     }
 
     ModelFromCodeSection(Function<Window, File> chooseCodeFolder) {
+        this(chooseCodeFolder,
+                (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Seleccionar carpeta de salida"),
+                defaultOutputDirectory());
+    }
+
+    ModelFromCodeSection(Function<Window, File> chooseCodeFolder,
+                        BiFunction<Window, Path, File> chooseOutputFolder, Path outputDirectory) {
         super("MODELO DESDE CÓDIGO", "Modelo desde código",
                 "Extracción de un modelo de clases a partir de código fuente Java.");
         this.chooseCodeFolder = Objects.requireNonNull(chooseCodeFolder, "chooseCodeFolder");
-        setMinHeight(Region.USE_PREF_SIZE);
+        this.chooseOutputFolder = Objects.requireNonNull(chooseOutputFolder, "chooseOutputFolder");
+        outputFolder = Objects.requireNonNull(outputDirectory, "outputDirectory").toAbsolutePath().normalize();
+        outputFolderLabel.setId("model-code-output-folder");
+        outputFolderLabel.setText(outputFolder.toString());
+        changeOutputFolderButton.setId("model-code-change-output-folder");
+        openOutputFolderButton.setId("model-code-open-output-folder");
+        setMinHeight(0);
 
         selectFolderButton.setId("model-code-select-folder");
         extractModelButton.setId("model-code-extract-model");
@@ -142,10 +171,15 @@ public final class ModelFromCodeSection extends Section {
         VBox extractionContent = new VBox(14,
                 UiComponents.panelHeading("Obtener modelo",
                         "Analiza los ficheros Java y genera un modelo JSON compatible con el modelo del enunciado."),
-                extractModelButton, generatedModel, extractionStatus);
+                UiComponents.outputSettings(outputFilename, outputFolderLabel, changeOutputFolderButton),
+                extractModelButton, openOutputFolderButton, generatedModel, extractionStatus);
         VBox.setVgrow(generatedModel, Priority.ALWAYS);
         VBox.setVgrow(extractionContent, Priority.ALWAYS);
         VBox extractionPanel = UiComponents.surface(extractionContent);
+        extractionPanel.maxHeightProperty().bind(javafx.beans.binding.Bindings
+                .when(generatedModel.managedProperty())
+                .then(Double.MAX_VALUE).otherwise(Region.USE_PREF_SIZE));
+        StackPane.setAlignment(extractionPanel, javafx.geometry.Pos.TOP_LEFT);
 
         classDiagram.setId("model-code-class-diagram-view");
         managerSelector.setId("model-code-manager-selector");
@@ -175,8 +209,10 @@ public final class ModelFromCodeSection extends Section {
         diagramScroll.setFitToWidth(false);
         diagramScroll.setFitToHeight(false);
         diagramScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        diagramScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        diagramScroll.setMinHeight(0);
+        diagramScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        diagramScroll.prefViewportHeightProperty().bind(classDiagram.prefHeightProperty());
+        diagramScroll.setMinHeight(Region.USE_PREF_SIZE);
+        diagramScroll.setMaxHeight(Region.USE_PREF_SIZE);
         VBox diagramContent = new VBox(14,
                 UiComponents.panelHeading("Diagrama de clases UML",
                         "Representación visual del modelo extraído del código."),
@@ -185,6 +221,9 @@ public final class ModelFromCodeSection extends Section {
         VBox.setVgrow(diagramScroll, Priority.ALWAYS);
         VBox.setVgrow(diagramContent, Priority.ALWAYS);
         VBox diagramPanel = UiComponents.surface(diagramContent);
+        minHeightProperty().bind(javafx.beans.binding.Bindings
+                .when(diagramPanel.managedProperty())
+                .then(Region.USE_PREF_SIZE).otherwise(0));
 
         panels = List.of(selectPanel, extractionPanel, diagramPanel);
         steps = List.of(
@@ -223,7 +262,7 @@ public final class ModelFromCodeSection extends Section {
                 diagramScroll.applyCss();
                 diagramScroll.layout();
                 diagramScroll.setHvalue(diagramScroll.getHmin());
-                diagramScroll.setVvalue((diagramScroll.getVmin() + diagramScroll.getVmax()) / 2);
+                diagramScroll.setVvalue(diagramScroll.getVmin());
             });
         }
     }
@@ -281,6 +320,7 @@ public final class ModelFromCodeSection extends Section {
             return;
         }
         Path folder = sourceFolder;
+        Path destination = outputFolder;
         invalidateModel();
         extracting = true;
         updateControls();
@@ -295,7 +335,16 @@ public final class ModelFromCodeSection extends Section {
                 throw new IOException("No se pudieron extraer tipos Java de los ficheros encontrados.");
             }
             String json = ModelIO.toJson(model);
-            return new ExtractedModel(model, json);
+            Files.createDirectories(destination);
+            String name = "modelo-codigo_" + LocalDateTime.now()
+                    .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS"));
+            Path resultPath = destination.resolve(name + ".json");
+            int collision = 1;
+            while (Files.exists(resultPath)) {
+                resultPath = destination.resolve(name + "_" + collision++ + ".json");
+            }
+            Files.writeString(resultPath, json, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
+            return new ExtractedModel(model, json, resultPath);
         }, result -> {
             generatedModel.setText(result.json());
             generatedModel.positionCaret(0);
@@ -307,10 +356,12 @@ public final class ModelFromCodeSection extends Section {
             showStatus(extractionStatus,
                     "Modelo obtenido correctamente. Puedes continuar con el paso 3: Diagrama de clases.\n"
                     + result.model().types().size()
-                    + " tipo(s) en " + result.model().source().filesParsed() + " fichero(s)." + warnings, false);
+                    + " tipo(s) en " + result.model().source().filesParsed() + " fichero(s)." + warnings
+                    + "\nResultado: " + result.outputPath(), false);
             steps.get(1).pseudoClassStateChanged(COMPLETED, true);
             steps.get(2).setDisable(false);
         }, failure -> {
+            logger.error("MODEL_CODE_EXTRACTION_ERROR | No se pudo obtener o guardar el modelo.", failure);
             String detail = failure.getMessage() == null
                     ? failure.getClass().getSimpleName() : failure.getMessage();
             showStatus(extractionStatus, "No se pudo obtener el modelo: " + detail, true);
@@ -407,6 +458,8 @@ public final class ModelFromCodeSection extends Section {
         boolean busy = extracting || loadingFolderContents;
         selectFolderButton.setDisable(busy);
         extractModelButton.setDisable(busy || sourceFolder == null);
+        changeOutputFolderButton.setDisable(busy);
+        openOutputFolderButton.setDisable(busy);
         steps.get(0).setDisable(busy);
         steps.get(1).setDisable(busy || sourceFolder == null);
     }
@@ -447,5 +500,44 @@ public final class ModelFromCodeSection extends Section {
         }
     }
 
-    private record ExtractedModel(ProjectModel model, String json) { }
+    private static Path defaultOutputDirectory() {
+        Path directory = Path.of("").toAbsolutePath().normalize();
+        while (directory != null) {
+            if (Files.isRegularFile(directory.resolve("modules/java-model-extractor/pom.xml"))) {
+                return directory.resolve("modules/java-model-extractor/output");
+            }
+            directory = directory.getParent();
+        }
+        return Path.of("output");
+    }
+
+    private void changeOutputFolder() {
+        File folder = chooseOutputFolder.apply(getScene() == null ? null : getScene().getWindow(), outputFolder);
+        if (folder != null) {
+            outputFolder = folder.toPath().toAbsolutePath().normalize();
+            outputFolderLabel.setText(outputFolder.toString());
+            showStatus(extractionStatus, "Carpeta de salida actualizada. Los resultados anteriores no se han movido.",
+                    false);
+        }
+    }
+
+    private void openOutputFolder() {
+        Path folder = outputFolder;
+        runTask(() -> {
+            if (!Files.isDirectory(folder)) {
+                throw new IOException("La carpeta de salida no existe: " + folder);
+            }
+            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                throw new IOException("El sistema no permite abrir carpetas desde la aplicación.");
+            }
+            Desktop.getDesktop().open(folder.toFile());
+            return folder;
+        }, opened -> showStatus(extractionStatus, "Carpeta de salida abierta: " + opened, false),
+                failure -> {
+                    logger.error("MODEL_CODE_OPEN_OUTPUT_ERROR | No se pudo abrir la carpeta de salida.", failure);
+                    showStatus(extractionStatus, "No se pudo abrir la carpeta de salida: " + folder, true);
+                }, () -> { });
+    }
+
+    private record ExtractedModel(ProjectModel model, String json, Path outputPath) { }
 }
