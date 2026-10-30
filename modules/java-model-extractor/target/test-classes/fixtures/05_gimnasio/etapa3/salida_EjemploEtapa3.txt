@@ -1,0 +1,29 @@
+Socios en el gimnasio:
+     socio1: Laura Prieto Gil
+     socio2: Álvaro Muñoz Peña
+Identificador de socio: socio2
+     Nombre: Álvaro Muñoz Peña
+     URL: https://www.miGym.com/socio2
+     FICHA:
+          Fecha de nacimiento: Thu Feb 09 00:00:00 CET 1995
+          Objetivo: Perder peso
+          Lesiones: Rodilla derecha
+          Nivel de actividad: Principiante
+     Entrenador personal: Marcos Vidal Ortiz
+     Plan nutricional: Dieta de definición de 2200 calorías
+No existe el socio socio56
+La password es incorrecta
+Password correcta
+Identificador de socio: socio2
+     Nombre: Álvaro Muñoz Peña
+     URL: https://www.miGym.com/socio2
+     FICHA:
+          Fecha de nacimiento: Thu Feb 09 00:00:00 CET 1995
+          Objetivo: Perder peso
+          Lesiones: Rodilla derecha
+          Nivel de actividad: Principiante
+     SESIONES:
+          https://www.miGym.com/sesion/socio2.1 Rutina de piernas y glúteos
+          https://www.miGym.com/sesion/socio2.2 Sesión de natación suave
+     Entrenador personal: Marcos Vidal Ortiz
+     Plan nutricional: Dieta de definición de 2200 calorías

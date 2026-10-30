@@ -1,5 +1,6 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.common.ui.JsonEditorView;
 import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
@@ -98,6 +99,12 @@ public final class ModelFromStatementSection extends Section {
             false, false, 20, List.of("model-json-result"));
         private final ClassDiagramView classDiagram = new ClassDiagramView();
         private final ScrollPane diagramScroll = new ScrollPane(classDiagram);
+        private final StackPane editorHost = new StackPane();
+        private final Button confirmModelButton = UiComponents.actionButton(
+            "Confirmar modelo", List.of("statement-select"), this::confirmModel);
+        private final Label refineStatus = UiComponents.statusLabel("model-statement-refine-status");
+        private JsonEditorView modelEditor;
+        private Path generatedModelPath;
         private boolean generationBusy;
     private final List<Button> steps;
     private final List<VBox> panels;
@@ -250,6 +257,16 @@ public final class ModelFromStatementSection extends Section {
             VBox.setVgrow(generatedModel, Priority.ALWAYS);
             VBox.setVgrow(generationContent, Priority.ALWAYS);
             VBox generationPanel = UiComponents.surface(generationContent);
+            editorHost.setId("model-statement-editor-host");
+            editorHost.setMinHeight(480);
+            confirmModelButton.setId("model-statement-confirm-model");
+            VBox refineContent = new VBox(14,
+                UiComponents.panelHeading("Afinar modelo",
+                    "Revisa y edita el modelo obtenido. Al confirmarlo se guardará una copia validada."),
+                editorHost, confirmModelButton, refineStatus);
+            VBox.setVgrow(editorHost, Priority.ALWAYS);
+            VBox.setVgrow(refineContent, Priority.ALWAYS);
+            VBox refinePanel = UiComponents.surface(refineContent);
             classDiagram.setId("model-statement-class-diagram-view");
             diagramScroll.setId("model-statement-class-diagram-scroll");
             diagramScroll.setPannable(true);
@@ -272,6 +289,7 @@ public final class ModelFromStatementSection extends Section {
             promptPanel,
             llmPanel,
                 generationPanel,
+                refinePanel,
                 diagramPanel);
 
         steps = List.of(
@@ -279,13 +297,15 @@ public final class ModelFromStatementSection extends Section {
                 UiComponents.stepButton(1, "SELECCIONAR PROMPT", "Prompt de análisis", this::showStep),
                 UiComponents.stepButton(2, "SELECCIONAR LLM", "Modelo de lenguaje", this::showStep),
                 UiComponents.stepButton(3, "OBTENER MODELO", "Generación del modelo", this::showStep),
-                UiComponents.stepButton(4, "DIAGRAMA DE CLASES", "Representación visual", this::showStep));
+                UiComponents.stepButton(4, "AFINAR MODELO", "Edición del modelo", this::showStep),
+                UiComponents.stepButton(5, "DIAGRAMA DE CLASES", "Representación visual", this::showStep));
         HBox flow = new HBox(8,
                 steps.get(0), UiComponents.arrowConnector(UiComponents.Direction.RIGHT),
                 steps.get(1), UiComponents.arrowConnector(UiComponents.Direction.RIGHT),
                 steps.get(2), UiComponents.arrowConnector(UiComponents.Direction.RIGHT),
                 steps.get(3), UiComponents.arrowConnector(UiComponents.Direction.RIGHT),
-                steps.get(4));
+                steps.get(4), UiComponents.arrowConnector(UiComponents.Direction.RIGHT),
+                steps.get(5));
         flow.getStyleClass().add("statement-flow");
         flow.getStyleClass().add("model-statement-flow");
         flow.setMaxHeight(Region.USE_PREF_SIZE);
@@ -372,7 +392,7 @@ public final class ModelFromStatementSection extends Section {
             panels.get(i).setManaged(i == index);
             steps.get(i).pseudoClassStateChanged(SELECTED, i == index);
         }
-        if (index == 4) {
+        if (index == 5) {
             Platform.runLater(() -> {
                 diagramScroll.applyCss();
                 diagramScroll.layout();
@@ -506,7 +526,13 @@ public final class ModelFromStatementSection extends Section {
 
     private void invalidateGeneratedModel() {
         steps.get(4).setDisable(true);
+        steps.get(5).setDisable(true);
         steps.get(3).pseudoClassStateChanged(COMPLETED, false);
+        steps.get(4).pseudoClassStateChanged(COMPLETED, false);
+        modelEditor = null;
+        generatedModelPath = null;
+        editorHost.getChildren().clear();
+        showStatus(refineStatus, "", false);
         generatedModel.clear();
         generatedModel.setVisible(false);
         generatedModel.setManaged(false);
@@ -555,12 +581,10 @@ public final class ModelFromStatementSection extends Section {
             generatedModel.positionCaret(0);
             generatedModel.setVisible(true);
             generatedModel.setManaged(true);
-            classDiagram.setModel(result.projectModel());
-            showStatus(diagramStatus, "Diagrama de clases generado correctamente. Flujo completado.", false);
             generationOutputPath.setText("Resultado: " + result.outputPath());
             showStatus(generationStatus, successSummary(result.analysis().response()), false);
             steps.get(3).pseudoClassStateChanged(COMPLETED, true);
-            steps.get(4).setDisable(false);
+            openModelEditor(result.outputPath());
         }, failure -> {
             logger.error("MODEL_STATEMENT_GENERATION_ERROR | No se pudo generar el modelo.", failure);
             if (failure instanceof InvalidModelOutputException invalidOutput) {
@@ -593,12 +617,62 @@ public final class ModelFromStatementSection extends Section {
 
     private String successSummary(com.crud2gui.statementanalyzer.model.ModelResponse response) {
         double seconds = response.elapsed().toMillis() / 1000.0;
-        return "Análisis completado. Puedes continuar con el paso 5: Diagrama de clases.\nModelo: "
+        return "Análisis completado. Puedes continuar con el paso 5: Afinar modelo.\nModelo: "
                 + response.provider() + "/" + response.model()
                 + " | " + String.format(Locale.getDefault(), "%.1f", seconds) + " s"
                 + " | tokens entrada/salida: " + tokenCount(response.inputTokens())
                 + "/" + tokenCount(response.outputTokens())
                 + " | fin: " + (response.finishReason() == null ? "desconocido" : response.finishReason());
+    }
+
+    private void openModelEditor(Path modelPath) {
+        try {
+            modelEditor = new JsonEditorView(modelPath);
+        } catch (IOException | RuntimeException exception) {
+            logger.error("MODEL_STATEMENT_EDITOR_ERROR | No se pudo abrir el modelo en el editor.", exception);
+            showStatus(refineStatus, "No se pudo abrir el modelo en el editor: " + exception.getMessage(), true);
+            return;
+        }
+        modelEditor.setSaveVisible(false);
+        generatedModelPath = modelPath;
+        editorHost.getChildren().setAll(modelEditor.getView());
+        showStatus(refineStatus, "Edita el modelo si es necesario y pulsa «Confirmar modelo».", false);
+        steps.get(4).setDisable(false);
+    }
+
+    private void confirmModel() {
+        if (modelEditor == null || generatedModelPath == null) {
+            return;
+        }
+        Path validatedPath = validatedPath(generatedModelPath);
+        try {
+            String json = modelEditor.currentJson();
+            ProjectModel projectModel = ModelIO.fromJson(json);
+            Files.writeString(validatedPath, json + System.lineSeparator(), StandardCharsets.UTF_8);
+            classDiagram.setModel(projectModel);
+        } catch (IOException | RuntimeException exception) {
+            logger.error("MODEL_STATEMENT_CONFIRM_ERROR | No se pudo confirmar el modelo.", exception);
+            String detail = exception.getMessage() == null
+                    ? exception.getClass().getSimpleName() : exception.getMessage();
+            showStatus(refineStatus, "El modelo no es válido: " + detail, true);
+            steps.get(4).pseudoClassStateChanged(COMPLETED, false);
+            steps.get(5).setDisable(true);
+            return;
+        }
+        showStatus(diagramStatus, "Diagrama de clases generado correctamente. Flujo completado.", false);
+        showStatus(refineStatus, "Modelo confirmado y guardado en: " + validatedPath
+                + "\nPuedes continuar con el paso 6: Diagrama de clases.", false);
+        steps.get(4).pseudoClassStateChanged(COMPLETED, true);
+        steps.get(5).setDisable(false);
+    }
+
+    static Path validatedPath(Path modelPath) {
+        String name = modelPath.getFileName().toString();
+        int extension = name.lastIndexOf('.');
+        String validated = extension > 0
+                ? name.substring(0, extension) + "-validated" + name.substring(extension)
+                : name + "-validated.json";
+        return modelPath.resolveSibling(validated);
     }
 
     private static String tokenCount(Integer count) {
@@ -640,7 +714,7 @@ public final class ModelFromStatementSection extends Section {
             }
             Desktop.getDesktop().open(folder.toFile());
             return folder;
-        }, opened -> showStatus(generationStatus, "Carpeta de salida abierta: " + opened, false),
+        }, opened -> { },
                 failure -> showStatus(generationStatus, "No se pudo abrir la carpeta de salida: " + folder, true),
                 () -> { });
     }

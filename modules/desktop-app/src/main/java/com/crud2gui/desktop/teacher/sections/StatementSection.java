@@ -4,7 +4,7 @@ import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.PdfPreview;
-import com.crud2gui.common.DotEnv;
+import com.crud2gui.common.utils.DotEnv;
 import com.crud2gui.statement.extractor.StatementExtractor;
 import com.crud2gui.statement.filter.StatementFilter;
 import com.crud2gui.statement.filter.StatementFilterConfigJson;
@@ -286,12 +286,14 @@ public final class StatementSection extends Section {
     /**
      * Captura la carpeta actual y solicita abrirla en el explorador mediante una
      * tarea auxiliar. Comprueba que exista y que el sistema admita la apertura;
-     * comunica el resultado o el error en el panel desde el que se solicitó.
+     * solo comunica el error, en el panel desde el que se solicitó.
      */
     private void openOutputFolder() {
         Path folder = outputFolder;
         int step = currentStep;
-        runTask(step, () -> {
+        busy = true;
+        updateState();
+        runTask(() -> {
             if (!Files.isDirectory(folder)) {
                 throw new IOException("La carpeta de salida no existe: " + folder);
             }
@@ -300,9 +302,12 @@ public final class StatementSection extends Section {
             }
             Desktop.getDesktop().open(folder.toFile());
             return folder;
-        }, "Abriendo carpeta de salida: " + folder,
-                opened -> showStatus(step, "Carpeta de salida abierta: " + opened, false),
-                "No se pudo abrir la carpeta de salida: " + folder);
+        }, opened -> { },
+                failure -> showStatus(step, "No se pudo abrir la carpeta de salida: " + folder, true),
+                () -> {
+                    busy = false;
+                    updateState();
+                });
     }
 
     /**

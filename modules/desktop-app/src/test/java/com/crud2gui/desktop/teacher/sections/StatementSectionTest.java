@@ -35,6 +35,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class StatementSectionTest {
 
+    /** Selección (1) + extracción (3: tarea, Salida, Iniciar) + filtrado (4: tarea, Salida, Reglas, Iniciar). */
+    private static final int EXPECTED_PANEL_SUBTITLES = 8;
+
     @TempDir
     Path directory;
 
@@ -201,7 +204,7 @@ class StatementSectionTest {
             controls.select().fire();
             controls.section().applyCss();
             var subtitles = controls.section().lookupAll(".panel-subtitle");
-            assertEquals(3, subtitles.size());
+            assertEquals(EXPECTED_PANEL_SUBTITLES, subtitles.size());
             for (var node : subtitles) {
                 Label subtitle = (Label) node;
                 assertEquals(15, subtitle.getFont().getSize(), 0.01);
@@ -559,7 +562,11 @@ class StatementSectionTest {
             controls.step(2).fire();
             assertTrue(isEffectivelyVisible(section.lookup(".statement-output-settings")));
             VBox extractionContent = (VBox) controls.text().getParent();
-            assertSame(section.lookup(".statement-output-settings"), extractionContent.getChildren().get(1));
+            var outputSettings = section.lookup(".statement-output-settings");
+            int settingsIndex = extractionContent.getChildren().indexOf(outputSettings);
+            assertTrue(settingsIndex > 0);
+            VBox outputHeading = (VBox) extractionContent.getChildren().get(settingsIndex - 1);
+            assertEquals("Salida", ((Label) outputHeading.getChildren().get(0)).getText());
             Button changeFolder = (Button) section.lookup(".statement-change-folder");
             Button openFolder = (Button) section.lookup(".statement-open-folder");
             assertTrue(changeFolder.getStyleClass().contains("secondary-button"));
@@ -618,7 +625,10 @@ class StatementSectionTest {
             VBox filterContent = (VBox) controls.filtered().getParent();
             var filterSettings = filterContent.lookup(".statement-output-settings");
             assertTrue(isEffectivelyVisible(filterSettings));
-            assertSame(filterSettings, filterContent.getChildren().get(1));
+            int filterSettingsIndex = filterContent.getChildren().indexOf(filterSettings);
+            assertTrue(filterSettingsIndex > 0);
+            VBox filterOutputHeading = (VBox) filterContent.getChildren().get(filterSettingsIndex - 1);
+            assertEquals("Salida", ((Label) filterOutputHeading.getChildren().get(0)).getText());
             assertTrue(isEffectivelyVisible(filterContent.lookup(".statement-open-folder")));
             return null;
         });
@@ -785,7 +795,7 @@ class StatementSectionTest {
                 stage.show();
                 controls.section().applyCss();
                 var subtitles = controls.section().lookupAll(".panel-subtitle");
-                assertEquals(3, subtitles.size());
+                assertEquals(EXPECTED_PANEL_SUBTITLES, subtitles.size());
                 for (var node : subtitles) {
                     Label subtitle = assertInstanceOf(Label.class, node);
                     assertFalse(subtitle.getText().isBlank());
@@ -810,8 +820,9 @@ class StatementSectionTest {
                         assertEquals(34, number.getWidth(), 0.1);
                         assertEquals(34, number.getHeight(), 0.1);
                     }
-                    assertTrue(controls.section().lookup(".statement-flow")
-                            .getLayoutBounds().getWidth() <= 860);
+                    var flow = (javafx.scene.layout.HBox) controls.section().lookup(".statement-flow");
+                    assertTrue(flow.getLayoutBounds().getWidth() <= flow.prefWidth(-1) + 0.5,
+                            "El flujo de pasos no debe estirarse más allá de su ancho preferido.");
                     for (var connector : controls.section().lookupAll(".statement-connector")) {
                         assertEquals(20, connector.getLayoutBounds().getWidth(), 0.1);
                         var arrow = assertInstanceOf(javafx.scene.shape.SVGPath.class,

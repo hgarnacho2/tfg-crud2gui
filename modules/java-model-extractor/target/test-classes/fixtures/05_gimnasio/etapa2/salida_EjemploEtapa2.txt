@@ -1,0 +1,27 @@
+Socios en el gimnasio:
+     socio1: Laura Prieto Gil
+     socio2: Álvaro Muñoz Peña
+No existe el socio socio56
+Identificador de socio: socio1
+     Nombre: Laura Prieto Gil
+     URL: https://www.miGym.com/socio1
+     FICHA:
+          Fecha de nacimiento: Sun Jan 24 00:00:00 CET 1988
+          Objetivo: Ganar masa muscular
+          Lesiones: Ninguna
+          Nivel de actividad: Intermedio
+No existe el socio socio56
+La password es incorrecta
+Password correcta
+No existe el identificador de socio socio56
+Identificador de socio: socio1
+     Nombre: Laura Prieto Gil
+     URL: https://www.miGym.com/socio1
+     FICHA:
+          Fecha de nacimiento: Sun Jan 24 00:00:00 CET 1988
+          Objetivo: Ganar masa muscular
+          Lesiones: Ninguna
+          Nivel de actividad: Intermedio
+     SESIONES:
+          https://www.miGym.com/sesion/socio1.1 Entrenamiento de fuerza: pecho y espalda
+          https://www.miGym.com/sesion/socio1.2 Clase de spinning de 45 minutos

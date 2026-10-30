@@ -1,6 +1,6 @@
 package com.crud2gui.authenticator;
 
-import com.crud2gui.common.DotEnv;
+import com.crud2gui.common.utils.DotEnv;
 
 import java.net.URI;
 import java.util.Arrays;

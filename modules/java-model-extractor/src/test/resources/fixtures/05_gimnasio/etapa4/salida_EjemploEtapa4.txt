@@ -1,0 +1,23 @@
+Socios en el gimnasio:
+     socio1: Laura Prieto Gil
+     socio2: Álvaro Muñoz Peña
+     socio3: Nombre Prueba Tres
+El socio socio2 ha sido eliminado
+No existe el socio socio2
+Socios en el gimnasio:
+     socio1: Laura Prieto Gil
+     socio3: Nombre Prueba Tres
+Socios en el gimnasio:
+     socio1: Laura Prieto Gil
+     socio3: Nombre Prueba Tres
+     socio2: Nombre Prueba Cuatro
+La sesión con URL https://www.miGym.com/sesion/socio1.2 ha sido eliminada
+No existe la sesión con URL https://www.miGym.com/sesion/socio1.2
+No existe el identificador de socio socio56
+Identificador de socio: socio1
+     Nombre: Laura Prieto Gil
+     URL: https://www.miGym.com/socio1
+     SESIONES:
+          https://www.miGym.com/sesion/socio1.1 Entrenamiento de fuerza: pecho y espalda
+          https://www.miGym.com/sesion/socio1.3 Rutina de piernas y glúteos
+          https://www.miGym.com/sesion/socio1.2 Sesión de natación suave

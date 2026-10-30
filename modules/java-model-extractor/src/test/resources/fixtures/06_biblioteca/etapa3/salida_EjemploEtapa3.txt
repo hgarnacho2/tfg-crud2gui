@@ -1,0 +1,29 @@
+Lectores en la biblioteca:
+     lector1: Inés Carrasco Bravo
+     lector2: Tomás Ibáñez Roca
+Identificador de lector: lector2
+     Nombre: Tomás Ibáñez Roca
+     URL: https://www.miBiblioteca.com/lector2
+     FICHA:
+          Fecha de nacimiento: Thu Feb 14 00:00:00 CET 1991
+          Géneros favoritos: Ensayo y poesía
+          Profesión: Profesor universitario
+          Libro favorito: Rayuela
+     Línea de investigación: Literatura comparada del siglo XX
+     Centro de investigación: Instituto de Estudios Literarios
+No existe el lector lector56
+La password es incorrecta
+Password correcta
+Identificador de lector: lector2
+     Nombre: Tomás Ibáñez Roca
+     URL: https://www.miBiblioteca.com/lector2
+     FICHA:
+          Fecha de nacimiento: Thu Feb 14 00:00:00 CET 1991
+          Géneros favoritos: Ensayo y poesía
+          Profesión: Profesor universitario
+          Libro favorito: Rayuela
+     RESEÑAS:
+          https://www.miBiblioteca.com/resena/lector2.1 Reseña muy recomendable
+          https://www.miBiblioteca.com/resena/lector2.2 Personajes inolvidables
+     Línea de investigación: Literatura comparada del siglo XX
+     Centro de investigación: Instituto de Estudios Literarios

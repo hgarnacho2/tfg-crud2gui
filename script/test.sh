@@ -4,7 +4,7 @@ set -e
 # Nos situamos siempre en la raíz del proyecto (subiendo un nivel desde script/)
 cd "$(dirname "$0")/.."
 
-# Si le pasas un argumento (ej: ./script/test.sh common-utils), ejecuta solo ese módulo.
+# Si le pasas un argumento (ej: ./script/test.sh modules/common), ejecuta solo ese módulo.
 # Si no le pasas nada, puedes decidir si ejecuta todo o avisa.
 if [ -n "$1" ]; then
     echo "=== Ejecutando tests para el módulo: $1 ==/="

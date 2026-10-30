@@ -1,0 +1,27 @@
+Alumnos en el colegio:
+     alumno1: Sofía Navarro Lara
+     alumno2: Diego Herrero Soto
+No existe el alumno alumno56
+Identificador de alumno: alumno1
+     Nombre: Sofía Navarro Lara
+     URL: https://www.miColegio.com/alumno1
+     FICHA:
+          Fecha de nacimiento: Tue Feb 12 00:00:00 CET 2008
+          Aficiones: Dibujo y baloncesto
+          Asignatura favorita: Matemáticas
+          Objetivos académicos: Estudiar Medicina
+No existe el alumno alumno56
+La password es incorrecta
+Password correcta
+No existe el identificador de alumno alumno56
+Identificador de alumno: alumno1
+     Nombre: Sofía Navarro Lara
+     URL: https://www.miColegio.com/alumno1
+     FICHA:
+          Fecha de nacimiento: Tue Feb 12 00:00:00 CET 2008
+          Aficiones: Dibujo y baloncesto
+          Asignatura favorita: Matemáticas
+          Objetivos académicos: Estudiar Medicina
+     ANOTACIONES:
+          https://www.miColegio.com/anotacion/alumno1.1 Participa activamente en clase
+          https://www.miColegio.com/anotacion/alumno1.2 Entrega los trabajos con retraso

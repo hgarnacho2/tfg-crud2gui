@@ -151,10 +151,10 @@ class ModelFromStatementSectionTest {
             Button refreshModels = (Button) section.lookup("#model-statement-refresh-models");
             Button openOutputFolder = (Button) section.lookup("#model-statement-open-output-folder");
             StackPane panelHost = (StackPane) section.getChildren().get(2);
-            assertEquals(5, panelHost.getChildren().size());
+            assertEquals(6, panelHost.getChildren().size());
             String[] statusIds = {"model-statement-status", "model-statement-prompt-status",
                     "model-statement-llm-status", "model-statement-generation-status",
-                    "model-statement-diagram-status"};
+                    "model-statement-refine-status", "model-statement-diagram-status"};
             for (int index = 0; index < statusIds.length; index++) {
                 VBox content = (VBox) ((VBox) panelHost.getChildren().get(index)).getChildren().get(0);
                 assertEquals(section.lookup("#" + statusIds[index]),
@@ -192,7 +192,7 @@ class ModelFromStatementSectionTest {
                         .contains("model-llm-field-title"));
                     assertTrue(section.lookup("#model-statement-model-title").getStyleClass()
                         .contains("model-llm-field-title"));
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 6; i++) {
                 assertEquals(i != 0, ((Button) section.lookup("#statement-step-" + (i + 1))).isDisabled());
             }
             ((Button) section.lookup("#statement-step-2")).fire();
@@ -220,7 +220,7 @@ class ModelFromStatementSectionTest {
             assertTrue(panelHost.getChildren().get(1).isVisible());
             assertTrue(((Button) section.lookup("#statement-step-2"))
                     .getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
-            for (int i = 2; i < 5; i++) {
+            for (int i = 2; i < 6; i++) {
                 assertTrue(((Button) section.lookup("#statement-step-" + (i + 1))).isDisabled());
             }
 
@@ -366,18 +366,31 @@ class ModelFromStatementSectionTest {
             TextArea result = (TextArea) section.lookup("#model-statement-generated-json");
             Label output = (Label) section.lookup(".model-generation-output-path");
             assertTrue(result.getText().contains("\"name\" : \"Usuario\""));
-            assertTrue(generationStatus.getText().contains("Puedes continuar con el paso 5: Diagrama de clases."));
-            assertEquals("Diagrama de clases generado correctamente. Flujo completado.",
-                    ((Label) section.lookup("#model-statement-diagram-status")).getText());
+            assertTrue(generationStatus.getText().contains("Puedes continuar con el paso 5: Afinar modelo."));
+            assertEquals("", ((Label) section.lookup("#model-statement-diagram-status")).getText());
             Path outputPath = Path.of(output.getText().substring("Resultado: ".length()));
             assertTrue(outputPath.startsWith(selectedOutputDirectory.toAbsolutePath().normalize()));
             assertTrue(Files.isRegularFile(outputPath));
             assertFalse(((Button) section.lookup("#statement-step-5")).isDisabled());
+            assertTrue(((Button) section.lookup("#statement-step-6")).isDisabled());
             assertEquals("Instrucciones para inferir clases.", provider.prompt.get());
             assertEquals("Texto del enunciado para el modelo.", provider.statement.get());
                 ((Button) section.lookup("#statement-step-5")).fire();
+                assertEquals(1, ((StackPane) section.lookup("#model-statement-editor-host"))
+                        .getChildren().size());
+                ((Button) section.lookup("#model-statement-confirm-model")).fire();
+                Path validated = outputPath.resolveSibling(outputPath.getFileName().toString()
+                        .replace(".json", "-validated.json"));
+                assertTrue(Files.isRegularFile(validated));
+                assertTrue(Files.readString(validated).contains("\"expectedManagerId\" : \"PlataformaCompraVenta\""));
+                assertTrue(((Label) section.lookup("#model-statement-refine-status")).getText()
+                        .contains("Puedes continuar con el paso 6: Diagrama de clases."));
+                assertEquals("Diagrama de clases generado correctamente. Flujo completado.",
+                        ((Label) section.lookup("#model-statement-diagram-status")).getText());
+                assertFalse(((Button) section.lookup("#statement-step-6")).isDisabled());
+                ((Button) section.lookup("#statement-step-6")).fire();
                 StackPane panelHost = (StackPane) section.getChildren().get(2);
-                VBox diagramPanel = (VBox) panelHost.getChildren().get(4);
+                VBox diagramPanel = (VBox) panelHost.getChildren().get(5);
                 VBox diagramContent = (VBox) diagramPanel.getChildren().get(0);
                 ScrollPane diagramScroll = (ScrollPane) diagramContent.getChildren().get(1);
                 ClassDiagramView diagram = (ClassDiagramView) diagramScroll.getContent();

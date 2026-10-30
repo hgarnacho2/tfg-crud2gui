@@ -1,0 +1,110 @@
+--------------------------------
+Creamos la plataforma de eventos
+--------------------------------
+Creada plataforma de eventos Tickly
+---------------------
+Creamos organizadores
+---------------------
+Creado organizador sergionavarro@correo.es
+Creado organizador carmenlozano@mimail.com
+Creado organizador inesvidal@otromail.com
+----------------------
+Añadimos organizadores
+----------------------
+El organizador con email sergionavarro@correo.es ha sido añadido
+El organizador con email carmenlozano@mimail.com ha sido añadido
+El organizador con email inesvidal@otromail.com ha sido añadido
+---------------
+Creamos eventos
+---------------
+Creado evento con id 1
+Creado evento con id 2
+Creado evento con id 3
+Creado evento con id 4
+Creado evento con id 5
+----------------------------------------
+Añadimos los eventos a los organizadores
+----------------------------------------
+El estado del evento con id 1 ha sido modificado a estado DISPONIBLE
+El evento con id 1 se ha añadido al organizador sergionavarro@correo.es
+El estado del evento con id 2 ha sido modificado a estado DISPONIBLE
+El evento con id 2 se ha añadido al organizador carmenlozano@mimail.com
+El estado del evento con id 3 ha sido modificado a estado DISPONIBLE
+El evento con id 3 se ha añadido al organizador inesvidal@otromail.com
+El estado del evento con id 4 ha sido modificado a estado DISPONIBLE
+El evento con id 4 se ha añadido al organizador sergionavarro@correo.es
+El estado del evento con id 5 ha sido modificado a estado DISPONIBLE
+El evento con id 5 se ha añadido al organizador inesvidal@otromail.com
+-------------------------------
+Imprimimos la info de un evento
+-------------------------------
+ID: 2
+Titulo: Conferencia sobre inteligencia artificial
+Precio de entrada: 15.0
+Descripcion: Charla divulgativa con preguntas. Incluye certificado.
+Estado: DISPONIBLE
+------------------------------------
+Imprimimos la info de un organizador
+------------------------------------
+------------
+Nombre: Inés Vidal Mora
+Email: inesvidal@otromail.com
+------------
+ID: 3
+Titulo: Festival de cine independiente
+Precio de entrada: 12.0
+Descripcion: Cortometrajes y coloquio con los directores.
+Estado: DISPONIBLE
+ID: 5
+Titulo: Concierto de rock en la sala Apolo
+Precio de entrada: 22.0
+Descripcion: Tres grupos locales en directo. Incluye consumición.
+Estado: DISPONIBLE
+----------------------------------------------
+Eliminamos un organizador a partir de su email
+----------------------------------------------
+El organizador con email inesvidal@otromail.com ha sido eliminado
+------------------------------------
+Imprimimos la lista de organizadores
+------------------------------------
+------------
+Nombre: Sergio Navarro Bel
+Email: sergionavarro@correo.es
+------------
+ID: 1
+Titulo: Concierto de jazz en el Retiro
+Precio de entrada: 25.0
+Descripcion: Jazz al aire libre con cuarteto en directo. Puertas 20:00.
+Estado: DISPONIBLE
+ID: 4
+Titulo: Taller de cocina mediterránea
+Precio de entrada: 30.5
+Descripcion: Taller práctico de cuatro horas. Incluye degustación.
+Estado: DISPONIBLE
+------------
+Nombre: Carmen Lozano Rey
+Email: carmenlozano@mimail.com
+------------
+ID: 2
+Titulo: Conferencia sobre inteligencia artificial
+Precio de entrada: 15.0
+Descripcion: Charla divulgativa con preguntas. Incluye certificado.
+Estado: DISPONIBLE
+-----------------------------------------------
+Imprimimos el total de eventos en la plataforma
+-----------------------------------------------
+ID: 1
+Titulo: Concierto de jazz en el Retiro
+Precio de entrada: 25.0
+Descripcion: Jazz al aire libre con cuarteto en directo. Puertas 20:00.
+Estado: DISPONIBLE
+ID: 4
+Titulo: Taller de cocina mediterránea
+Precio de entrada: 30.5
+Descripcion: Taller práctico de cuatro horas. Incluye degustación.
+Estado: DISPONIBLE
+ID: 2
+Titulo: Conferencia sobre inteligencia artificial
+Precio de entrada: 15.0
+Descripcion: Charla divulgativa con preguntas. Incluye certificado.
+Estado: DISPONIBLE

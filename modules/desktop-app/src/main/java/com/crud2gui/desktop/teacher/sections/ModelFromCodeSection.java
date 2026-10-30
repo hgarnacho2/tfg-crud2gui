@@ -1,5 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.common.ui.JavaCodeViewer;
+import com.crud2gui.common.ui.JsonEditorView;
 import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.UiComponents;
@@ -17,7 +19,6 @@ import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextArea;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -72,14 +73,16 @@ public final class ModelFromCodeSection extends Section {
     private final Label folderTreeStatus = UiComponents.label(
             "Selecciona una carpeta para ver su contenido.", List.of("statement-file-path"));
     private final TreeView<FolderEntry> folderTree = new TreeView<>();
+    private final JavaCodeViewer codeViewer = new JavaCodeViewer();
+    private final HBox codeBrowser = new HBox(12, folderTree, codeViewer);
     private final VBox selectedFolderCard =
             UiComponents.vBox(List.of("statement-file-card"), selectedFolderName, selectedFolderPath,
-                    folderTreeStatus, folderTree);
+                    folderTreeStatus, codeBrowser);
     private final Label selectionStatus = UiComponents.statusLabel("model-code-selection-status");
     private final Label extractionStatus = UiComponents.statusLabel("model-code-extraction-status");
     private final Label diagramStatus = UiComponents.statusLabel("model-code-diagram-status");
-    private final TextArea generatedModel = UiComponents.textArea(
-            false, false, 20, List.of("model-json-result"));
+    private final StackPane generatedModel = new StackPane();
+    private JsonEditorView generatedModelViewer;
     private final ClassDiagramView classDiagram = new ClassDiagramView();
     private final ScrollPane diagramScroll = new ScrollPane(classDiagram);
     private final Label managerSelectionPrompt = UiComponents.label(
@@ -124,6 +127,7 @@ public final class ModelFromCodeSection extends Section {
         folderTreeStatus.setManaged(false);
         generatedModel.setId("model-code-generated-json");
         generatedModel.setMinHeight(0);
+        generatedModel.setPrefHeight(480);
         generatedModel.setMaxHeight(Double.MAX_VALUE);
         generatedModel.setVisible(false);
         generatedModel.setManaged(false);
@@ -131,19 +135,11 @@ public final class ModelFromCodeSection extends Section {
         folderTree.getStyleClass().add("model-code-folder-tree");
         folderTree.setShowRoot(true);
         folderTree.setEditable(false);
-        folderTree.setFocusTraversable(false);
-        folderTree.setSelectionModel(null);
         folderTree.setFixedCellSize(28);
         folderTree.setMinHeight(140);
         folderTree.setPrefHeight(300);
         folderTree.setMaxHeight(Double.MAX_VALUE);
-        folderTree.setVisible(false);
-        folderTree.setManaged(false);
         folderTree.setCellFactory(ignored -> new TreeCell<>() {
-            {
-                setMouseTransparent(true);
-            }
-
             @Override
             protected void updateItem(FolderEntry entry, boolean empty) {
                 super.updateItem(entry, empty);
@@ -153,7 +149,24 @@ public final class ModelFromCodeSection extends Section {
                         !empty && entry != null && !entry.directory() && entry.name().endsWith(".java"));
             }
         });
-        VBox.setVgrow(folderTree, Priority.ALWAYS);
+        folderTree.getSelectionModel().selectedItemProperty().addListener((observable, previous, selected) -> {
+            if (selected != null && !selected.getValue().directory()) {
+                codeViewer.showFile(selected.getValue().path());
+            }
+        });
+        codeViewer.setId("model-code-viewer");
+        codeViewer.setMinSize(0, 140);
+        codeViewer.setPrefHeight(300);
+        codeViewer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        HBox.setHgrow(codeViewer, Priority.ALWAYS);
+        folderTree.setMinWidth(220);
+        folderTree.setPrefWidth(300);
+        codeBrowser.setId("model-code-browser");
+        codeBrowser.setMinHeight(140);
+        codeBrowser.setPrefHeight(300);
+        codeBrowser.setMaxHeight(Double.MAX_VALUE);
+        setCodeBrowserVisible(false);
+        VBox.setVgrow(codeBrowser, Priority.ALWAYS);
         VBox.setVgrow(selectedFolderCard, Priority.ALWAYS);
         folderTreeStatus.setId("model-code-folder-tree-status");
 
@@ -164,7 +177,7 @@ public final class ModelFromCodeSection extends Section {
         VBox.setVgrow(selectContent, Priority.ALWAYS);
         VBox selectPanel = UiComponents.surface(selectContent);
         selectPanel.maxHeightProperty().bind(javafx.beans.binding.Bindings
-                .when(folderTree.managedProperty())
+                .when(codeBrowser.managedProperty())
                 .then(Double.MAX_VALUE).otherwise(Region.USE_PREF_SIZE));
         StackPane.setAlignment(selectPanel, javafx.geometry.Pos.TOP_LEFT);
 
@@ -285,8 +298,8 @@ public final class ModelFromCodeSection extends Section {
         selectedFolderCard.pseudoClassStateChanged(SELECTED, true);
         invalidateModel();
         folderTree.setRoot(null);
-        folderTree.setVisible(true);
-        folderTree.setManaged(true);
+        codeViewer.clear();
+        setCodeBrowserVisible(true);
         folderTreeStatus.setVisible(true);
         folderTreeStatus.setManaged(true);
         folderTreeStatus.setText("Leyendo contenido de la carpeta...");
@@ -346,10 +359,7 @@ public final class ModelFromCodeSection extends Section {
             Files.writeString(resultPath, json, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
             return new ExtractedModel(model, json, resultPath);
         }, result -> {
-            generatedModel.setText(result.json());
-            generatedModel.positionCaret(0);
-            generatedModel.setVisible(true);
-            generatedModel.setManaged(true);
+            showGeneratedModel(result.outputPath());
             configureManagerSelection(result.model());
             String warnings = result.model().source().warnings().isEmpty()
                     ? "" : " Se encontraron " + result.model().source().warnings().size() + " aviso(s).";
@@ -371,11 +381,28 @@ public final class ModelFromCodeSection extends Section {
         });
     }
 
+    private void showGeneratedModel(Path modelPath) {
+        try {
+            generatedModelViewer = new JsonEditorView(modelPath, false);
+        } catch (IOException exception) {
+            logger.error("MODEL_CODE_VIEWER_ERROR | No se pudo mostrar el modelo generado.", exception);
+            return;
+        }
+        generatedModel.getChildren().setAll(generatedModelViewer.getView());
+        generatedModel.setVisible(true);
+        generatedModel.setManaged(true);
+    }
+
+    JsonEditorView generatedModelViewer() {
+        return generatedModelViewer;
+    }
+
     private void invalidateModel() {
         steps.get(2).setDisable(true);
         steps.get(1).pseudoClassStateChanged(COMPLETED, false);
         steps.get(2).pseudoClassStateChanged(COMPLETED, false);
-        generatedModel.clear();
+        generatedModel.getChildren().clear();
+        generatedModelViewer = null;
         showStatus(extractionStatus, "", false);
         generatedModel.setVisible(false);
         generatedModel.setManaged(false);
@@ -464,6 +491,13 @@ public final class ModelFromCodeSection extends Section {
         steps.get(1).setDisable(busy || sourceFolder == null);
     }
 
+    private void setCodeBrowserVisible(boolean visible) {
+        codeBrowser.setVisible(visible);
+        codeBrowser.setManaged(visible);
+        folderTree.setVisible(visible);
+        folderTree.setManaged(visible);
+    }
+
     private static FolderEntry readFolderTree(Path directory) throws IOException {
         List<Path> children;
         try (var entries = Files.list(directory)) {
@@ -477,10 +511,10 @@ public final class ModelFromCodeSection extends Section {
             boolean childDirectory = Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS);
             childEntries.add(childDirectory
                     ? readFolderTree(child)
-                    : new FolderEntry(child.getFileName().toString(), false, List.of()));
+                    : new FolderEntry(child.getFileName().toString(), child, false, List.of()));
         }
         String name = directory.getFileName() == null ? directory.toString() : directory.getFileName().toString();
-        return new FolderEntry(name, true, childEntries);
+        return new FolderEntry(name, directory, true, childEntries);
     }
 
     private static TreeItem<FolderEntry> toTreeItem(FolderEntry entry) {
@@ -494,7 +528,7 @@ public final class ModelFromCodeSection extends Section {
         item.getChildren().forEach(ModelFromCodeSection::expandTree);
     }
 
-    private record FolderEntry(String name, boolean directory, List<FolderEntry> children) {
+    private record FolderEntry(String name, Path path, boolean directory, List<FolderEntry> children) {
         private FolderEntry {
             children = List.copyOf(children);
         }
@@ -532,7 +566,7 @@ public final class ModelFromCodeSection extends Section {
             }
             Desktop.getDesktop().open(folder.toFile());
             return folder;
-        }, opened -> showStatus(extractionStatus, "Carpeta de salida abierta: " + opened, false),
+        }, opened -> { },
                 failure -> {
                     logger.error("MODEL_CODE_OPEN_OUTPUT_ERROR | No se pudo abrir la carpeta de salida.", failure);
                     showStatus(extractionStatus, "No se pudo abrir la carpeta de salida: " + folder, true);

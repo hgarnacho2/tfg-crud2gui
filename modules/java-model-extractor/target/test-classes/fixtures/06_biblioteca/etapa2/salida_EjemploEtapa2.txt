@@ -1,0 +1,27 @@
+Lectores en la biblioteca:
+     lector1: Inés Carrasco Bravo
+     lector2: Tomás Ibáñez Roca
+No existe el lector lector56
+Identificador de lector: lector1
+     Nombre: Inés Carrasco Bravo
+     URL: https://www.miBiblioteca.com/lector1
+     FICHA:
+          Fecha de nacimiento: Mon Dec 03 00:00:00 CET 1979
+          Géneros favoritos: Novela histórica
+          Profesión: Bibliotecaria
+          Libro favorito: El nombre de la rosa
+No existe el lector lector56
+La password es incorrecta
+Password correcta
+No existe el identificador de lector lector56
+Identificador de lector: lector1
+     Nombre: Inés Carrasco Bravo
+     URL: https://www.miBiblioteca.com/lector1
+     FICHA:
+          Fecha de nacimiento: Mon Dec 03 00:00:00 CET 1979
+          Géneros favoritos: Novela histórica
+          Profesión: Bibliotecaria
+          Libro favorito: El nombre de la rosa
+     RESEÑAS:
+          https://www.miBiblioteca.com/resena/lector1.1 Una lectura imprescindible
+          https://www.miBiblioteca.com/resena/lector1.2 Final algo decepcionante

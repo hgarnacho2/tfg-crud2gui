@@ -1,6 +1,6 @@
 package com.crud2gui.statement.extractor;
 
-import com.crud2gui.common.DotEnv;
+import com.crud2gui.common.utils.DotEnv;
 import com.crud2gui.statement.filter.StatementFilter;
 import com.crud2gui.statement.filter.StatementFilterConfig;
 import com.crud2gui.statement.filter.StatementFilterConfigJson;

@@ -1,0 +1,70 @@
+/* JavaCodeViewer · tema claro verde (a juego con CRUD2GUI) */
+
+.java-code {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dbe5e0;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Cabecera */
+.java-code .code-header {
+    -fx-background-color: #f3f7f5;
+    -fx-background-radius: 8 8 0 0;
+    -fx-padding: 10 14 10 14;
+    -fx-border-color: #dbe5e0;
+    -fx-border-width: 0 0 1 0;
+}
+.java-code .chip {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #087e65;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cfe0d8;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 2 7 2 7;
+}
+.java-code .file-name { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1a1f1d; }
+.java-code .file-info { -fx-font-size: 12px; -fx-text-fill: #5d6a66; }
+
+/* Cuerpo */
+.java-code .code-body { -fx-background-color: #ffffff; }
+.java-code .placeholder { -fx-text-fill: #5d6a66; -fx-font-size: 13px; }
+
+.java-code .code-area {
+    -fx-background-color: #ffffff;
+    -fx-font-family: "Consolas", "Menlo", "Monospaced";
+    -fx-font-size: 13px;
+    -fx-highlight-fill: #bfe3d3;
+}
+.java-code .code-area .text { -fx-fill: #1a1f1d; }
+
+/* Números de línea */
+.java-code .lineno {
+    -fx-background-color: #f3f7f5;
+    -fx-text-fill: #8a9792;
+    -fx-font-family: "Consolas", "Menlo", "Monospaced";
+    -fx-padding: 0 10 0 12;
+}
+
+/* Colores del código */
+.java-code .tok-keyword    { -fx-fill: #087e65; -fx-font-weight: bold; }
+.java-code .tok-type       { -fx-fill: #1f6fb2; -fx-font-weight: bold; }
+.java-code .tok-literal    { -fx-fill: #c2570c; -fx-font-weight: bold; }
+.java-code .tok-string     { -fx-fill: #b4540a; }
+.java-code .tok-char       { -fx-fill: #b4540a; }
+.java-code .tok-number     { -fx-fill: #1f6fb2; }
+.java-code .tok-annotation { -fx-fill: #7a4fae; }
+.java-code .tok-classname  { -fx-fill: #0f5c8a; }
+.java-code .tok-comment    { -fx-fill: #7b8a85; -fx-font-style: italic; }
+
+/* Scrollbars discretas */
+.java-code .scroll-bar { -fx-background-color: transparent; }
+.java-code .scroll-bar .thumb { -fx-background-color: #c9d8d2; -fx-background-radius: 6; }
+.java-code .scroll-bar .thumb:hover { -fx-background-color: #a8c4b9; }
+.java-code .scroll-bar .increment-button,
+.java-code .scroll-bar .decrement-button { -fx-padding: 0; }
+.java-code .scroll-bar .increment-arrow,
+.java-code .scroll-bar .decrement-arrow { -fx-padding: 0; -fx-shape: ""; }

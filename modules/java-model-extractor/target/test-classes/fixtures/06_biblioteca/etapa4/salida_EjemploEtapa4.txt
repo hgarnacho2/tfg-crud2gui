@@ -1,0 +1,23 @@
+Lectores en la biblioteca:
+     lector1: Inés Carrasco Bravo
+     lector2: Tomás Ibáñez Roca
+     lector3: Nombre Prueba Tres
+El lector lector2 ha sido eliminado
+No existe el lector lector2
+Lectores en la biblioteca:
+     lector1: Inés Carrasco Bravo
+     lector3: Nombre Prueba Tres
+Lectores en la biblioteca:
+     lector1: Inés Carrasco Bravo
+     lector3: Nombre Prueba Tres
+     lector2: Nombre Prueba Cuatro
+La reseña con URL https://www.miBiblioteca.com/resena/lector1.2 ha sido eliminada
+No existe la reseña con URL https://www.miBiblioteca.com/resena/lector1.2
+No existe el identificador de lector lector56
+Identificador de lector: lector1
+     Nombre: Inés Carrasco Bravo
+     URL: https://www.miBiblioteca.com/lector1
+     RESEÑAS:
+          https://www.miBiblioteca.com/resena/lector1.1 Una lectura imprescindible
+          https://www.miBiblioteca.com/resena/lector1.3 Reseña muy recomendable
+          https://www.miBiblioteca.com/resena/lector1.2 Personajes inolvidables

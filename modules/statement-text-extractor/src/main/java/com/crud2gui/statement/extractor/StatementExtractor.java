@@ -1,23 +1,19 @@
 package com.crud2gui.statement.extractor;
 
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
+import com.crud2gui.common.utils.PdfTextExtractor;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Extrae el contenido textual de un fichero PDF y permite guardarlo
+ * Extrae el contenido textual del PDF de un enunciado y permite guardarlo
  * en un fichero de texto plano con extensión {@code .txt}.
+ * Delega la extracción genérica en {@link PdfTextExtractor}.
  *
  * @author hgarnacho
- * @version 1.2
+ * @version 1.3
  * @since 1.0
  */
 public final class StatementExtractor {
@@ -34,21 +30,7 @@ public final class StatementExtractor {
      * @throws IOException si el fichero no existe o no se puede leer.
      */
     public static String extractText(Path pdfPath) throws IOException {
-        if (pdfPath == null) {
-            throw new IllegalArgumentException("La ruta del PDF no puede ser null.");
-        }
-
-        if (!Files.exists(pdfPath) || !Files.isRegularFile(pdfPath) || !Files.isReadable(pdfPath)) {
-            throw new IOException("No se puede leer o no existe el fichero PDF: " + pdfPath);
-        }
-
-        File file = pdfPath.toFile();
-
-        try (PDDocument document = Loader.loadPDF(file)) {
-            PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setSortByPosition(true);
-            return stripper.getText(document);
-        }
+        return PdfTextExtractor.extractText(pdfPath);
     }
 
     /**
@@ -60,31 +42,7 @@ public final class StatementExtractor {
      * @throws IOException si ocurre un error de lectura/escritura.
      */
     public static Path extractText(Path pdfPath, Path txtPath) throws IOException {
-        if (pdfPath == null) {
-            throw new IllegalArgumentException("La ruta del PDF no puede ser null.");
-        }
-
-        if (txtPath == null) {
-            throw new IllegalArgumentException("La ruta del TXT de salida no puede ser null.");
-        }
-
-        Path normalizedPdf = pdfPath.toAbsolutePath().normalize();
-        Path normalizedTxt = txtPath.toAbsolutePath().normalize();
-
-        if (normalizedPdf.equals(normalizedTxt)) {
-            throw new IllegalArgumentException("El fichero de salida no puede ser el mismo que el PDF de origen.");
-        }
-
-        String text = extractText(pdfPath);
-
-        Path parent = normalizedTxt.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
-
-        Files.writeString(normalizedTxt, text, StandardCharsets.UTF_8);
-
-        return normalizedTxt;
+        return PdfTextExtractor.extractText(pdfPath, txtPath);
     }
 
     /**
@@ -105,18 +63,7 @@ public final class StatementExtractor {
             return pdfPath; // O manejar según convenga si solo se quería omitir
         }
 
-        Path fileName = pdfPath.getFileName();
-        if (fileName == null) {
-            throw new IllegalArgumentException("La ruta del PDF debe incluir un nombre de fichero.");
-        }
-
-        String name = fileName.toString();
-        int dot = name.lastIndexOf('.');
-        String base = (dot > 0) ? name.substring(0, dot) : name;
-
-        Path txtPath = pdfPath.resolveSibling(base + ".txt");
-
-        return extractText(pdfPath, txtPath);
+        return extractText(pdfPath, PdfTextExtractor.siblingTxtPath(pdfPath));
     }
 
     public static void main(String[] args) {

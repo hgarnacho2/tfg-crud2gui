@@ -1,0 +1,8 @@
+Identificador de lector: lector1
+     Nombre: Inés Carrasco Bravo
+     URL: https://www.miBiblioteca.com/lector1
+     FICHA:
+          Fecha de nacimiento: Mon Dec 03 00:00:00 CET 1979
+          Géneros favoritos: Novela histórica
+          Profesión: Bibliotecaria
+          Libro favorito: El nombre de la rosa

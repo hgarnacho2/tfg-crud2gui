@@ -1,0 +1,110 @@
+-------------------------------
+Creamos la plataforma de cursos
+-------------------------------
+Creada plataforma de cursos Edubit
+--------------------
+Creamos instructores
+--------------------
+Creado instructor marta.iglesias@correo.es
+Creado instructor raulortega@mimail.com
+Creado instructor nuriacampos@otromail.com
+---------------------
+Añadimos instructores
+---------------------
+El instructor con email marta.iglesias@correo.es ha sido añadido
+El instructor con email raulortega@mimail.com ha sido añadido
+El instructor con email nuriacampos@otromail.com ha sido añadido
+--------------
+Creamos cursos
+--------------
+Creado curso con id 1
+Creado curso con id 2
+Creado curso con id 3
+Creado curso con id 4
+Creado curso con id 5
+--------------------------------------
+Añadimos los cursos a los instructores
+--------------------------------------
+El estado del curso con id 1 ha sido modificado a estado ABIERTO
+El curso con id 1 se ha añadido al instructor marta.iglesias@correo.es
+El estado del curso con id 2 ha sido modificado a estado ABIERTO
+El curso con id 2 se ha añadido al instructor raulortega@mimail.com
+El estado del curso con id 3 ha sido modificado a estado ABIERTO
+El curso con id 3 se ha añadido al instructor nuriacampos@otromail.com
+El estado del curso con id 4 ha sido modificado a estado ABIERTO
+El curso con id 4 se ha añadido al instructor marta.iglesias@correo.es
+El estado del curso con id 5 ha sido modificado a estado ABIERTO
+El curso con id 5 se ha añadido al instructor nuriacampos@otromail.com
+------------------------------
+Imprimimos la info de un curso
+------------------------------
+ID: 2
+Titulo: Diseño de bases de datos con SQL
+Precio de matricula: 79.9
+Descripcion: Modelado relacional y consultas SQL. Proyecto final.
+Estado: ABIERTO
+-----------------------------------
+Imprimimos la info de un instructor
+-----------------------------------
+------------
+Nombre: Nuria Campos Vega
+Email: nuriacampos@otromail.com
+------------
+ID: 3
+Titulo: Fotografía digital para principiantes
+Precio de matricula: 35.0
+Descripcion: Domina la cámara y la composición. Edición en directo.
+Estado: ABIERTO
+ID: 5
+Titulo: Python aplicado a la ciencia de datos
+Precio de matricula: 89.0
+Descripcion: Análisis de datos con pandas. Proyecto final real.
+Estado: ABIERTO
+---------------------------------------------
+Eliminamos un instructor a partir de su email
+---------------------------------------------
+El instructor con email nuriacampos@otromail.com ha sido eliminado
+-----------------------------------
+Imprimimos la lista de instructores
+-----------------------------------
+------------
+Nombre: Marta Iglesias Roca
+Email: marta.iglesias@correo.es
+------------
+ID: 1
+Titulo: Introducción a Java desde cero
+Precio de matricula: 49.0
+Descripcion: Programación para principiantes. Incluye ejercicios.
+Estado: ABIERTO
+ID: 4
+Titulo: Marketing digital y redes sociales
+Precio de matricula: 59.5
+Descripcion: Estrategias para pymes y emprendedores. Con plantillas.
+Estado: ABIERTO
+------------
+Nombre: Raúl Ortega Pons
+Email: raulortega@mimail.com
+------------
+ID: 2
+Titulo: Diseño de bases de datos con SQL
+Precio de matricula: 79.9
+Descripcion: Modelado relacional y consultas SQL. Proyecto final.
+Estado: ABIERTO
+----------------------------------------------
+Imprimimos el total de cursos en la plataforma
+----------------------------------------------
+ID: 1
+Titulo: Introducción a Java desde cero
+Precio de matricula: 49.0
+Descripcion: Programación para principiantes. Incluye ejercicios.
+Estado: ABIERTO
+ID: 4
+Titulo: Marketing digital y redes sociales
+Precio de matricula: 59.5
+Descripcion: Estrategias para pymes y emprendedores. Con plantillas.
+Estado: ABIERTO
+ID: 2
+Titulo: Diseño de bases de datos con SQL
+Precio de matricula: 79.9
+Descripcion: Modelado relacional y consultas SQL. Proyecto final.
+Estado: ABIERTO

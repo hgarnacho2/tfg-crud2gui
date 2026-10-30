@@ -20,12 +20,12 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,6 +43,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ModelFromCodeSectionTest {
@@ -140,7 +141,7 @@ class ModelFromCodeSectionTest {
             Label folderName = (Label) section.lookup(".statement-file-name");
             Label folderBadge = (Label) folderName.getGraphic();
             assertEquals("FOLDER", folderBadge.getText());
-            TextArea json = (TextArea) section.lookup("#model-code-generated-json");
+            StackPane json = (StackPane) section.lookup("#model-code-generated-json");
             root.layout();
             StackPane host = (StackPane) section.getChildren().get(2);
             assertEquals(host.getHeight(), host.getChildren().get(1).getLayoutBounds().getHeight(), 1);
@@ -151,12 +152,17 @@ class ModelFromCodeSectionTest {
             root.resize(1200, 800);
             root.layout();
             assertTrue(json.getHeight() < height - 150);
-            assertTrue(json.getText().contains("\"schemaVersion\" : \"1.0\""));
-            assertTrue(json.getText().contains("\"name\" : \"Producto\""));
-            assertTrue(json.getText().contains("\"name\" : \"Lanzador\""));
-            assertTrue(json.getText().contains("\"name\" : \"Gestor\""));
-            assertTrue(json.getText().contains("\"packageName\" : \"demo\""));
-            assertEquals("demo", ModelIO.fromJson(json.getText()).types().get(0).packageName());
+            var viewer = section.generatedModelViewer();
+            assertFalse(viewer.isEditable());
+            assertEquals(1, json.getChildren().size());
+            assertSame(viewer.getView(), json.getChildren().get(0));
+            String jsonText = viewer.currentJson();
+            assertTrue(jsonText.contains("\"schemaVersion\" : \"1.0\""));
+            assertTrue(jsonText.contains("\"name\" : \"Producto\""));
+            assertTrue(jsonText.contains("\"name\" : \"Lanzador\""));
+            assertTrue(jsonText.contains("\"name\" : \"Gestor\""));
+            assertTrue(jsonText.contains("\"packageName\" : \"demo\""));
+            assertEquals("demo", ModelIO.fromJson(jsonText).types().get(0).packageName());
             Button diagramStep = (Button) section.lookup("#statement-step-3");
             diagramStep.fire();
             assertTrue(diagramStep.getPseudoClassStates().stream()
@@ -319,6 +325,7 @@ class ModelFromCodeSectionTest {
         Path packageFolder = Files.createDirectories(source.resolve("demo"));
         Files.writeString(packageFolder.resolve("Producto.java"), "package demo; class Producto {}");
         Files.writeString(directory.resolve("README.md"), "proyecto");
+        Files.writeString(directory.resolve("config.xml"), "<config/>");
         for (int index = 0; index < 60; index++) {
             Files.writeString(packageFolder.resolve("Clase" + index + ".java"), "class Clase" + index + " {}");
         }
@@ -347,8 +354,6 @@ class ModelFromCodeSectionTest {
             assertFalse(((Button) section.lookup("#statement-step-2")).isDisabled());
             assertFalse(tree.isMouseTransparent());
             assertFalse(tree.isDisabled());
-            assertEquals(null, tree.getSelectionModel());
-            assertFalse(tree.isFocusTraversable());
             assertTrue(tree.getRoot().isExpanded());
             assertTrue(tree.getRoot().getValue().toString().contains(directory.getFileName().toString()));
 
@@ -375,8 +380,6 @@ class ModelFromCodeSectionTest {
             root.layout();
             assertTrue(tree.getHeight() < tallTreeHeight);
             assertEquals(250, tallTreeHeight - tree.getHeight(), 1);
-            assertTrue(tree.lookupAll(".tree-cell").stream()
-                    .allMatch(cell -> ((TreeCell<?>) cell).isMouseTransparent()));
             List<TreeCell<?>> visibleCells = tree.lookupAll(".tree-cell").stream()
                     .map(node -> (TreeCell<?>) node)
                     .filter(cell -> !cell.isEmpty())
@@ -407,10 +410,32 @@ class ModelFromCodeSectionTest {
             assertTrue(srcItem.isExpanded());
             assertTrue(demoItem.isExpanded());
 
+            com.crud2gui.common.ui.JavaCodeViewer viewer =
+                    (com.crud2gui.common.ui.JavaCodeViewer) section.lookup("#model-code-viewer");
+            assertEquals("", viewer.getFileName());
+            @SuppressWarnings("unchecked")
+            TreeView<Object> selectableTree = (TreeView<Object>) tree;
+            TreeItem<Object> producto = selectableTree.getRoot().getChildren().get(0).getChildren().get(0)
+                    .getChildren().stream()
+                    .filter(item -> item.getValue().toString().contains("Producto.java"))
+                    .findFirst().orElseThrow();
+            selectableTree.getSelectionModel().select(producto);
+            assertEquals("Producto.java", viewer.getFileName());
+            assertEquals("package demo; class Producto {}", viewer.getText());
+            selectableTree.getSelectionModel().select(selectableTree.getRoot());
+            assertEquals("Producto.java", viewer.getFileName());
+            assertEquals(java.util.Set.of("java", "txt", "md"), viewer.getAllowedExtensions());
+            selectableTree.getSelectionModel().select(rootFile(selectableTree, "README.md"));
+            assertEquals("proyecto", viewer.getText());
+            selectableTree.getSelectionModel().select(rootFile(selectableTree, "config.xml"));
+            assertEquals("config.xml", viewer.getFileName());
+            assertTrue(viewer.getText().startsWith("Tipo de fichero no admitido en el visor."));
+            assertFalse(viewer.getText().contains("<config/>"));
+
             StackPane panelHost = (StackPane) section.getChildren().get(2);
             VBox extractionPanel = (VBox) panelHost.getChildren().get(1);
             VBox extractionContent = (VBox) extractionPanel.getChildren().get(0);
-            TextArea json = (TextArea) extractionContent.lookup("#model-code-generated-json");
+            Region json = (Region) extractionContent.lookup("#model-code-generated-json");
             assertEquals(Priority.ALWAYS, VBox.getVgrow(json));
             assertEquals(0, json.getMinHeight());
             return null;
@@ -584,6 +609,12 @@ class ModelFromCodeSectionTest {
             throw new AssertionError("Esperaba el estado '" + expectedText + "', pero se mostró: '"
                     + status.getText() + "'.", timeout);
         }
+    }
+
+    private static TreeItem<Object> rootFile(TreeView<Object> tree, String name) {
+        return tree.getRoot().getChildren().stream()
+                .filter(item -> item.getValue().toString().contains(name))
+                .findFirst().orElseThrow();
     }
 
     private static <T> T onFx(Callable<T> action) throws Exception {

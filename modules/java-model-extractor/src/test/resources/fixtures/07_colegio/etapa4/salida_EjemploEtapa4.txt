@@ -1,0 +1,23 @@
+Alumnos en el colegio:
+     alumno1: Sofía Navarro Lara
+     alumno2: Diego Herrero Soto
+     alumno3: Nombre Prueba Tres
+El alumno alumno2 ha sido eliminado
+No existe el alumno alumno2
+Alumnos en el colegio:
+     alumno1: Sofía Navarro Lara
+     alumno3: Nombre Prueba Tres
+Alumnos en el colegio:
+     alumno1: Sofía Navarro Lara
+     alumno3: Nombre Prueba Tres
+     alumno2: Nombre Prueba Cuatro
+La anotación con URL https://www.miColegio.com/anotacion/alumno1.2 ha sido eliminada
+No existe la anotación con URL https://www.miColegio.com/anotacion/alumno1.2
+No existe el identificador de alumno alumno56
+Identificador de alumno: alumno1
+     Nombre: Sofía Navarro Lara
+     URL: https://www.miColegio.com/alumno1
+     ANOTACIONES:
+          https://www.miColegio.com/anotacion/alumno1.1 Participa activamente en clase
+          https://www.miColegio.com/anotacion/alumno1.3 Excelente actitud en el laboratorio
+          https://www.miColegio.com/anotacion/alumno1.2 Ha mejorado su nota de matemáticas

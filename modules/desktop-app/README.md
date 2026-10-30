@@ -150,8 +150,12 @@ disponible y la etiqueta inferior confirma que se puede continuar con el paso 3:
 Seleccionar LLM. Cancelar o un error de lectura conserva el prompt anterior, si lo habia.
 Si el LLM devuelve una respuesta con JSON incorrecto o incompatible con el modelo,
 el visor muestra el texto original sin modificarlo. La etiqueta inferior conserva
-el error y el paso del diagrama permanece bloqueado; esa respuesta no se guarda
+el error y los pasos de afinado y diagrama permanecen bloqueados; esa respuesta no se guarda
 como un modelo valido. Se puede volver a pulsar «Obtener modelo» para reintentar.
+Con un JSON valido se habilita el paso 5 «Afinar modelo», que abre el JSON generado en el
+editor `JsonEditorView` (modulo `common`, paquete `com.crud2gui.common.ui`). «Confirmar modelo» valida el JSON editado,
+lo guarda como copia `<nombre>-validated.json` junto al original y habilita el paso 6
+«Diagrama de clases» con el modelo confirmado.
 
 ### Seleccion de codigo del docente
 
@@ -163,8 +167,9 @@ seleccionada. El arbol y su estado de carga permanecen ocultos hasta seleccionar
 carpeta valida; cancelar el selector conserva el estado anterior.
 El panel de seleccion tambien permanece compacto hasta seleccionar la carpeta.
 El arbol de la carpeta seleccionada ocupa la altura disponible
-y permite desplazarse con la rueda y las barras. Las carpetas permanecen expandidas;
-los elementos no se pueden seleccionar, abrir ni plegar.
+y permite desplazarse con la rueda y las barras. Las carpetas aparecen expandidas.
+Al seleccionar un fichero, el visor `JavaCodeViewer` (modulo `common`) muestra su contenido
+a la derecha en solo lectura, con numeros de linea y resaltado de sintaxis para `.java`.
 Los ficheros con extension `.java` se resaltan en verde y negrita.
 Tras cargar el contenido, un mensaje verde confirma la seleccion e indica que se puede
 continuar al paso 2: Obtener modelo.

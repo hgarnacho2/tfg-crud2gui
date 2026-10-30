@@ -1,6 +1,6 @@
 package com.crud2gui.statementanalyzer;
 
-import com.crud2gui.common.DotEnv;
+import com.crud2gui.common.utils.DotEnv;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

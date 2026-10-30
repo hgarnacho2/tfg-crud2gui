@@ -20,13 +20,13 @@ Dependencias del módulo (se descargan solas la primera vez, hace falta internet
 * [Apache PDFBox](https://pdfbox.apache.org/) 3.0.3: extracción de texto.
 * Jackson Databind 2.18.2: lectura y escritura de la configuración JSON del filtro.
 * JUnit Jupiter 5.10.2: tests.
-* `common-utils`: librería transversal para la gestión centralizada de configuración.
+* `common`: librería transversal (configuración con `DotEnv` y extracción genérica de texto con `PdfTextExtractor`, en el paquete `com.crud2gui.common.utils`). `StatementExtractor` delega en `PdfTextExtractor`.
 
 ---
 
 ## ⚙️ Configuración y Entorno (`DotEnv`)
 
-El módulo incorpora un gestor de configuración jerárquico a través de la clase `DotEnv` (provista por `common-utils`). Busca automáticamente los ficheros de entorno (**`.env.public`** y **`.env.private`**) subiendo de forma inteligente por los directorios padres hasta la **raíz del proyecto**, garantizando que funcione independientemente de la ruta desde donde se ejecute.
+El módulo incorpora un gestor de configuración jerárquico a través de la clase `DotEnv` (provista por `common`). Busca automáticamente los ficheros de entorno (**`.env.public`** y **`.env.private`**) subiendo de forma inteligente por los directorios padres hasta la **raíz del proyecto**, garantizando que funcione independientemente de la ruta desde donde se ejecute.
 
 ### Variables de configuración disponibles (en `.env.public`):
 * **`FILTER_STATEMENT_TEXT`** (`true` / `false`): Activa o desactiva el paso de filtrado durante la ejecución de `Main`.

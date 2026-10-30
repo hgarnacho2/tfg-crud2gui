@@ -1,6 +1,6 @@
 package com.crud2gui.statementanalyzer.client;
 
-import com.crud2gui.common.DotEnv;
+import com.crud2gui.common.utils.DotEnv;
 import com.crud2gui.statementanalyzer.model.GenerationOptions;
 import com.crud2gui.statementanalyzer.model.ModelInfo;
 import com.crud2gui.statementanalyzer.model.ModelResponse;

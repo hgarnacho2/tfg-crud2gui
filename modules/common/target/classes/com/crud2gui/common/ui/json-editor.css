@@ -1,0 +1,185 @@
+/* ==========================================================
+   JsonEditorView · tema claro verde (a juego con CRUD2GUI)
+   Paleta:
+     verde oscuro  #123b35   verde acento  #087e65 (hover #066a55)
+     fondo         #f3f7f5   menta         #e4f3ec
+     borde suave   #dbe5e0   borde botón   #cfe0d8
+     texto         #1a1f1d   texto suave   #5d6a66
+   ========================================================== */
+
+.json-editor {
+    -fx-background-color: #f3f7f5;
+    -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    -fx-font-size: 13px;
+    -fx-base: #f1f6f4;
+    -fx-control-inner-background: #ffffff;
+    -fx-accent: #087e65;
+    -fx-focus-color: #087e65;
+    -fx-faint-focus-color: transparent;
+    -fx-text-fill: #1a1f1d;
+}
+
+.json-editor .label { -fx-text-fill: #1a1f1d; }
+
+/* ---------- Cabecera ---------- */
+.json-editor .toolbar {
+    -fx-background-color: #f3f7f5;
+    -fx-padding: 18 24 12 24;
+}
+.json-editor .title    { -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1a1f1d; }
+.json-editor .subtitle { -fx-font-size: 12px; -fx-text-fill: #5d6a66; }
+
+/* ---------- Botones ---------- */
+.json-editor .button {
+    -fx-background-color: #f1f6f4;
+    -fx-border-color: #cfe0d8;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-text-fill: #087e65;
+    -fx-font-weight: bold;
+    -fx-padding: 7 14 7 14;
+    -fx-cursor: hand;
+}
+.json-editor .button:hover    { -fx-background-color: #e4f3ec; -fx-border-color: #a8d5c5; }
+.json-editor .button:pressed  { -fx-background-color: #d3ebdf; }
+.json-editor .button:disabled { -fx-opacity: 0.45; }
+
+.json-editor .button.primary {
+    -fx-background-color: #087e65;
+    -fx-border-color: #087e65;
+    -fx-text-fill: #ffffff;
+}
+.json-editor .button.primary:hover   { -fx-background-color: #066a55; -fx-border-color: #066a55; }
+.json-editor .button.primary:pressed { -fx-background-color: #055745; }
+
+.json-editor .button.danger { -fx-text-fill: #b3261e; -fx-background-color: #fbf3f2; -fx-border-color: #efcbc8; }
+.json-editor .button.danger:hover { -fx-background-color: #f7e1df; -fx-border-color: #e3a9a4; }
+
+/* ---------- Pestañas (subrayado verde) ---------- */
+.json-editor .tab-pane { -fx-padding: 0 24 0 24; }
+.json-editor .tab-pane > .tab-header-area { -fx-padding: 0; }
+.json-editor .tab-pane > .tab-header-area > .tab-header-background { -fx-background-color: transparent; }
+.json-editor .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-padding: 6 14 6 14;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 2 0;
+}
+.json-editor .tab:selected { -fx-border-color: #087e65; }
+.json-editor .tab .tab-label { -fx-text-fill: #5d6a66; -fx-font-weight: bold; }
+.json-editor .tab:selected .tab-label { -fx-text-fill: #087e65; }
+.json-editor .tab:hover .tab-label { -fx-text-fill: #066a55; }
+.json-editor .tab-pane > .tab-content-area {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dbe5e0;
+    -fx-border-width: 1;
+    -fx-border-radius: 0 8 8 8;
+    -fx-background-radius: 0 8 8 8;
+}
+
+/* ---------- Split pane ---------- */
+.json-editor .split-pane { -fx-background-color: transparent; -fx-padding: 0; }
+.json-editor .split-pane > .split-pane-divider { -fx-background-color: #dbe5e0; -fx-padding: 0 0.5 0 0.5; }
+
+/* ---------- Árbol ---------- */
+.json-editor .tree-view { -fx-background-color: #ffffff; -fx-padding: 8; }
+.json-editor .tree-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 4 8 4 4;
+    -fx-background-radius: 6;
+}
+.json-editor .tree-cell:hover    { -fx-background-color: #f1f6f4; }
+.json-editor .tree-cell:selected { -fx-background-color: #e4f3ec; }
+.json-editor .tree-cell .tree-disclosure-node .arrow { -fx-background-color: #5d6a66; }
+
+.json-editor .key   { -fx-text-fill: #1a1f1d; -fx-font-weight: bold; }
+.json-editor .muted { -fx-text-fill: #5d6a66; }
+.json-editor .value { -fx-font-family: "Consolas", "Menlo", "Monospaced"; -fx-font-size: 12.5px; }
+
+/* Insignias de tipo */
+.json-editor .badge {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-min-width: 28;
+    -fx-alignment: center;
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 5;
+}
+.json-editor .kind-object  { -fx-text-fill: #7a4fae; }
+.json-editor .kind-array   { -fx-text-fill: #a86a08; }
+.json-editor .kind-string  { -fx-text-fill: #087e65; }
+.json-editor .kind-number  { -fx-text-fill: #1f6fb2; }
+.json-editor .kind-boolean { -fx-text-fill: #c2570c; }
+.json-editor .kind-null    { -fx-text-fill: #6b7773; }
+
+.json-editor .badge.kind-object  { -fx-background-color: #f0e8f8; }
+.json-editor .badge.kind-array   { -fx-background-color: #fbf0d9; }
+.json-editor .badge.kind-string  { -fx-background-color: #e4f3ec; }
+.json-editor .badge.kind-number  { -fx-background-color: #e3eef9; }
+.json-editor .badge.kind-boolean { -fx-background-color: #fbe9dc; }
+.json-editor .badge.kind-null    { -fx-background-color: #eceeed; }
+
+/* ---------- Inspector ---------- */
+.json-editor .inspector { -fx-background-color: #fafcfb; }
+.json-editor .panel-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1a1f1d; }
+.json-editor .field-label { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #5d6a66; }
+
+.json-editor .text-field,
+.json-editor .combo-box {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 6;
+    -fx-border-color: #cfe0d8;
+    -fx-border-radius: 6;
+    -fx-text-fill: #1a1f1d;
+    -fx-padding: 4 8 4 8;
+}
+.json-editor .combo-box .list-cell { -fx-text-fill: #1a1f1d; -fx-background-color: transparent; }
+.json-editor .combo-box .arrow { -fx-background-color: #5d6a66; }
+.json-editor .text-field:focused,
+.json-editor .combo-box:focused { -fx-border-color: #087e65; }
+.json-editor .text-field:disabled { -fx-opacity: 1; -fx-background-color: #f1f6f4; -fx-text-fill: #5d6a66; }
+
+.json-editor .text-area {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 6;
+    -fx-border-color: #dcdcdc;
+    -fx-border-radius: 6;
+}
+.json-editor .text-area .content { -fx-background-color: #ffffff; -fx-background-radius: 6; }
+.json-editor .text-area:focused  { -fx-border-color: #087e65; }
+.json-editor .text-area:invalid  { -fx-border-color: #c0392b; }
+.json-editor .text-area.code {
+    -fx-font-family: "Consolas", "Menlo", "Monospaced";
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #1a1f1d;
+}
+
+.json-editor .check-box { -fx-text-fill: #1a1f1d; }
+.json-editor .check-box .box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #a8d5c5;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+.json-editor .check-box:selected .box { -fx-background-color: #087e65; -fx-border-color: #087e65; }
+.json-editor .check-box .mark { -fx-background-color: #ffffff; }
+
+/* ---------- Barra de estado (como los avisos de la app) ---------- */
+.json-editor .statusbar {
+    -fx-background-color: #f3f7f5, #e4f3ec;
+    -fx-background-insets: 0, 12 24 18 24;
+    -fx-background-radius: 0, 8;
+    -fx-padding: 22 40 28 40;
+}
+.json-editor .status { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #087e65; }
+
+/* ---------- Scrollbars discretas ---------- */
+.json-editor .scroll-bar { -fx-background-color: transparent; }
+.json-editor .scroll-bar .thumb { -fx-background-color: #c9d8d2; -fx-background-radius: 6; }
+.json-editor .scroll-bar .thumb:hover { -fx-background-color: #a8c4b9; }
+.json-editor .scroll-bar .increment-button,
+.json-editor .scroll-bar .decrement-button { -fx-padding: 0; }
+.json-editor .scroll-bar .increment-arrow,
+.json-editor .scroll-bar .decrement-arrow { -fx-padding: 0; -fx-shape: ""; }

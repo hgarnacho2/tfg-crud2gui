@@ -1,8 +1,10 @@
 package com.crud2gui.desktop.teacher;
 
 import com.crud2gui.authenticator.AuthenticatedUser;
+import com.crud2gui.desktop.teacher.sections.CrudSection;
 import com.crud2gui.desktop.teacher.sections.ModelFromStatementSection;
 import com.crud2gui.desktop.teacher.sections.ModelFromCodeSection;
+import com.crud2gui.desktop.teacher.sections.ModelValidationSection;
 import com.crud2gui.desktop.teacher.sections.StatementSection;
 import com.crud2gui.desktop.ui.UiComponents;
 import javafx.beans.property.ObjectProperty;
@@ -23,7 +25,9 @@ public final class TeacherDashboardView extends BorderPane {
     private enum TeacherSection {
         STATEMENT("Enunciado"),
         MODEL_FROM_STATEMENT("Enunciado >> Modelo"),
-        MODEL_FROM_CODE("Código >> Modelo");
+        MODEL_FROM_CODE("Código >> Modelo"),
+        MODEL_VALIDATION("Validar modelos"),
+        CRUD("CRUD");
 
         private final String label;
 
@@ -72,6 +76,8 @@ public final class TeacherDashboardView extends BorderPane {
             case STATEMENT -> new StatementSection();
             case MODEL_FROM_STATEMENT -> new ModelFromStatementSection();
             case MODEL_FROM_CODE -> new ModelFromCodeSection();
+            case MODEL_VALIDATION -> new ModelValidationSection();
+            case CRUD -> new CrudSection();
         };
     }
 }

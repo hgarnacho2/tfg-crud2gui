@@ -1,0 +1,165 @@
+-----------------------------------
+Creamos la plataforma de adopciones
+-----------------------------------
+Creada plataforma de adopciones Huellas
+----------------
+Creamos refugios
+----------------
+Creado refugio refugio.huellas@correo.es
+Creado refugio amigospeludos@mimail.com
+Creado refugio segundaoportunidad@otromail.com
+-----------------
+Añadimos refugios
+-----------------
+El refugio con email refugio.huellas@correo.es ha sido añadido
+El refugio con email amigospeludos@mimail.com ha sido añadido
+El refugio con email segundaoportunidad@otromail.com ha sido añadido
+----------------
+Creamos animales
+----------------
+Creado animal con id 1
+Creado animal con id 2
+Creado animal con id 3
+Creado animal con id 4
+Creado animal con id 5
+------------------------------------
+Añadimos los animales a los refugios
+------------------------------------
+El estado del animal con id 1 ha sido modificado a estado DISPONIBLE
+El animal con id 1 se ha añadido al refugio refugio.huellas@correo.es
+El estado del animal con id 2 ha sido modificado a estado DISPONIBLE
+El animal con id 2 se ha añadido al refugio amigospeludos@mimail.com
+El estado del animal con id 3 ha sido modificado a estado DISPONIBLE
+El animal con id 3 se ha añadido al refugio segundaoportunidad@otromail.com
+El estado del animal con id 4 ha sido modificado a estado DISPONIBLE
+El animal con id 4 se ha añadido al refugio refugio.huellas@correo.es
+El estado del animal con id 5 ha sido modificado a estado DISPONIBLE
+El animal con id 5 se ha añadido al refugio segundaoportunidad@otromail.com
+-------------------------------
+Imprimimos la info de un animal
+-------------------------------
+ID: 2
+Titulo: Simba, gato atigrado
+Tasa de adopcion: 40.0
+Descripcion: Gato joven y juguetón. Esterilizado y vacunado.
+Estado: DISPONIBLE
+--------------------------------
+Imprimimos la info de un refugio
+--------------------------------
+------------
+Nombre: Asociación Segunda Oportunidad
+Email: segundaoportunidad@otromail.com
+------------
+ID: 3
+Titulo: Rocky, pastor alemán
+Tasa de adopcion: 90.0
+Descripcion: Perro enérgico que necesita jardín. Adiestrado.
+Estado: DISPONIBLE
+ID: 5
+Titulo: Toby, cachorro de labrador
+Tasa de adopcion: 75.0
+Descripcion: Cachorro de cuatro meses. Vacunado, sin esterilizar.
+Estado: DISPONIBLE
+------------------------------------------
+Eliminamos un refugio a partir de su email
+------------------------------------------
+El refugio con email segundaoportunidad@otromail.com ha sido eliminado
+-------------------------------
+Imprimimos la lista de refugios
+-------------------------------
+------------
+Nombre: Refugio Huellas del Sur
+Email: refugio.huellas@correo.es
+------------
+ID: 1
+Titulo: Luna, perra mestiza cariñosa
+Tasa de adopcion: 60.0
+Descripcion: Perra de tres años, sociable con niños. Con chip.
+Estado: DISPONIBLE
+ID: 4
+Titulo: Nala, gata siamesa
+Tasa de adopcion: 45.0
+Descripcion: Gata tranquila, ideal para piso. Vacunada y con chip.
+Estado: DISPONIBLE
+------------
+Nombre: Protectora Amigos Peludos
+Email: amigospeludos@mimail.com
+------------
+ID: 2
+Titulo: Simba, gato atigrado
+Tasa de adopcion: 40.0
+Descripcion: Gato joven y juguetón. Esterilizado y vacunado.
+Estado: DISPONIBLE
+------------------------------------------------
+Imprimimos el total de animales en la plataforma
+------------------------------------------------
+ID: 1
+Titulo: Luna, perra mestiza cariñosa
+Tasa de adopcion: 60.0
+Descripcion: Perra de tres años, sociable con niños. Con chip.
+Estado: DISPONIBLE
+ID: 4
+Titulo: Nala, gata siamesa
+Tasa de adopcion: 45.0
+Descripcion: Gata tranquila, ideal para piso. Vacunada y con chip.
+Estado: DISPONIBLE
+ID: 2
+Titulo: Simba, gato atigrado
+Tasa de adopcion: 40.0
+Descripcion: Gato joven y juguetón. Esterilizado y vacunado.
+Estado: DISPONIBLE
+---------------------------------
+Eliminamos un animal a un refugio
+---------------------------------
+El animal con id 1 se ha eliminado de la lista del refugio refugio.huellas@correo.es
+ID: 4
+Titulo: Nala, gata siamesa
+Tasa de adopcion: 45.0
+Descripcion: Gata tranquila, ideal para piso. Vacunada y con chip.
+Estado: DISPONIBLE
+-----------------------------
+Imprimimos todos los animales
+-----------------------------
+ID: 4
+Titulo: Nala, gata siamesa
+Tasa de adopcion: 45.0
+Descripcion: Gata tranquila, ideal para piso. Vacunada y con chip.
+Estado: DISPONIBLE
+ID: 2
+Titulo: Simba, gato atigrado
+Tasa de adopcion: 40.0
+Descripcion: Gato joven y juguetón. Esterilizado y vacunado.
+Estado: DISPONIBLE
+El estado del animal con id 2 ha sido modificado a estado ADOPTADO
+-----------------------------------
+Imprimimos los animales disponibles
+-----------------------------------
+ID: 4
+Titulo: Nala, gata siamesa
+Tasa de adopcion: 45.0
+Descripcion: Gata tranquila, ideal para piso. Vacunada y con chip.
+Estado: DISPONIBLE
+---------------------------------
+Imprimimos los animales adoptados
+---------------------------------
+ID: 2
+Titulo: Simba, gato atigrado
+Tasa de adopcion: 40.0
+Descripcion: Gato joven y juguetón. Esterilizado y vacunado.
+Estado: ADOPTADO
+-------------------------------------------------
+Imprimimos los animales disponibles de un refugio
+-------------------------------------------------
+ID: 4
+Titulo: Nala, gata siamesa
+Tasa de adopcion: 45.0
+Descripcion: Gata tranquila, ideal para piso. Vacunada y con chip.
+Estado: DISPONIBLE
+---------------------------------------------------------------
+Imprimimos los animales que contienen la palabra "esterilizado"
+---------------------------------------------------------------
+ID: 2
+Titulo: Simba, gato atigrado
+Tasa de adopcion: 40.0
+Descripcion: Gato joven y juguetón. Esterilizado y vacunado.
+Estado: ADOPTADO
