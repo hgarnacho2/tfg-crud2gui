@@ -4,6 +4,33 @@ Biblioteca Maven que autentica clientes públicos de escritorio contra Microsoft
 
 Este módulo no es una aplicación ejecutable y no depende directamente de JavaFX. No incluye credenciales de usuario ni `client secret`.
 
+## 📂 Estructura del módulo
+
+```text
+authenticator/
+├── pom.xml
+├── README.md
+├── script/
+│   ├── install.sh
+│   ├── test.sh
+│   └── verify.sh
+└── src/
+    ├── main/
+    │   ├── java/com/crud2gui/authenticator/entraid/
+    │   │   ├── AuthenticatedUser.java
+    │   │   ├── AuthenticatorConfig.java
+    │   │   ├── EntraIdAuthenticator.java
+    │   │   └── IdTokenClaims.java
+    │   └── resources/templates/
+    │       ├── auth_error_page.html
+    │       └── auth_success_page.html
+    └── test/java/com/crud2gui/authenticator/entraid/
+        ├── AuthenticatorConfigTest.java
+        ├── AuthPageTemplatesTest.java
+        ├── EntraIdAuthenticatorTest.java
+        └── IdTokenClaimsTest.java
+```
+
 ## Configuración de Entra
 
 En el registro de aplicación, configura la plataforma **Mobile and desktop applications** con el redirect URI loopback que vaya a usar la aplicación, por defecto `http://localhost`. Registra los roles de aplicación `alumno` y `docente` y asígnalos a los usuarios en **Enterprise applications > Users and groups**.

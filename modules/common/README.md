@@ -1,99 +1,74 @@
-# Common Module
+# Common
 
-El módulo `common` es una librería transversal que proporciona utilidades compartidas y reutilizables en los diferentes componentes del proyecto multi-módulo `TFG_CRUD2GUI`.
+Librería Maven con utilidades compartidas por los módulos de CRUD2GUI. Actualmente ofrece configuración desde ficheros `.env` y extracción de texto de PDF; no contiene interfaz gráfica.
 
-* **`com.crud2gui.common.utils`**: utilidades sin interfaz gráfica.
-  * `DotEnv`: gestor de variables de entorno mediante ficheros `.env` públicos y privados.
-  * `PdfTextExtractor`: extracción genérica del texto de un PDF (PDFBox) y guardado en `.txt`.
-PDFBox se declara como dependencia **opcional**: no se propaga, de modo que cada módulo que use `PdfTextExtractor` debe declararla en su propio `pom.xml`.
+## DotEnv
 
-## 📂 Estructura del Módulo
+`com.crud2gui.common.utils.DotEnv` lee ficheros UTF-8 con entradas `CLAVE=valor`. Admite líneas vacías, comentarios que empiezan por `#`, el prefijo `export` y comillas simples o dobles alrededor del valor. No interpreta sustituciones de variables ni comentarios al final de una línea.
+
+Para resolver una variable, `getStringVar` y `getBooleanVar` aplican esta precedencia:
+
+1. Variable de entorno del sistema.
+2. Propiedad Java (`-DCLAVE=valor`).
+3. `.env.public`.
+4. `.env.private`.
+5. Valor predeterminado recibido por el método.
+
+Al cargar varios ficheros con `load`, se procesan en el orden indicado y las claves posteriores sobrescriben las anteriores. Los ficheros inexistentes se ignoran. `loadDefaultsIn` carga `.env.public` y `.env.private` desde un directorio; `loadProjectDefaults` busca la configuración en los recursos del classpath o en el proyecto Maven a partir de `user.dir`.
+
+```java
+import com.crud2gui.common.utils.DotEnv;
+
+import java.util.Map;
+
+String clientId = DotEnv.getStringVar("AZURE_CLIENT_ID", "");
+boolean debug = DotEnv.getBooleanVar("DOTENV_DEBUG", false);
+Map<String, String> config = DotEnv.loadProjectDefaults();
+```
+
+La depuración se activa con `DOTENV_DEBUG=true` y se evalúa una vez por proceso. No guardes secretos en `.env.public`; usa `.env.private`, excluido de Git.
+
+## PDF
+
+`com.crud2gui.common.utils.PdfTextExtractor` extrae el texto digital de un PDF ordenándolo por posición. No realiza OCR, por lo que un PDF compuesto solo por imágenes no produce texto mediante este extractor.
+
+```java
+import com.crud2gui.common.utils.PdfTextExtractor;
+
+import java.nio.file.Path;
+
+Path pdfPath = Path.of("documento.pdf");
+String text = PdfTextExtractor.extractText(pdfPath);
+Path txt = PdfTextExtractor.extractText(pdfPath, Path.of("salida/documento.txt"));
+Path sibling = PdfTextExtractor.siblingTxtPath(pdfPath);
+```
+
+La variante que recibe una salida crea las carpetas necesarias, escribe UTF-8 y devuelve la ruta absoluta normalizada. Las rutas de entrada y salida, una vez normalizadas, deben ser distintas. PDFBox es una dependencia opcional de `common`: cada módulo que use `PdfTextExtractor` debe declarar PDFBox en su propio `pom.xml`.
+
+## Estructura
 
 ```text
 common/
 ├── pom.xml
-├── README.md
 ├── script/
+│   ├── install.sh
+│   ├── test.sh
+│   └── verify.sh
 └── src/
     ├── main/
-    │   ├── java/com/crud2gui/common/
-    │   │   └── utils/
-    │   │       ├── DotEnv.java
-    │   │       └── PdfTextExtractor.java
-    └── test/java/com/crud2gui/common/utils/
-        ├── DotEnvTest.java
-        └── PdfTextExtractorTest.java
+    │   └── java/com/crud2gui/common/utils/
+    │       ├── DotEnv.java
+    │       └── PdfTextExtractor.java
+    └── test/
+        └── java/com/crud2gui/common/utils/
+            ├── DotEnvTest.java
+            └── PdfTextExtractorTest.java
 ```
 
-## ⚙️ La Clase `DotEnv`
-
-La clase `DotEnv` ofrece un lector minimalista y eficiente de configuraciones basadas en clave-valor. Está diseñada con un constructor privado para impedir su instanciación y expone métodos estáticos orientados a facilitar la gestión centralizada de entornos.
-
-### Características principales:
-* **Soporte para comentarios y líneas vacías:** Omite automáticamente las líneas que comiencen por `#` o estén vacías.
-* **Compatibilidad con prefijos `export`:** Limpia prefijos comunes de scripts de shell.
-* **Eliminación de BOM:** Maneja correctamente archivos codificados en UTF-8 con marcas de orden de bytes (BOM).
-* **Limpieza de comillas:** Remueve comillas dobles o simples envolventes en los valores.
-
-## 🔄 Estrategia de Configuración: `env.public` y `env.private` en la Raíz
-
-Para separar la configuración general o por defecto (versionada en el control de cambios) de los secretos o claves privadas locales, el sistema implementa un mecanismo de **carga secuencial y mezcla opcional** de múltiples ficheros de entorno ubicados de forma transversal en la **raíz del proyecto multi-módulo**.
-
-### Mecánica de funcionamiento:
-1. **Ubicación en la raíz:** Los ficheros se sitúan en el directorio raíz del proyecto (`TFG_CRUD2GUI/`), permitiendo que cualquier submódulo (como `statement-analyzer`) los comparta de forma unificada.
-2. **Opcionalidad del fichero privado:** Si el fichero privado (`env.private`) no existe en el disco, el sistema no lanza ninguna excepción; simplemente omite su lectura de forma transparente.
-3. **Orden de precedencia y sobreescritura:** Los ficheros se procesan en orden secuencial. Las claves definidas en los ficheros posteriores (**`env.private`**) **sobrescriben** a las de los anteriores (**`env.public`**).
-
-* **`env.public`**: Contiene configuraciones genéricas (como URLs por defecto, timeouts, o variables compartidas). **Se versiona en Git**.
-* **`env.private`**: Contiene credenciales personales o tokens de API (ej. `GEMINI_API_KEY`). **No se versiona** (debe añadirse al `.gitignore`).
-
----
-
-## 💻 Ejemplos de Uso
-
-### 1. Detección automática en la raíz (`loadProjectDefaults`)
-El método recomendado para la aplicación. Detecta automáticamente si se está ejecutando desde la raíz o desde dentro de un submódulo (subiendo un nivel si es necesario) para cargar y fusionar `env.public` y `env.private`:
-
-```java
-import com.crud2gui.common.utils.DotEnv;
-import java.io.IOException;
-import java.util.Map;
-
-// Carga automática buscando en la raíz del proyecto multi-módulo
-Map<String, String> env = DotEnv.loadProjectDefaults();
-String apiKey = env.get("GEMINI_API_KEY");
-```
-
-### 2. Carga en un directorio específico (`loadDefaultsIn`)
-Permite especificar de forma explícita el directorio base donde se encuentran los ficheros:
-
-```java
-Map<String, String> env = DotEnv.loadDefaultsIn(Path.of("/ruta/al/directorio"));
-```
-
-### 3. Carga secuencial personalizada (`load`)
-Puedes combinar cualquier cantidad de rutas de manera explícita:
-
-```java
-Map<String, String> env = DotEnv.load(
-    Path.of("env.public"),
-    Path.of("env.private.local")
-);
-```
-
----
-
-## 🛠️ Instalación y Publicación Local
-
-Al tratarse de un submódulo Maven independiente, para que el resto de submódulos puedan resolverlo como dependencia, debes instalarlo en tu repositorio local ejecutando el script provisto:
+Desde la raíz del repositorio:
 
 ```bash
-cd modules/common/script/
-./install.sh
-```
-
-O bien mediante Maven directamente desde la raíz del módulo:
-
-```bash
-mvn clean install
+modules/common/script/test.sh
+modules/common/script/verify.sh
+modules/common/script/install.sh
 ```
