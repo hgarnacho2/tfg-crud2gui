@@ -8,7 +8,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Lector de ficheros {@code .env} ({@code CLAVE=valor}) y gestor de configuración jerárquica.
+ * Lee ficheros {@code .env} y resuelve configuración desde variables de entorno,
+ * propiedades Java y ficheros públicos y privados del proyecto.
+ *
+ * <p>Al combinar ficheros, se procesan en el orden recibido y los posteriores
+ * sobrescriben las claves anteriores.</p>
  */
 public final class DotEnv {
 
@@ -17,23 +21,23 @@ public final class DotEnv {
     private static Boolean debugEnabledCache = null;
 
     /**
-     * Comprueba si el modo de depuración de DotEnv está activado.
-     * Soporta: Variable de entorno, Propiedad Java (-D) o clave DOTENV_DEBUG en .env.public
+     * Comprueba si el modo de depuración está activado y almacena el resultado para este proceso.
+     * La primera consulta busca {@code DOTENV_DEBUG} en el entorno del sistema, las propiedades
+     * Java y los ficheros del proyecto, en ese orden.
+     *
+     * @return {@code true} si el primer valor encontrado es {@code true}, sin distinguir mayúsculas
      */
     private static boolean isDebugEnabled() {
         if (debugEnabledCache != null) {
             return debugEnabledCache;
         }
 
-        // 1. Comprobar variable de entorno
         String val = System.getenv("DOTENV_DEBUG");
-        
-        // 2. Comprobar propiedad de sistema Java (-DDOTENV_DEBUG=true)
+
         if (val == null || val.isBlank()) {
             val = System.getProperty("DOTENV_DEBUG");
         }
 
-        // 3. Comprobar dentro de los propios ficheros .env si no se indicó antes
         if (val == null || val.isBlank()) {
             try {
                 Path resolvedDir = resolveProjectDefaultsDir();
@@ -46,6 +50,11 @@ public final class DotEnv {
         return debugEnabledCache;
     }
 
+    /**
+     * Escribe un mensaje de diagnóstico cuando {@code DOTENV_DEBUG} está activado.
+     *
+     * @param message mensaje que se registra
+     */
     private static void logDebug(String message) {
         if (isDebugEnabled()) {
             System.out.println("[DotEnv] [DEBUG] " + message);
@@ -53,24 +62,28 @@ public final class DotEnv {
     }
 
     /**
-     * Resuelve una propiedad de tipo texto (String) siguiendo la jerarquía estricta.
+     * Resuelve una propiedad de texto siguiendo su precedencia de configuración.
+     * Busca primero en las variables de entorno del sistema, después en propiedades Java
+     * {@code -D}, luego en {@code .env.public} y {@code .env.private}, y finalmente usa el valor
+     * predeterminado. Los valores encontrados se devuelven sin espacios exteriores.
+     *
+     * @param clave nombre de la propiedad
+     * @param defaultValue valor usado si la clave no aparece o está vacía en todas las fuentes
+     * @return valor configurado o {@code defaultValue}
      */
     public static String getStringVar(String clave, String defaultValue) {
-        // 1. Comprobar variable de entorno del sistema operativo
         String envVal = System.getenv(clave);
         if (envVal != null && !envVal.isBlank()) {
             logDebug("Clave '" + clave + "' encontrada en variable de entorno del S.O. Valor: '" + envVal.trim() + "'");
             return envVal.trim();
         }
 
-        // 2. Comprobar propiedad de sistema de Java (-Dkey=...)
         String propVal = System.getProperty(clave);
         if (propVal != null && !propVal.isBlank()) {
             logDebug("Clave '" + clave + "' encontrada en propiedad del sistema Java (-D). Valor: '" + propVal.trim() + "'");
             return propVal.trim();
         }
 
-        // 3. Cargar desde los ficheros de entorno del proyecto
         try {
             Path resolvedDir = resolveProjectDefaultsDir();
             Path publicFile = resolvedDir.resolve(".env.public");
@@ -94,11 +107,19 @@ public final class DotEnv {
             logDebug("Error leyendo los ficheros de entorno para la clave '" + clave + "': " + e.getMessage());
         }
 
-        // 4. Valor por defecto
         logDebug("Clave '" + clave + "' no encontrada en ninguna fuente. Aplicando valor por defecto: " + defaultValue);
         return defaultValue;
     }
 
+    /**
+     * Resuelve una propiedad como booleano usando {@link #getStringVar(String, String)}.
+     * Si no encuentra valor, devuelve el predeterminado; si lo encuentra, aplica
+     * {@link Boolean#parseBoolean(String)}.
+     *
+     * @param clave nombre de la propiedad
+     * @param defaultValue valor usado si la clave no está configurada
+     * @return valor booleano resuelto
+     */
     public static boolean getBooleanVar(String clave, boolean defaultValue) {
         String val = getStringVar(clave, null);
         if (val != null) {
@@ -107,8 +128,14 @@ public final class DotEnv {
         return defaultValue;
     }
 
-    // --- Métodos de carga y resolución ---
-
+    /**
+     * Carga y combina una secuencia de ficheros {@code .env}.
+     * Los ficheros inexistentes se ignoran; si una clave se repite, prevalece el último valor.
+     *
+     * @param files rutas de los ficheros en orden de precedencia
+     * @return mapa con las claves combinadas, vacío si {@code files} es {@code null}
+     * @throws IOException si no se puede leer alguno de los ficheros existentes
+     */
     public static Map<String, String> load(Path... files) throws IOException {
         Map<String, String> mergedValues = new LinkedHashMap<>();
         if (files == null) {
@@ -120,12 +147,27 @@ public final class DotEnv {
         return mergedValues;
     }
 
+    /**
+     * Carga {@code .env.public} y después {@code .env.private} desde un directorio.
+     * El fichero privado es opcional y sus claves sobrescriben las públicas.
+     *
+     * @param baseDir directorio que contiene los ficheros
+     * @return mapa con los valores combinados
+     * @throws IOException si un fichero existente no se puede leer
+     */
     public static Map<String, String> loadDefaultsIn(Path baseDir) throws IOException {
         Path publicFile = baseDir.resolve(".env.public");
         Path privateFile = baseDir.resolve(".env.private");
         return load(publicFile, privateFile);
     }
 
+    /**
+     * Busca la configuración en los recursos empaquetados o ascendiendo desde {@code user.dir}.
+     * Se detiene al encontrar {@code .env.public} o la raíz de un proyecto Maven multimódulo;
+     * si no encuentra ninguna, usa el directorio actual.
+     *
+     * @return directorio donde buscar los ficheros de configuración
+     */
     private static Path resolveProjectDefaultsDir() {
         try {
             var resourceUrl = DotEnv.class.getClassLoader().getResource(".env.public");
@@ -154,11 +196,25 @@ public final class DotEnv {
         return Path.of(".").toAbsolutePath().normalize();
     }
 
+    /**
+     * Detecta el directorio del proyecto y carga sus ficheros de configuración predeterminados.
+     *
+     * @return mapa combinado de {@code .env.public} y {@code .env.private}
+     * @throws IOException si un fichero existente no se puede leer
+     */
     public static Map<String, String> loadProjectDefaults() throws IOException {
         Path resolvedDir = resolveProjectDefaultsDir();
         return loadDefaultsIn(resolvedDir);
     }
 
+    /**
+     * Interpreta un fichero {@code .env}: ignora líneas vacías y comentarios, admite el prefijo
+     * {@code export}, elimina BOM y comillas envolventes, y separa cada clave en el primer {@code =}.
+     *
+     * @param file ruta del fichero; si no es un fichero regular, se devuelve un mapa vacío
+     * @return valores encontrados en el fichero
+     * @throws IOException si no se puede leer un fichero regular
+     */
     private static Map<String, String> loadSingle(Path file) throws IOException {
         if (!Files.isRegularFile(file)) {
             return Map.of();
