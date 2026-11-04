@@ -1,15 +1,11 @@
 # Common Module
 
-El módulo `common` es una librería transversal que proporciona utilidades compartidas y reutilizables en los diferentes componentes del proyecto multi-módulo `TFG_CRUD2GUI`. Se organiza en dos paquetes:
+El módulo `common` es una librería transversal que proporciona utilidades compartidas y reutilizables en los diferentes componentes del proyecto multi-módulo `TFG_CRUD2GUI`.
 
 * **`com.crud2gui.common.utils`**: utilidades sin interfaz gráfica.
   * `DotEnv`: gestor de variables de entorno mediante ficheros `.env` públicos y privados.
   * `PdfTextExtractor`: extracción genérica del texto de un PDF (PDFBox) y guardado en `.txt`.
-* **`com.crud2gui.common.ui`**: componentes JavaFX reutilizables.
-  * `JsonEditorView`: visor/editor de ficheros JSON (árbol + texto).
-  * `JavaCodeViewer`: visor de solo lectura de ficheros de código con resaltado de sintaxis Java (RichTextFX).
-
-PDFBox, JavaFX, Jackson y RichTextFX se declaran como dependencias **opcionales**: no se propagan, de modo que cada módulo que use `PdfTextExtractor`, `JsonEditorView` o `JavaCodeViewer` debe declararlas en su propio `pom.xml`.
+PDFBox se declara como dependencia **opcional**: no se propaga, de modo que cada módulo que use `PdfTextExtractor` debe declararla en su propio `pom.xml`.
 
 ## 📂 Estructura del Módulo
 
@@ -21,15 +17,9 @@ common/
 └── src/
     ├── main/
     │   ├── java/com/crud2gui/common/
-    │   │   ├── ui/
-    │   │   │   ├── JavaCodeViewer.java
-    │   │   │   └── JsonEditorView.java
     │   │   └── utils/
     │   │       ├── DotEnv.java
     │   │       └── PdfTextExtractor.java
-    │   └── resources/com/crud2gui/common/ui/
-    │       ├── java-code.css
-    │       └── json-editor.css
     └── test/java/com/crud2gui/common/utils/
         ├── DotEnvTest.java
         └── PdfTextExtractorTest.java

@@ -1,7 +1,7 @@
 package com.crud2gui.desktop;
 
-import com.crud2gui.authenticator.AuthenticatorConfig;
-import com.crud2gui.authenticator.EntraIdAuthenticator;
+import com.crud2gui.authenticator.entraid.AuthenticatorConfig;
+import com.crud2gui.authenticator.entraid.EntraIdAuthenticator;
 import com.crud2gui.desktop.login.LoginController;
 import com.crud2gui.desktop.login.LoginView;
 import com.crud2gui.desktop.login.LogoutView;

@@ -1,7 +1,7 @@
 package com.crud2gui.desktop.login;
 
-import com.crud2gui.authenticator.AuthenticatedUser;
-import com.crud2gui.authenticator.EntraIdAuthenticator;
+import com.crud2gui.authenticator.entraid.AuthenticatedUser;
+import com.crud2gui.authenticator.entraid.EntraIdAuthenticator;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

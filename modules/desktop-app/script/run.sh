@@ -5,7 +5,7 @@ script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 module_dir=$(cd -- "$script_dir/.." && pwd)
 project_root=$(cd -- "$script_dir/../../.." && pwd)
 
-install_dependencies=true
+install_dependencies=false
 show_info=false
 
 usage() {
@@ -13,13 +13,14 @@ usage() {
 Uso: $0 [opciones]
 
 Opciones:
-	--install      Instala desktop-app y sus dependencias, incluido statement-text-extractor (predeterminado).
-	--no-install   Omite la instalación; requiere snapshots actuales ya instalados en Maven.
+	--install      Instala desktop-app y sus dependencias antes de arrancar.
+	--no-install   Alias compatible; omite la instalación (comportamiento predeterminado).
   --debug        Muestra la salida INFO de Maven y el diagnóstico DEBUG de MSAL.
   -h, --help     Muestra esta ayuda.
 
 Ejemplos:
 	$0
+	$0 --install
 	$0 --no-install
 	$0 --debug --no-install
 USAGE
@@ -63,5 +64,13 @@ if [[ "$install_dependencies" == "true" ]]; then
 fi
 
 echo "=== Iniciando CRUD2GUI Desktop App ==="
-echo "Opciones del script: $0 --help"
+echo "Opciones disponibles: --install, --no-install, --debug, -h, --help"
+echo "Usa '$0 --help' para ver descripciones y ejemplos."
+printf 'Opciones seleccionadas:'
+if (($# == 0)); then
+	printf ' (valores predeterminados)'
+else
+	printf ' %q' "$@"
+fi
+printf '\n'
 "${maven[@]}" -f "$module_dir/pom.xml" javafx:run

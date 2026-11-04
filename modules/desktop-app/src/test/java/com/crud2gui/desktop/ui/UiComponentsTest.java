@@ -4,13 +4,14 @@ import com.crud2gui.desktop.login.LoginView;
 import com.crud2gui.desktop.login.LogoutView;
 import com.crud2gui.desktop.student.StudentDashboardView;
 import com.crud2gui.desktop.teacher.TeacherDashboardView;
-import com.crud2gui.authenticator.AuthenticatedUser;
+import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
@@ -21,6 +22,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,6 +40,32 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UiComponentsTest {
+
+    @Test
+    void keepsStepHeightConsistentAcrossSectionsAndStates() throws Exception {
+        onJavaFxThread(() -> {
+            Button plain = UiComponents.stepButton(0, "SELECCIONAR PDF", "Documento de origen", ignored -> {});
+            Button model = UiComponents.stepButton(1, "MODELO INFERIDO ENUNCIADO", "Modelo del enunciado",
+                    ignored -> {});
+            var plainFlow = UiComponents.hBox(List.of("statement-flow"), plain);
+            var modelFlow = UiComponents.hBox(List.of("statement-flow", "model-statement-flow"), model);
+            VBox root = new VBox(plainFlow, modelFlow);
+            styledScene(root);
+            for (boolean disabled : List.of(false, true)) {
+                plain.setDisable(disabled);
+                model.setDisable(disabled);
+                root.applyCss();
+                root.resize(1000, 300);
+                root.layout();
+                for (Button step : List.of(plain, model)) {
+                    assertEquals(88, step.getMinHeight());
+                    assertEquals(88, step.getPrefHeight());
+                    assertEquals(88, step.getMaxHeight());
+                    assertEquals(88, step.getHeight());
+                }
+            }
+        });
+    }
 
     @Test
     void fileContentPaneResolvesEachOpeningAndRecoversWithoutStatementStyles(@TempDir Path directory)
@@ -399,7 +427,12 @@ class UiComponentsTest {
             assertEquals(accountCard.getBackground(), header.getBackground());
             assertEquals(accountCard.getBorder(), header.getBorder());
             assertEquals(accountCard.getPadding(), header.getPadding());
-            ((Button) dashboard.lookup(".sign-out-button")).fire();
+            Button signOut = (Button) dashboard.lookup(".sign-out-button");
+            respondToConfirmation("Cancelar");
+            signOut.fire();
+            assertEquals(0, signOuts.get());
+            respondToConfirmation("Cerrar sesión");
+            signOut.fire();
             assertEquals(1, signOuts.get());
         });
     }
@@ -454,6 +487,7 @@ class UiComponentsTest {
             assertNotNull(dashboard.lookup(".current-user-card"));
             Button signOut = (Button) dashboard.lookup(".sign-out-button");
             assertEquals("Cerrar sesión", signOut.getText());
+            respondToConfirmation("Cerrar sesión");
             signOut.fire();
             assertEquals(1, signOuts.get());
             assertEquals(36, ((javafx.scene.layout.StackPane)
@@ -790,5 +824,21 @@ class UiComponentsTest {
             }
         });
         result.get(10, TimeUnit.SECONDS);
+    }
+
+    private static void respondToConfirmation(String buttonText) {
+        Platform.runLater(() -> {
+            for (Window window : Window.getWindows()) {
+                if (!window.isShowing() || window.getScene() == null
+                        || !(window.getScene().getRoot() instanceof DialogPane dialogPane)) {
+                    continue;
+                }
+                dialogPane.getButtonTypes().stream()
+                        .filter(buttonType -> buttonType.getText().equals(buttonText))
+                        .findFirst()
+                        .ifPresent(buttonType -> ((Button) dialogPane.lookupButton(buttonType)).fire());
+                return;
+            }
+        });
     }
 }

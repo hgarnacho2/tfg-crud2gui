@@ -1,6 +1,7 @@
 package com.crud2gui.modelvalidator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.crud2gui.model.Analysis;
@@ -58,20 +59,28 @@ public final class ModelComparisonMain {
             throw new IllegalArgumentException("No existe la configuracion de validacion: " + effectiveConfigFile);
         }
         ValidationOptions options = ValidationOptions.fromJson(JSON.readTree(effectiveConfigFile.toFile()));
+        ObjectNode report = compareFiles(expectedFile, actualFile, options, reportFile);
+
+        System.out.println("Resultado: " + (report.path("valid").asBoolean() ? "VALID" : "INVALID"));
+        for (JsonNode finding : report.path("findings")) {
+            System.out.printf("[%s] %s (%s): %s%n", finding.path("severity").asText(),
+                    finding.path("path").asText(), finding.path("code").asText(),
+                    finding.path("message").asText());
+        }
+        System.out.println("Informe JSON: " + reportFile.toAbsolutePath().normalize());
+        if (!report.path("valid").asBoolean()) {
+            System.exit(1);
+        }
+    }
+
+    public static ObjectNode compareFiles(Path expectedFile, Path actualFile, ValidationOptions options,
+            Path reportFile) throws IOException {
         ProjectModel expected = ModelIO.read(expectedFile);
         ProjectModel actual = ModelIO.read(actualFile);
         ModelValidator.Result result = ModelValidator.validate(expected, actual, options);
-        writeReport(reportFile, expectedFile, actualFile, expected, actual, result, options);
-
-        System.out.println("Resultado: " + (result.isValid() ? "VALID" : "INVALID"));
-        for (ModelValidator.Finding finding : result.findings()) {
-            System.out.printf("[%s] %s (%s): %s%n", finding.severity(), finding.path(),
-                    finding.code(), finding.message());
-        }
-        System.out.println("Informe JSON: " + reportFile.toAbsolutePath().normalize());
-        if (!result.isValid()) {
-            System.exit(1);
-        }
+        ObjectNode report = createReport(expectedFile, actualFile, expected, actual, result, options);
+        writeReport(reportFile, report);
+        return report;
     }
 
     static Path defaultValidationConfigPath() throws Exception {
@@ -82,6 +91,10 @@ public final class ModelComparisonMain {
     }
 
     static Path defaultReportPath(Path expectedFile) {
+        return defaultReportPath(expectedFile, Path.of("output"));
+    }
+
+    public static Path defaultReportPath(Path expectedFile, Path outputDirectory) {
         String modelName = expectedFile.getFileName().toString();
         int extension = modelName.lastIndexOf('.');
         if (extension > 0) {
@@ -95,10 +108,10 @@ public final class ModelComparisonMain {
         String timestamp = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss", Locale.ROOT));
         String reportName = "validation_" + modelName + "_" + timestamp;
-        Path reportFile = Path.of("output", reportName + ".json");
+        Path reportFile = outputDirectory.resolve(reportName + ".json");
         int suffix = 1;
         while (Files.exists(reportFile)) {
-            reportFile = Path.of("output", reportName + "_" + suffix + ".json");
+            reportFile = outputDirectory.resolve(reportName + "_" + suffix + ".json");
             suffix++;
         }
         return reportFile;
@@ -119,11 +132,12 @@ public final class ModelComparisonMain {
         static void writeReport(Path reportFile, Path expectedFile, Path actualFile,
                     ProjectModel expected, ProjectModel actual,
                     ModelValidator.Result result, ValidationOptions options) throws IOException {
-        Path parent = reportFile.toAbsolutePath().normalize().getParent();
-        if (parent != null) {
-            java.nio.file.Files.createDirectories(parent);
-        }
+        writeReport(reportFile, createReport(expectedFile, actualFile, expected, actual, result, options));
+    }
 
+    private static ObjectNode createReport(Path expectedFile, Path actualFile,
+            ProjectModel expected, ProjectModel actual, ModelValidator.Result result,
+            ValidationOptions options) {
         var report = JSON.createObjectNode();
         report.put("valid", result.isValid());
         report.put("expectedModel", expectedFile.toString());
@@ -141,7 +155,14 @@ public final class ModelComparisonMain {
         summary.put("warnings", count(result.findings(), WARNING));
         summary.put("info", count(result.findings(), INFO));
         report.set("findings", JSON.valueToTree(result.findings()));
+        return report;
+    }
 
+    private static void writeReport(Path reportFile, ObjectNode report) throws IOException {
+        Path parent = reportFile.toAbsolutePath().normalize().getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
         JSON.writeValue(reportFile.toFile(), report);
     }
 

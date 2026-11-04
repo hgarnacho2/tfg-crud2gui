@@ -1,6 +1,6 @@
 package com.crud2gui.desktop.teacher.sections;
 
-import com.crud2gui.authenticator.AuthenticatedUser;
+import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import com.crud2gui.desktop.teacher.TeacherDashboardView;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
@@ -48,13 +48,55 @@ class TeacherModelSectionsTest {
     }
 
     @Test
-    void selectsBothModelsAndKeepsValidationResultDisabled() throws Exception {
-        Path source = Files.writeString(directory.resolve("source.json"), "{}");
-        Path inferred = Files.writeString(directory.resolve("inferred.json"), "{}");
+        void selectsBothModelsRunsValidationAndDisplaysReport() throws Exception {
+                String expectedJson = """
+                                {
+                                    "schemaVersion": "1.0",
+                                    "expectedManagerId": "Owner",
+                                    "source": { "filesParsed": 1, "warnings": [] },
+                                    "types": [{
+                                        "id": "demo.Owner", "name": "Owner", "packageName": "demo",
+                                        "kind": "CLASS", "visibility": "PUBLIC", "modifiers": [],
+                                        "hasMainMethod": false, "fields": [], "constructors": [],
+                                        "methods": [], "enumConstants": [], "interfaces": []
+                                    }],
+                                    "relations": []
+                                }
+                                """;
+                String actualJson = """
+                                {
+                                    "schemaVersion": "1.0",
+                                    "expectedManagerId": "Owner",
+                                    "source": { "filesParsed": 1, "warnings": [] },
+                                    "types": [{
+                                        "id": "demo.Owner", "name": "Owner", "packageName": "demo",
+                                        "kind": "CLASS", "visibility": "PUBLIC", "modifiers": [],
+                                        "hasMainMethod": false, "fields": [], "constructors": [],
+                                        "methods": [], "enumConstants": [], "interfaces": []
+                                    }],
+                                    "relations": [],
+                                    "analysis": {
+                                        "managerClass": { "id": "demo.Owner", "score": 1.0,
+                                            "confidence": "HIGH", "reasons": ["Clase principal del dominio"] },
+                                        "alternatives": [], "subManagers": [], "entryPoints": [], "manualOverride": false
+                                    }
+                                }
+                                """;
+                Path source = Files.writeString(directory.resolve("source.json"), actualJson);
+                Path inferred = Files.writeString(directory.resolve("inferred.json"), expectedJson);
+                Path reportDirectory = directory.resolve("reports");
+                Path initialDirectory = directory.resolve("initial-reports");
+                AtomicReference<File> folderSelection = new AtomicReference<>();
+                CompletableFuture<Void> validationFinished = new CompletableFuture<>();
+                AtomicReference<ModelValidationSection> sectionReference = new AtomicReference<>();
         AtomicReference<File> selection = new AtomicReference<>(source.toFile());
         onFx(() -> {
-            ModelValidationSection section = new ModelValidationSection(owner -> selection.get());
+                        ModelValidationSection section = new ModelValidationSection(owner -> selection.get(),
+                                        () -> initialDirectory, (owner, current) -> folderSelection.get());
+                    sectionReference.set(section);
             attach(section);
+                assertEquals("Selecciona los modelos JSON de código y enunciado para preparar su validación.",
+                    ((Label) section.lookup(".section-subtitle")).getText());
             Button first = button(section, "model-validation-step-java");
             Button second = button(section, "model-validation-step-statement");
             Button result = button(section, "model-validation-step-result");
@@ -68,9 +110,18 @@ class TeacherModelSectionsTest {
                     ((Label) section.lookup("#model-validation-java-filename")).getText());
             assertTrue(second.isDisabled());
             assertTrue(result.isDisabled());
+            assertFalse(button(section, "model-validation-run").getParent().getParent().isVisible());
             button(section, "model-validation-java-select").fire();
             assertFalse(second.isDisabled());
             assertTrue(first.getPseudoClassStates().contains(PseudoClass.getPseudoClass("completed")));
+                ModelJsonSelection sourceSelection =
+                    (ModelJsonSelection) section.lookup("#model-validation-java");
+                assertTrue(sourceSelection.lookup("#model-validation-java-preview").isVisible());
+                assertFalse(((javafx.scene.control.TextArea) sourceSelection.lookup(".code")).isEditable());
+                assertEquals("Modelo cargado correctamente. Puedes continuar con el paso 2: Modelo inferido enunciado.",
+                    ((Label) sourceSelection.lookup("#model-validation-java-status")).getText());
+                Label filename = (Label) sourceSelection.lookup("#model-validation-java-filename");
+                assertTrue(filename.getGraphic().getStyleClass().contains("statement-neutral-badge"));
             second.fire();
             assertFalse(section.lookup("#model-validation-java").getParent().isVisible());
             assertTrue(section.lookup("#model-validation-statement").getParent().isVisible());
@@ -80,10 +131,124 @@ class TeacherModelSectionsTest {
             assertEquals(inferred,
                     ((ModelJsonSelection) section.lookup("#model-validation-statement")).getSelectedFile());
             assertTrue(second.getPseudoClassStates().contains(PseudoClass.getPseudoClass("completed")));
+                ModelJsonSelection inferredSelection =
+                    (ModelJsonSelection) section.lookup("#model-validation-statement");
+                assertTrue(inferredSelection.lookup("#model-validation-statement-preview").isVisible());
+                assertFalse(((javafx.scene.control.TextArea) inferredSelection.lookup(".code")).isEditable());
+                assertEquals("Modelo inferido cargado correctamente. Puedes continuar con el paso 3: Resultado de la validación.",
+                    ((Label) inferredSelection.lookup("#model-validation-statement-status")).getText());
+            assertFalse(result.isDisabled());
+            assertFalse(Files.exists(initialDirectory));
+            assertFalse(Files.exists(reportDirectory));
+            assertNull(section.lookup("#model-validation-result-view"));
+            result.fire();
+            assertNotNull(section.lookup("#model-validation-options"));
+            assertFalse(section.lookup("#model-validation-result-title").getParent().isManaged());
+            var methodsOption = (javafx.scene.control.CheckBox) section.lookup("#validation-option-methods");
+            methodsOption.setSelected(true);
+            assertTrue(button(section, "model-validation-run").getParent().getParent().isVisible());
+            assertEquals("Validar modelos", button(section, "model-validation-run").getText());
+            button(section, "model-validation-change-output-folder").fire();
+            assertEquals(initialDirectory.toString(),
+                    ((Label) section.lookup("#model-validation-output-path")).getText());
+            folderSelection.set(reportDirectory.toFile());
+            button(section, "model-validation-change-output-folder").fire();
+            assertEquals(reportDirectory.toString(),
+                    ((Label) section.lookup("#model-validation-output-path")).getText());
+            result.disabledProperty().addListener((observable, wasDisabled, isDisabled) -> {
+                if (!isDisabled) {
+                    validationFinished.complete(null);
+                }
+            });
+            button(section, "model-validation-run").fire();
             assertTrue(result.isDisabled());
-            first.fire();
-            assertTrue(section.lookup("#model-validation-java").getParent().isVisible());
-            assertEquals(source.toString(), ((Label) section.lookup("#model-validation-java-path")).getText());
+            assertTrue(section.lookup("#model-validation-options").isDisabled());
+            return null;
+        });
+        validationFinished.get(20, TimeUnit.SECONDS);
+        onFx(() -> {
+            ModelValidationSection section = sectionReference.get();
+            Button result = button(section, "model-validation-step-result");
+            assertFalse(result.isDisabled());
+            assertTrue(result.getPseudoClassStates().contains(PseudoClass.getPseudoClass("completed")));
+            var reportView = section.lookup("#model-validation-result-view");
+            assertNotNull(reportView);
+                section.getScene().getRoot().applyCss();
+                var resultPanel = (javafx.scene.layout.VBox) section.lookup(".model-validation-result-panel");
+                assertEquals(14, resultPanel.getSpacing());
+                assertEquals(14, ((ModelJsonSelection) section.lookup("#model-validation-java")).getSpacing());
+                assertEquals(14, ((ModelJsonSelection) section.lookup("#model-validation-statement")).getSpacing());
+                Label savedStatus = (Label) reportView.lookup("#model-validation-report-path");
+                assertTrue(savedStatus.getStyleClass().contains("status-message"));
+                assertTrue(savedStatus.isWrapText());
+                assertEquals(15, savedStatus.getFont().getSize());
+                assertEquals(javafx.scene.paint.Color.web("#e4f3ec"),
+                    savedStatus.getBackground().getFills().get(0).getFill());
+                assertEquals(14, ((Label) reportView.lookup(".model-validation-block-title")).getFont().getSize());
+                var accordion = (javafx.scene.control.TitledPane) reportView.lookup("#model-validation-findings");
+                assertEquals(14, accordion.getFont().getSize());
+                assertEquals(6, accordion.getBorder().getStrokes().get(0).getRadii().getTopLeftHorizontalRadius());
+                assertTrue(accordion.lookup(".title .text") instanceof javafx.scene.text.Text);
+                assertTrue(((javafx.scene.text.Text) accordion.lookup(".title .text")).getFont().getStyle()
+                    .contains("Bold"));
+            assertEquals("Estructura válida",
+                    ((Label) reportView.lookup("#model-validation-outcome-title")).getText());
+            assertEquals("Listo para CRUD",
+                    ((Label) reportView.lookup("#model-validation-readiness")).getText());
+            assertTrue(((Label) reportView.lookup("#model-validation-report-path")).getText()
+                    .contains(reportDirectory.toString()));
+                assertFalse(button(section, "model-validation-run").isDisabled());
+                assertTrue(((Label) section.lookup("#model-validation-output-name")).getText().endsWith(".json"));
+                assertFalse(Files.exists(initialDirectory));
+            return null;
+        });
+        try (var reports = Files.list(reportDirectory)) {
+            Path report = reports.findFirst().orElseThrow();
+            assertTrue(Files.readString(report).contains("\"readyForCrud\" : true"));
+            var json = new com.fasterxml.jackson.databind.ObjectMapper().readTree(report.toFile());
+            assertTrue(json.path("validationOptions").path("methods").asBoolean());
+        }
+        Path newDestination = directory.resolve("new-reports");
+        CompletableFuture<Void> repeatedValidation = new CompletableFuture<>();
+        onFx(() -> {
+            ModelValidationSection section = sectionReference.get();
+            Button result = button(section, "model-validation-step-result");
+            result.disabledProperty().addListener((observable, previous, disabled) -> {
+                if (!disabled) {
+                    repeatedValidation.complete(null);
+                }
+            });
+            folderSelection.set(newDestination.toFile());
+            ((javafx.scene.control.CheckBox) section.lookup("#validation-option-methods")).setSelected(false);
+            button(section, "model-validation-change-output-folder").fire();
+            button(section, "model-validation-run").fire();
+            assertTrue(button(section, "model-validation-change-output-folder").isDisabled());
+            return null;
+        });
+        repeatedValidation.get(20, TimeUnit.SECONDS);
+        try (var reports = Files.list(newDestination)) {
+            Path report = reports.findFirst().orElseThrow();
+            var json = new com.fasterxml.jackson.databind.ObjectMapper().readTree(report.toFile());
+            assertFalse(json.path("validationOptions").path("methods").asBoolean());
+        }
+        try (var reports = Files.list(reportDirectory)) {
+            assertEquals(1, reports.count());
+        }
+    }
+
+    @Test
+    void configuresEveryValidatorOptionVisually() throws Exception {
+        onFx(() -> {
+            var initial = com.crud2gui.modelvalidator.ValidationOptions.defaults();
+            var editor = new com.crud2gui.desktop.ui.ValidationOptionsView(initial);
+            attach(editor);
+            assertEquals(initial, editor.getOptions());
+            var controls = editor.lookupAll(".check-box");
+            assertEquals(12, controls.size());
+            controls.forEach(control -> ((javafx.scene.control.CheckBox) control).setSelected(false));
+            assertEquals(new com.crud2gui.modelvalidator.ValidationOptions(false, false, false, false,
+                    false, false, false, false, false, false, false, false), editor.getOptions());
+            assertEquals(com.crud2gui.modelvalidator.ValidationOptions.defaults(), initial);
             return null;
         });
     }

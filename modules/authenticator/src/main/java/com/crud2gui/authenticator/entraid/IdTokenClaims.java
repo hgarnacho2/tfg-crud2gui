@@ -1,4 +1,4 @@
-package com.crud2gui.authenticator;
+package com.crud2gui.authenticator.entraid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

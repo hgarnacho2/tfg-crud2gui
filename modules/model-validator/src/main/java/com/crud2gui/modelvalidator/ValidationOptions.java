@@ -1,7 +1,11 @@
 package com.crud2gui.modelvalidator;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.crud2gui.model.TypeKind;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 /** Configura las categorías estructurales que debe comprobar el validador. */
 public record ValidationOptions(boolean classes, boolean interfaces, boolean enums, boolean records,
@@ -12,6 +16,15 @@ public record ValidationOptions(boolean classes, boolean interfaces, boolean enu
     public static ValidationOptions defaults() {
         return new ValidationOptions(true, true, true, true, true, true,
                 true, true, true, true, true, true);
+    }
+
+    public static ValidationOptions loadDefault() throws IOException {
+        try (InputStream config = ValidationOptions.class.getResourceAsStream("/conf/validation-options.json")) {
+            if (config == null) {
+                throw new IOException("No se encontró la configuración predeterminada de validación.");
+            }
+            return fromJson(new ObjectMapper().readTree(config));
+        }
     }
 
     public boolean validatesType(TypeKind kind) {

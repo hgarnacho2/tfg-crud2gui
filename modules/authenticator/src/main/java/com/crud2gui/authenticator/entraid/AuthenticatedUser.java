@@ -1,4 +1,4 @@
-package com.crud2gui.authenticator;
+package com.crud2gui.authenticator.entraid;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -8,6 +8,7 @@ import java.util.Set;
 /**
  * Identidad y permisos de aplicación del usuario que ha completado el inicio de sesión en Entra ID.
  * Representa el estado de sesión de la aplicación; no contiene ni almacena tokens o credenciales.
+ * No recibe el token de identidad directamente sino datos contenidos en él.
  *
  * @param objectId identificador estable del usuario dentro del tenant, obtenido de {@code oid} o {@code sub}
  * @param username nombre de inicio de sesión o correo electrónico, si está presente en el token

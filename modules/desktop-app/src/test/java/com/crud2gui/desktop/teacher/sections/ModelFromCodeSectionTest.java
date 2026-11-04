@@ -410,8 +410,8 @@ class ModelFromCodeSectionTest {
             assertTrue(srcItem.isExpanded());
             assertTrue(demoItem.isExpanded());
 
-            com.crud2gui.common.ui.JavaCodeViewer viewer =
-                    (com.crud2gui.common.ui.JavaCodeViewer) section.lookup("#model-code-viewer");
+            com.crud2gui.desktop.ui.JavaCodeViewer viewer =
+                    (com.crud2gui.desktop.ui.JavaCodeViewer) section.lookup("#model-code-viewer");
             assertEquals("", viewer.getFileName());
             @SuppressWarnings("unchecked")
             TreeView<Object> selectableTree = (TreeView<Object>) tree;

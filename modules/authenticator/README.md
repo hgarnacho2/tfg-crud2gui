@@ -1,33 +1,39 @@
 # CRUD2GUI Authenticator
 
-Modulo reutilizable para autenticar una aplicacion de escritorio Java contra Microsoft Entra ID. Usa MSAL4J como cliente publico; la app JavaFX presenta el login en un WebView integrado y recibe el retorno por loopback con el flujo interactivo de codigo de autorizacion y PKCE.
+Biblioteca Maven que autentica clientes públicos de escritorio contra Microsoft Entra ID mediante MSAL4J. La interfaz anfitriona proporciona la acción que presenta la autorización; actualmente `desktop-app` la carga en un `WebView` JavaFX. El flujo interactivo usa authorization code con PKCE y un callback loopback.
 
-## Registro de Entra
+Este módulo no es una aplicación ejecutable y no depende directamente de JavaFX. No incluye credenciales de usuario ni `client secret`.
 
-En el registro `CRUD2GUI`, configura la plataforma **Mobile and desktop applications** con el redirect URI `http://localhost`. La aplicacion es un cliente publico: no necesita ni debe incluir un client secret.
+## Configuración de Entra
 
-Los roles de aplicacion se leen del claim `roles` del ID token. Asigna los roles de aplicacion `alumno` y `docente` a los usuarios desde **Enterprise applications > Users and groups**. La autoridad se limita al tenant indicado por `AZURE_TENANT_ID`.
+En el registro de aplicación, configura la plataforma **Mobile and desktop applications** con el redirect URI loopback que vaya a usar la aplicación, por defecto `http://localhost`. Registra los roles de aplicación `alumno` y `docente` y asígnalos a los usuarios en **Enterprise applications > Users and groups**.
 
-El `client ID` identifica la aplicacion durante OAuth. El object ID del registro no se usa en el flujo de autenticacion.
+El registro debe ser un cliente público; no necesita `client secret`. El WebView integrado puede no admitir todas las opciones de SSO, MFA o Conditional Access del navegador del sistema. Comprueba el flujo con las políticas del tenant.
 
-## Configuracion
+## Configuración
 
-El modulo utiliza `DotEnv`; la precedencia es variable de entorno del sistema, propiedad Java `-D`, `.env.private` y `.env.public`.
+`AuthenticatorConfig.fromEnvironment()` lee las variables con esta precedencia: entorno del sistema, propiedades Java `-D`, `.env.private` y `.env.public`. Si no se indican scopes o redirect URI, aplica los valores predeterminados.
 
-| Variable | Uso |
-|---|---|
-| `AZURE_CLIENT_ID` | Application (client) ID del registro Entra |
-| `AZURE_TENANT_ID` | ID o dominio del tenant |
-| `AZURE_REDIRECT_URI` | URI loopback registrada para la app de escritorio; por defecto `http://localhost` |
-| `AZURE_SCOPES` | Scopes separados por espacios o comas; por defecto `openid profile email` |
+| Variable | Descripción | Predeterminado |
+|---|---|---|
+| `AZURE_CLIENT_ID` | Application (client) ID del registro | Obligatoria |
+| `AZURE_TENANT_ID` | ID o dominio del tenant | Obligatoria |
+| `AZURE_REDIRECT_URI` | Callback HTTP loopback registrado | `http://localhost` |
+| `AZURE_SCOPES` | Scopes separados por espacios o comas | `openid profile email` |
 
-Estos valores identifican la aplicacion y el tenant, no son credenciales. No configures contrasenas de usuario ni client secret. La autenticacion de cada persona se presenta dentro de la ventana JavaFX.
+El client ID y el tenant ID identifican la aplicación y el tenant; no son secretos. No configures contraseñas de usuario ni un client secret.
 
-## Uso desde la GUI
+## API
+
+Los tipos de Entra están en `com.crud2gui.authenticator.entraid` y la identidad devuelta es `AuthenticatedUser`.
 
 ```java
+import com.crud2gui.authenticator.entraid.AuthenticatorConfig;
+import com.crud2gui.authenticator.entraid.EntraIdAuthenticator;
+
 AuthenticatorConfig config = AuthenticatorConfig.fromEnvironment();
-EntraIdAuthenticator authenticator = new EntraIdAuthenticator(config, loginView::showEmbeddedBrowser);
+EntraIdAuthenticator authenticator =
+        new EntraIdAuthenticator(config, loginView::showEmbeddedBrowser);
 
 authenticator.authenticate().thenAccept(user -> {
     if (user.isDocente()) {
@@ -38,16 +44,16 @@ authenticator.authenticate().thenAccept(user -> {
 });
 ```
 
-`authenticate()` devuelve un `CompletableFuture`; la GUI debe consumirlo de forma asíncrona para no bloquear el hilo visual. `AuthenticatedUser` expone identificador, nombre, tenant, roles y expiración, pero no conserva tokens ni credenciales.
+`OpenBrowserAction` permite que la interfaz anfitriona decida cómo presentar la URL de autorización. `authenticate()` es asíncrono y devuelve `CompletableFuture<AuthenticatedUser>`; no bloquees el hilo de interfaz. `AuthenticatedUser` contiene claims de identidad y roles, no el token. MSAL gestiona la caché de tokens en memoria.
 
-Las páginas locales que MSAL muestra al terminar o fallar el callback están personalizadas en español y se pueden editar en `src/main/resources/templates/auth_success_page.html` y `src/main/resources/templates/auth_error_page.html`. No reemplazan ni modifican la página de inicio de sesión alojada por Microsoft. MSAL conserva el flujo de authorization code con PKCE y el callback loopback; la app JavaFX inyecta siempre su WebView mediante `OpenBrowserAction`. El WebView puede no ofrecer todos los métodos de autenticación, SSO o requisitos MFA/Conditional Access; valida el flujo con las políticas del tenant.
+`clearAccounts()` elimina las cuentas de la caché MSAL en memoria. `logoutUri()` construye el endpoint de cierre de sesión de Entra, pero no abre el navegador ni cierra por sí solo la sesión web; la aplicación anfitriona debe completar el retorno al callback.
 
-El flujo interactivo espera el callback local durante un tiempo limitado. Si falla, confirma que `http://localhost` esta registrado en **Authentication > Mobile and desktop applications**. No compartas la URL de callback ni sus parametros.
+Las páginas locales que MSAL muestra al completar o fallar el callback están en `src/main/resources/templates/auth_success_page.html` y `src/main/resources/templates/auth_error_page.html`. Son páginas de resultado; la página de inicio de sesión sigue alojada por Microsoft.
 
-## Tests
+## Pruebas
 
 ```bash
 modules/authenticator/script/test.sh
 ```
 
-Las pruebas no abren el navegador ni necesitan acceso a Entra.
+Las pruebas son unitarias: no abren el navegador ni autentican contra Entra. El test de claims usa un JWT sintético para comprobar la extracción del payload; la autenticidad del token corresponde a MSAL.

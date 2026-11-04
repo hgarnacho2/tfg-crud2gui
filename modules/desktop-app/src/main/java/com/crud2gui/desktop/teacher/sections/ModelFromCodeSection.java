@@ -1,7 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
-import com.crud2gui.common.ui.JavaCodeViewer;
-import com.crud2gui.common.ui.JsonEditorView;
+import com.crud2gui.desktop.ui.JavaCodeViewer;
+import com.crud2gui.desktop.ui.JsonEditorViewer;
 import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.UiComponents;
@@ -82,7 +82,7 @@ public final class ModelFromCodeSection extends Section {
     private final Label extractionStatus = UiComponents.statusLabel("model-code-extraction-status");
     private final Label diagramStatus = UiComponents.statusLabel("model-code-diagram-status");
     private final StackPane generatedModel = new StackPane();
-    private JsonEditorView generatedModelViewer;
+    private JsonEditorViewer generatedModelViewer;
     private final ClassDiagramView classDiagram = new ClassDiagramView();
     private final ScrollPane diagramScroll = new ScrollPane(classDiagram);
     private final Label managerSelectionPrompt = UiComponents.label(
@@ -383,7 +383,7 @@ public final class ModelFromCodeSection extends Section {
 
     private void showGeneratedModel(Path modelPath) {
         try {
-            generatedModelViewer = new JsonEditorView(modelPath, false);
+            generatedModelViewer = new JsonEditorViewer(modelPath, false);
         } catch (IOException exception) {
             logger.error("MODEL_CODE_VIEWER_ERROR | No se pudo mostrar el modelo generado.", exception);
             return;
@@ -393,7 +393,7 @@ public final class ModelFromCodeSection extends Section {
         generatedModel.setManaged(true);
     }
 
-    JsonEditorView generatedModelViewer() {
+    JsonEditorViewer generatedModelViewer() {
         return generatedModelViewer;
     }
 

@@ -1,4 +1,4 @@
-package com.crud2gui.authenticator;
+package com.crud2gui.authenticator.entraid;
 
 import org.junit.jupiter.api.Test;
 
@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthPageTemplatesTest {
 
+    // Verifica que las páginas locales de éxito y error se cargan desde los recursos del classpath.
     @Test
     void loadsSuccessAndErrorPagesFromClasspathResources() {
         String success = EntraIdAuthenticator.loadTemplate("/templates/auth_success_page.html");

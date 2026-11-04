@@ -1,4 +1,4 @@
-package com.crud2gui.authenticator;
+package com.crud2gui.authenticator.entraid;
 
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class EntraIdAuthenticatorTest {
 
+    // Comprueba que el logout apunta al tenant correcto y conserva los parámetros del callback registrado.
     @Test
     void buildsTenantLogoutWithEncodedRegisteredReturn() throws Exception {
         var config = new AuthenticatorConfig("client-id", "tenant.example",
@@ -26,6 +27,7 @@ class EntraIdAuthenticatorTest {
                 URLDecoder.decode(logout.getRawQuery(), StandardCharsets.UTF_8));
     }
 
+    // Limpiar una caché vacía debe terminar sin lanzar una excepción.
     @Test
     void clearsAnEmptyCacheWithoutBrowserOrNetwork() throws Exception {
         var authenticator = new EntraIdAuthenticator(new AuthenticatorConfig("client-id",

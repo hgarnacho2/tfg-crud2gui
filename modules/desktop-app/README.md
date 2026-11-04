@@ -8,16 +8,17 @@ Desde la raiz del repositorio, ejecuta:
 modules/desktop-app/script/run.sh
 ```
 
-Por defecto, el script compila e instala `desktop-app` y todas sus dependencias del reactor
-(incluidos el modelo y los extractores) antes de arrancar, para usar las versiones actuales.
-No ejecuta `clean`: en Windows puede fallar al borrar archivos de `target` que otro proceso
-tenga abiertos. Los errores de compilacion o instalacion detienen el arranque.
-Usa `--no-install` solo cuando los snapshots actuales ya estén instalados en Maven. Opciones:
+Por defecto, el script no instala dependencias y requiere que los snapshots actuales estén
+instalados en Maven. Usa `--install` para compilar e instalar `desktop-app` y las dependencias
+del reactor (incluidos el modelo y los extractores) antes de arrancar. No ejecuta `clean`: en
+Windows puede fallar al borrar archivos de `target` que otro proceso tenga abiertos. Los errores
+de compilacion o instalacion detienen el arranque. `--no-install` se conserva como alias.
+Opciones:
 
 ```bash
-modules/desktop-app/script/run.sh --no-install
+modules/desktop-app/script/run.sh --install
 modules/desktop-app/script/run.sh --debug
-modules/desktop-app/script/run.sh --debug --no-install
+modules/desktop-app/script/run.sh --debug --install
 ```
 
 `--debug` muestra la salida `INFO` de Maven y activa el logging de diagnóstico de MSAL.
@@ -153,7 +154,7 @@ el visor muestra el texto original sin modificarlo. La etiqueta inferior conserv
 el error y los pasos de afinado y diagrama permanecen bloqueados; esa respuesta no se guarda
 como un modelo valido. Se puede volver a pulsar «Obtener modelo» para reintentar.
 Con un JSON valido se habilita el paso 5 «Afinar modelo», que abre el JSON generado en el
-editor `JsonEditorView` (modulo `common`, paquete `com.crud2gui.common.ui`). «Confirmar modelo» valida el JSON editado,
+editor `JsonEditorViewer` (paquete `com.crud2gui.desktop.ui`). «Confirmar modelo» valida el JSON editado,
 lo guarda como copia `<nombre>-validated.json` junto al original y habilita el paso 6
 «Diagrama de clases» con el modelo confirmado.
 
@@ -168,7 +169,7 @@ carpeta valida; cancelar el selector conserva el estado anterior.
 El panel de seleccion tambien permanece compacto hasta seleccionar la carpeta.
 El arbol de la carpeta seleccionada ocupa la altura disponible
 y permite desplazarse con la rueda y las barras. Las carpetas aparecen expandidas.
-Al seleccionar un fichero, el visor `JavaCodeViewer` (modulo `common`) muestra su contenido
+Al seleccionar un fichero, el visor `JavaCodeViewer` muestra su contenido
 a la derecha en solo lectura, con numeros de linea y resaltado de sintaxis para `.java`.
 Los ficheros con extension `.java` se resaltan en verde y negrita.
 Tras cargar el contenido, un mensaje verde confirma la seleccion e indica que se puede

@@ -1,4 +1,4 @@
-package com.crud2gui.authenticator;
+package com.crud2gui.authenticator.entraid;
 
 import com.microsoft.aad.msal4j.InteractiveRequestParameters;
 import com.microsoft.aad.msal4j.OpenBrowserAction;
@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class EntraIdAuthenticator {
 
-    private static final int CALLBACK_TIMEOUT_SECONDS = 300;
+    private static final int CALLBACK_TIMEOUT_SECONDS = 180;
     private static final String SUCCESS_PAGE = loadTemplate("/templates/auth_success_page.html");
     private static final String ERROR_PAGE = loadTemplate("/templates/auth_error_page.html");
 

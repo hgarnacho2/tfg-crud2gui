@@ -1,6 +1,6 @@
 package com.crud2gui.desktop.teacher.sections;
 
-import com.crud2gui.desktop.ui.PdfPreview;
+import com.crud2gui.desktop.ui.PdfViewer;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.scene.Scene;
@@ -660,8 +660,8 @@ class StatementSectionTest {
             document.addPage(new PDPage());
             document.save(pdf.toFile());
         }
-        PdfPreview preview = onFx(() -> {
-            PdfPreview viewer = new PdfPreview();
+        PdfViewer preview = onFx(() -> {
+            PdfViewer viewer = new PdfViewer();
             Scene scene = new Scene(viewer, 960, 680);
             scene.getStylesheets().add(Objects.requireNonNull(
                     getClass().getResource("/styles/app.css")).toExternalForm());
@@ -710,7 +710,7 @@ class StatementSectionTest {
         Files.delete(replacement);
     }
 
-    private static void awaitPreview(PdfPreview preview, Runnable action) throws Exception {
+    private static void awaitPreview(PdfViewer preview, Runnable action) throws Exception {
         CompletableFuture<Void> loaded = onFx(() -> {
             CompletableFuture<Void> result = new CompletableFuture<>();
             var image = (javafx.scene.image.ImageView) preview.lookup(".pdf-preview-image");
@@ -733,7 +733,7 @@ class StatementSectionTest {
         loaded.get(15, TimeUnit.SECONDS);
     }
 
-    private static void assertFullPageHeight(PdfPreview preview) {
+    private static void assertFullPageHeight(PdfViewer preview) {
         preview.applyCss();
         preview.resize(960, preview.prefHeight(960));
         preview.layout();
@@ -747,8 +747,8 @@ class StatementSectionTest {
 
     @Test
     void reportsPreviewFailureAndDiscardsPreviousDocumentWhenSelectionChangesQuickly() throws Exception {
-        PdfPreview preview = onFx(() -> {
-            PdfPreview viewer = new PdfPreview();
+        PdfViewer preview = onFx(() -> {
+            PdfViewer viewer = new PdfViewer();
             new Scene(viewer);
             viewer.applyCss();
             return viewer;

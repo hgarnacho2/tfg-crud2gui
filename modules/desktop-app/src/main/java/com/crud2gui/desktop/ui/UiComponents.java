@@ -1,6 +1,6 @@
 package com.crud2gui.desktop.ui;
 
-import com.crud2gui.authenticator.AuthenticatedUser;
+import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
@@ -19,6 +19,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressIndicator;
+import javafx.stage.Window;
 
 import java.util.List;
 import java.io.IOException;
@@ -200,7 +201,14 @@ public final class UiComponents {
         details.setMinWidth(0);
         HBox.setHgrow(details, Priority.ALWAYS);
         HBox identity = hBox(List.of("current-user-identity"), avatar, details);
-        Button signOut = actionButton("Cerrar sesión", List.of("sign-out-button"), onSignOut);
+        Button signOut = actionButton("Cerrar sesión", List.of("sign-out-button"), () -> {
+            Window owner = identity.getScene() == null ? null : identity.getScene().getWindow();
+            if (ConfirmationDialog.confirm(owner, "Confirmar cierre de sesión",
+                    "¿Quieres cerrar la sesión?", "Se cerrará tu sesión de CRUD2GUI y Microsoft.",
+                    "Cerrar sesión", "Cancelar")) {
+                onSignOut.run();
+            }
+        });
         return vBox(List.of("current-user-card"), identity, signOut);
     }
 

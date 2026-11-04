@@ -25,6 +25,11 @@
     </dependency>
     <dependency>
       <groupId>com.crud2gui</groupId>
+      <artifactId>crud2gui-model-validator</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.crud2gui</groupId>
       <artifactId>crud2gui-java-model-extractor</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -62,6 +67,11 @@
       <groupId>org.fxmisc.richtext</groupId>
       <artifactId>richtextfx</artifactId>
       <version>0.11.3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.17.2</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

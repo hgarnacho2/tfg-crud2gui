@@ -24,8 +24,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 /** Previsualización local de una página PDF, sin selección de texto ni archivos abiertos persistentes. */
-public final class PdfPreview extends VBox {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PdfPreview.class);
+public final class PdfViewer extends VBox {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PdfViewer.class);
     private final ImageView image = new ImageView();
     private final Label status = UiComponents.mutedText("");
     private final Label pageLabel = UiComponents.label("", List.of("pdf-preview-page"));
@@ -40,7 +40,7 @@ public final class PdfPreview extends VBox {
     private Task<RenderedPage> pending;
 
     /** Construye el visor con desplazamiento, navegación y zoom acotado. */
-    public PdfPreview() {
+    public PdfViewer() {
         super(12);
         getStyleClass().add("pdf-preview");
         status.getStyleClass().add("pdf-preview-status");

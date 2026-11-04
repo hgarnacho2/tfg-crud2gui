@@ -1,4 +1,4 @@
-package com.crud2gui.common.ui;
+package com.crud2gui.desktop.ui;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,21 +38,21 @@ import java.time.format.DateTimeFormatter;
  * Visor/editor de JSON para JavaFX.
  *
  * Uso:
- *   JsonEditorView.show(Path.of("config.json"));                 // abre una ventana nueva
- *   Parent vista = JsonEditorView.createView(Path.of("a.json")); // para incrustarlo en tu escena
- *   JsonEditorView editor = new JsonEditorView(path);            // para incrustarlo y leer el JSON editado
- *   JsonEditorView visor = new JsonEditorView(path, false);      // solo lectura (sin inspector ni guardado)
+ *   JsonEditorViewer.show(Path.of("config.json"));                 // abre una ventana nueva
+ *   Parent vista = JsonEditorViewer.createView(Path.of("a.json")); // para incrustarlo en tu escena
+ *   JsonEditorViewer editor = new JsonEditorViewer(path);            // para incrustarlo y leer el JSON editado
+ *   JsonEditorViewer visor = new JsonEditorViewer(path, false);      // solo lectura (sin inspector ni guardado)
  *
- * Requiere jackson-databind y javafx-controls (dependencias opcionales del módulo common).
+ * Requiere jackson-databind y javafx-controls, incluidas como dependencias de desktop-app.
  */
-public final class JsonEditorView {
+public final class JsonEditorViewer {
 
     // ───────────────────────────── API pública ─────────────────────────────
 
     /** Abre el editor en una ventana nueva. */
     public static void show(Path path) {
         try {
-            JsonEditorView view = new JsonEditorView(path);
+            JsonEditorViewer view = new JsonEditorViewer(path);
             Stage stage = new Stage();
             stage.setTitle("Editor JSON · " + path.getFileName());
             stage.setScene(new Scene(view.root, 1000, 640));
@@ -68,14 +68,14 @@ public final class JsonEditorView {
     /** Devuelve el editor como nodo para incrustarlo donde quieras. */
     public static Parent createView(Path path) {
         try {
-            return new JsonEditorView(path).root;
+            return new JsonEditorViewer(path).root;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     /** Crea un editor sobre el fichero indicado. */
-    public JsonEditorView(Path path) throws IOException {
+    public JsonEditorViewer(Path path) throws IOException {
         this(path, true);
     }
 
@@ -84,7 +84,7 @@ public final class JsonEditorView {
      *
      * @param editable {@code false} oculta el inspector, «Recargar» y «Guardar» y bloquea la pestaña de texto
      */
-    public JsonEditorView(Path path, boolean editable) throws IOException {
+    public JsonEditorViewer(Path path, boolean editable) throws IOException {
         this.path = path;
         this.editable = editable;
         buildUi();
@@ -177,7 +177,7 @@ public final class JsonEditorView {
 
     private void buildUi() {
         root.getStyleClass().add("json-editor");
-        root.getStylesheets().add(JsonEditorView.class.getResource("json-editor.css").toExternalForm());
+        root.getStylesheets().add(JsonEditorViewer.class.getResource("json-editor.css").toExternalForm());
 
         // Barra superior
         title.getStyleClass().add("title");

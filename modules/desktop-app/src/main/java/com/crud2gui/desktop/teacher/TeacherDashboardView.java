@@ -1,6 +1,6 @@
 package com.crud2gui.desktop.teacher;
 
-import com.crud2gui.authenticator.AuthenticatedUser;
+import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import com.crud2gui.desktop.teacher.sections.CrudSection;
 import com.crud2gui.desktop.teacher.sections.ModelFromStatementSection;
 import com.crud2gui.desktop.teacher.sections.ModelFromCodeSection;

@@ -1,7 +1,5 @@
 package com.crud2gui.desktop.ui;
 
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
@@ -23,12 +21,9 @@ public final class FileDialogs {
      * @return true solo si se confirma el reemplazo
      */
     public static boolean confirmOverwrite(Path path) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                "El archivo ya existe:\n" + path + "\n\n¿Quieres reemplazarlo?",
-                ButtonType.YES, ButtonType.NO);
-        alert.setTitle("Confirmar sobrescritura");
-        alert.setHeaderText("Reemplazar archivo de salida");
-        return alert.showAndWait().filter(ButtonType.YES::equals).isPresent();
+        return ConfirmationDialog.confirm(null, "Confirmar sobrescritura", "Reemplazar archivo de salida",
+            "El archivo ya existe:\n" + path + "\n\n¿Quieres reemplazarlo?",
+            "Reemplazar", "Cancelar");
     }
 
     /**

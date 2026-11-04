@@ -1,4 +1,4 @@
-package com.crud2gui.common.ui;
+package com.crud2gui.desktop.ui;
 
 import javafx.application.Platform;
 import javafx.geometry.Pos;

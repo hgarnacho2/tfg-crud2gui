@@ -1,4 +1,4 @@
-package com.crud2gui.authenticator;
+package com.crud2gui.authenticator.entraid;
 
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class AuthenticatorConfigTest {
 
+    // Comprueba la autoridad construida para el tenant y que los scopes no se puedan alterar.
     @Test
     void buildsTenantAuthorityAndKeepsScopesImmutable() {
         AuthenticatorConfig config = new AuthenticatorConfig("client-id", "tenant.example",
@@ -19,6 +20,7 @@ class AuthenticatorConfigTest {
         assertThrows(UnsupportedOperationException.class, () -> config.scopes().add("User.Read"));
     }
 
+    // Un cliente público de escritorio solo debe aceptar redirects de callback loopback.
     @Test
     void onlyAcceptsLoopbackHttpRedirectsForDesktopClients() {
         assertThrows(IllegalArgumentException.class, () -> new AuthenticatorConfig("client-id", "tenant",

@@ -1,6 +1,6 @@
 package com.crud2gui.desktop.teacher.sections;
 
-import com.crud2gui.common.ui.JsonEditorView;
+import com.crud2gui.desktop.ui.JsonEditorViewer;
 import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
@@ -103,7 +103,7 @@ public final class ModelFromStatementSection extends Section {
         private final Button confirmModelButton = UiComponents.actionButton(
             "Confirmar modelo", List.of("statement-select"), this::confirmModel);
         private final Label refineStatus = UiComponents.statusLabel("model-statement-refine-status");
-        private JsonEditorView modelEditor;
+        private JsonEditorViewer modelEditor;
         private Path generatedModelPath;
         private boolean generationBusy;
     private final List<Button> steps;
@@ -627,7 +627,7 @@ public final class ModelFromStatementSection extends Section {
 
     private void openModelEditor(Path modelPath) {
         try {
-            modelEditor = new JsonEditorView(modelPath);
+            modelEditor = new JsonEditorViewer(modelPath);
         } catch (IOException | RuntimeException exception) {
             logger.error("MODEL_STATEMENT_EDITOR_ERROR | No se pudo abrir el modelo en el editor.", exception);
             showStatus(refineStatus, "No se pudo abrir el modelo en el editor: " + exception.getMessage(), true);

@@ -1,6 +1,6 @@
 package com.crud2gui.desktop.login;
 
-import com.crud2gui.authenticator.AuthenticatedUser;
+import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import com.crud2gui.desktop.ui.UiComponents;
 import javafx.application.Platform;
 import javafx.scene.control.Button;

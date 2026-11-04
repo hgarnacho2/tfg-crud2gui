@@ -3,7 +3,7 @@ package com.crud2gui.desktop.teacher.sections;
 import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
-import com.crud2gui.desktop.ui.PdfPreview;
+import com.crud2gui.desktop.ui.PdfViewer;
 import com.crud2gui.common.utils.DotEnv;
 import com.crud2gui.statement.extractor.StatementExtractor;
 import com.crud2gui.statement.filter.StatementFilter;
@@ -77,7 +77,7 @@ public final class StatementSection extends Section {
     private final Label filePath = UiComponents.label("Selecciona un documento para comenzar.",
             List.of("statement-file-path"));
     private final VBox fileCard = UiComponents.vBox(List.of("statement-file-card"), filename, filePath);
-    private final PdfPreview pdfPreview = new PdfPreview();
+    private final PdfViewer pdfViewer = new PdfViewer();
     private final List<Label> statuses = List.of(
             UiComponents.statusLabel("statement-selection-status"),
             UiComponents.statusLabel("statement-extraction-status"),
@@ -161,7 +161,7 @@ public final class StatementSection extends Section {
                 UiComponents.panelHeading("Seleccionar PDF",
                         "En el primer paso, se selecciona el documento PDF que contiene el enunciado de la práctica.",
                         17, 8),
-                selectPDFButton, fileCard, pdfPreview, statuses.get(0)));
+                selectPDFButton, fileCard, pdfViewer, statuses.get(0)));
         VBox extractionPanel = UiComponents.surface(new VBox(14,
                 UiComponents.panelHeading("Extraer texto", "Una vez seleccionado el PDF, se extrae el contenido como texto plano."),
                 UiComponents.panelHeading("Salida", "Se generará un fichero de texto plano con el contenido extraído en la carpeta de salida seleccionada."),
@@ -265,7 +265,7 @@ public final class StatementSection extends Section {
         resetFilter();
         updateState();
         showStep(0);
-        pdfPreview.load(selectedPdf);
+        pdfViewer.load(selectedPdf);
         showStatus(0, "PDF seleccionado. Puedes continuar con el paso 2: Extraer texto.", false);
     }
 
