@@ -188,3 +188,27 @@ En ambos flujos de modelos, el visor del diagrama conserva la altura completa de
 modelo, sin ajustarla a la pantalla ni recortar las clases. Si supera la ventana,
 se utiliza el desplazamiento vertical general de la pagina, tambien con la rueda
 sobre el diagrama. El visor mantiene su desplazamiento horizontal cuando es necesario.
+
+### Continuidad de los flujos docentes
+
+El panel docente conserva el contexto del trabajo entre sesiones en
+`%USERPROFILE%/.crud2gui/teacher-workflow-<id>.json`, con un archivo distinto por cuenta
+autenticada. El identificador de Entra se usa para derivar el nombre del archivo y no se
+guarda en claro. El estado guarda referencias a archivos e IDs de proveedor/modelo, no copias
+de los documentos.
+
+El texto filtrado correctamente es la entrada sugerida para «Enunciado >> Modelo»; si no
+hay uno, se sugiere el texto extraído. La validación propone el último modelo Java generado
+y el último modelo del enunciado confirmado. Las rutas que el usuario elige manualmente se
+recuerdan y tienen prioridad hasta que cambia la entrada de su flujo. Si una ruta ya no
+existe, no se carga y se puede seleccionar otro archivo. Cambiar de PDF, carpeta Java o
+texto de enunciado invalida las salidas dependientes de esa entrada.
+
+También se recuerdan el proveedor LLM y el modelo seleccionados. Al retomar, se consulta de
+nuevo el catálogo del proveedor y solo se restaura el modelo si sigue disponible; si no,
+queda sin seleccionar para que se pueda elegir otro.
+
+Al entrar en el panel docente, si existe un contexto guardado, se puede continuar con él
+o elegir «Reiniciar contexto de trabajo». Cerrar el diálogo conserva el contexto anterior.
+El reinicio limpia las referencias persistidas, pero no elimina los PDF, TXT ni modelos
+generados en disco.

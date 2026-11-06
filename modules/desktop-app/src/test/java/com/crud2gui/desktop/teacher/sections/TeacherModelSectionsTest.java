@@ -2,6 +2,7 @@ package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import com.crud2gui.desktop.teacher.TeacherDashboardView;
+import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.scene.Node;
@@ -316,6 +317,34 @@ class TeacherModelSectionsTest {
             assertSame(validationPage, content.getContent());
             crud.fire();
             assertSame(crudPage, content.getContent());
+            return null;
+        });
+    }
+
+    @Test
+    void validationRestoresLatestModelsFromWorkflowContext() throws Exception {
+        Path statement = Files.writeString(directory.resolve("filtered.txt"), "statement");
+        Path javaModel = Files.writeString(directory.resolve("java-model.json"), "{}");
+        Path inferredModel = Files.writeString(directory.resolve("inferred-model-validated.json"), "{}");
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("workflow.json"));
+        workflow.recordFilteredText(statement);
+        workflow.recordCodeModel(javaModel);
+        workflow.recordConfirmedStatementModel(inferredModel);
+
+        onFx(() -> {
+            ModelFromStatementSection inference = new ModelFromStatementSection(workflow);
+            attach(inference);
+            assertEquals(statement.toString(), ((Label) inference.lookup("#model-statement-source")).getText());
+            assertEquals(inferredModel, workflow.getSuggestedInferredModel());
+
+            ModelValidationSection section = new ModelValidationSection(workflow);
+            attach(section);
+
+            ModelJsonSelection source = (ModelJsonSelection) section.lookup("#model-validation-java");
+            ModelJsonSelection inferred = (ModelJsonSelection) section.lookup("#model-validation-statement");
+            assertEquals(javaModel, source.getSelectedFile());
+            assertEquals(inferredModel, inferred.getSelectedFile());
+            assertFalse(button(section, "model-validation-run").isDisabled());
             return null;
         });
     }

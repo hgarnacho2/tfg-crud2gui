@@ -10,6 +10,9 @@ import com.crud2gui.desktop.ui.UiComponents;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 
@@ -46,11 +49,14 @@ public final class TeacherDashboardView extends BorderPane {
             new SimpleObjectProperty<>(TeacherSection.STATEMENT);
     private final Map<TeacherSection, Node> pages = new EnumMap<>(TeacherSection.class);
     private final ScrollPane scroll = new ScrollPane();
+        private final TeacherWorkflowContext workflow;
 
     /** Crea el panel docente y conserva la acción de cierre de sesión proporcionada. */
     public TeacherDashboardView(AuthenticatedUser user, Runnable onSignOut) {
         Objects.requireNonNull(user, "user");
         Objects.requireNonNull(onSignOut, "onSignOut");
+        workflow = new TeacherWorkflowContext(user.objectId());
+        resolvePreviousContext();
         setStyle("-fx-background-color: #f3f7f5; -fx-font-family: 'Segoe UI';");
         setLeft(UiComponents.dashboardSidebar("Panel docente",
                 UiComponents.currentUserCard(user, "docente", onSignOut),
@@ -65,18 +71,42 @@ public final class TeacherDashboardView extends BorderPane {
         showSection(selectedSection.get());
     }
 
+    /**
+     * Ofrece continuar o reiniciar cuando existe un contexto anterior para la cuenta.
+     * Cerrar el diálogo conserva el contexto; reiniciarlo solo elimina sus referencias.
+     */
+    private void resolvePreviousContext() {
+        if (!workflow.hasSavedContext()) {
+            return;
+        }
+        ButtonType continueWork = new ButtonType("Continuar con el contexto anterior", ButtonBar.ButtonData.YES);
+        ButtonType resetWork = new ButtonType("Reiniciar contexto de trabajo", ButtonBar.ButtonData.NO);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Contexto de trabajo");
+        alert.setHeaderText("Se ha encontrado un contexto de trabajo anterior.");
+        alert.setContentText("Puedes continuarlo o reiniciarlo. Los archivos existentes no se eliminarán.");
+        alert.getButtonTypes().setAll(continueWork, resetWork);
+        alert.showAndWait().filter(resetWork::equals).ifPresent(button -> workflow.reset());
+    }
+
     private void showSection(TeacherSection section) {
         scroll.setFitToHeight(section == TeacherSection.MODEL_FROM_STATEMENT
                 || section == TeacherSection.MODEL_FROM_CODE);
-        scroll.setContent(pages.computeIfAbsent(section, this::createPage));
+        Node page = pages.computeIfAbsent(section, this::createPage);
+        if (page instanceof ModelFromStatementSection modelFromStatement) {
+            modelFromStatement.refreshStatementInput();
+        } else if (page instanceof ModelValidationSection validation) {
+            validation.refreshModelSelections();
+        }
+        scroll.setContent(page);
     }
 
     private Node createPage(TeacherSection section) {
         return switch (section) {
-            case STATEMENT -> new StatementSection();
-            case MODEL_FROM_STATEMENT -> new ModelFromStatementSection();
-            case MODEL_FROM_CODE -> new ModelFromCodeSection();
-            case MODEL_VALIDATION -> new ModelValidationSection();
+            case STATEMENT -> new StatementSection(workflow);
+            case MODEL_FROM_STATEMENT -> new ModelFromStatementSection(workflow);
+            case MODEL_FROM_CODE -> new ModelFromCodeSection(workflow);
+            case MODEL_VALIDATION -> new ModelValidationSection(workflow);
             case CRUD -> new CrudSection();
         };
     }

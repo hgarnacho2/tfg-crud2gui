@@ -5,6 +5,7 @@ import com.crud2gui.desktop.ui.JsonEditorViewer;
 import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.UiComponents;
+import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import com.crud2gui.javamodelextractor.ProjectParser;
 import com.crud2gui.model.ManagerCandidate;
 import com.crud2gui.model.ModelIO;
@@ -49,6 +50,7 @@ public final class ModelFromCodeSection extends Section {
 
     private final Function<Window, File> chooseCodeFolder;
     private final BiFunction<Window, Path, File> chooseOutputFolder;
+    private final TeacherWorkflowContext workflow;
     private Path outputFolder;
     private final Label outputFilename = UiComponents.labelWithGraphic("Resultado JSON con fecha y hora",
             List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
@@ -97,21 +99,36 @@ public final class ModelFromCodeSection extends Section {
 
     /** Crea la sección con un selector de carpetas del sistema. */
     public ModelFromCodeSection() {
-        this(owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"));
+        this(owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"), null);
+    }
+
+    public ModelFromCodeSection(TeacherWorkflowContext workflow) {
+        this(owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"), workflow);
     }
 
     ModelFromCodeSection(Function<Window, File> chooseCodeFolder) {
+        this(chooseCodeFolder, null);
+    }
+
+    private ModelFromCodeSection(Function<Window, File> chooseCodeFolder, TeacherWorkflowContext workflow) {
         this(chooseCodeFolder,
                 (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Seleccionar carpeta de salida"),
-                defaultOutputDirectory());
+                defaultOutputDirectory(), workflow);
     }
 
     ModelFromCodeSection(Function<Window, File> chooseCodeFolder,
                         BiFunction<Window, Path, File> chooseOutputFolder, Path outputDirectory) {
+        this(chooseCodeFolder, chooseOutputFolder, outputDirectory, null);
+    }
+
+    private ModelFromCodeSection(Function<Window, File> chooseCodeFolder,
+                        BiFunction<Window, Path, File> chooseOutputFolder, Path outputDirectory,
+                        TeacherWorkflowContext workflow) {
         super("MODELO DESDE CÓDIGO", "Modelo desde código",
                 "Extracción de un modelo de clases a partir de código fuente Java.");
         this.chooseCodeFolder = Objects.requireNonNull(chooseCodeFolder, "chooseCodeFolder");
         this.chooseOutputFolder = Objects.requireNonNull(chooseOutputFolder, "chooseOutputFolder");
+        this.workflow = workflow;
         outputFolder = Objects.requireNonNull(outputDirectory, "outputDirectory").toAbsolutePath().normalize();
         outputFolderLabel.setId("model-code-output-folder");
         outputFolderLabel.setText(outputFolder.toString());
@@ -290,6 +307,9 @@ public final class ModelFromCodeSection extends Section {
             return;
         }
         sourceFolder = folder.toPath().toAbsolutePath().normalize();
+        if (workflow != null) {
+            workflow.selectCodeFolder(sourceFolder);
+        }
         Path selectedFolder = sourceFolder;
         selectedFolderName.setText(folder.getName().isBlank() ? sourceFolder.toString() : folder.getName());
         selectedFolderPath.setText(sourceFolder.toString());
@@ -360,6 +380,9 @@ public final class ModelFromCodeSection extends Section {
             return new ExtractedModel(model, json, resultPath);
         }, result -> {
             showGeneratedModel(result.outputPath());
+            if (workflow != null) {
+                workflow.recordCodeModel(result.outputPath());
+            }
             configureManagerSelection(result.model());
             String warnings = result.model().source().warnings().isEmpty()
                     ? "" : " Se encontraron " + result.model().source().warnings().size() + " aviso(s).";

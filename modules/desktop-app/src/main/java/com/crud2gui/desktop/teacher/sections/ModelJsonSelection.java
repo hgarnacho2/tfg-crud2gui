@@ -31,6 +31,7 @@ final class ModelJsonSelection extends VBox {
     private final VBox preview = new VBox();
     private final String readyMessage;
     private Path selectedFile;
+    private boolean manuallySelected;
 
     static File chooseJson(Window owner) {
         return FileDialogs.chooseFile(owner, "Seleccionar modelo JSON",
@@ -69,30 +70,9 @@ final class ModelJsonSelection extends VBox {
                 status.pseudoClassStateChanged(PseudoClass.getPseudoClass("error"), true);
                 return;
             }
-            JsonEditorViewer viewer = null;
-            if (readyMessage != null) {
-                try {
-                    viewer = new JsonEditorViewer(candidate, false);
-                } catch (IOException exception) {
-                    status.setText("No se pudo mostrar el modelo JSON seleccionado.");
-                    status.pseudoClassStateChanged(PseudoClass.getPseudoClass("error"), true);
-                    return;
-                }
+            if (loadFile(candidate, true)) {
+                onSelected.accept(candidate);
             }
-            selectedFile = candidate;
-            filename.setText(file.getName());
-            path.setText(candidate.toString());
-            fileCard.pseudoClassStateChanged(PseudoClass.getPseudoClass("selected"), true);
-            if (viewer == null) {
-                status.setText("");
-            } else {
-                preview.getChildren().setAll(viewer.getView());
-                preview.setVisible(true);
-                preview.setManaged(true);
-                status.setText(readyMessage);
-            }
-            status.pseudoClassStateChanged(PseudoClass.getPseudoClass("error"), false);
-            onSelected.accept(candidate);
         });
         select.setId(id + "-select");
         getChildren().addAll(UiComponents.panelHeading(title, description), select, fileCard, preview, status);
@@ -100,5 +80,76 @@ final class ModelJsonSelection extends VBox {
 
     Path getSelectedFile() {
         return selectedFile;
+    }
+
+    boolean isManuallySelected() {
+        return manuallySelected;
+    }
+
+    void setRestoredFile(Path file, boolean manual) {
+        manuallySelected = manual;
+        if (file == null) {
+            clearFile();
+        } else if (!loadFile(file, false)) {
+            clearFile();
+            status.setText("El modelo recordado ya no está disponible. Selecciona otro JSON.");
+            status.pseudoClassStateChanged(PseudoClass.getPseudoClass("error"), true);
+        }
+    }
+
+    void setSuggestedFile(Path file) {
+        if (!manuallySelected) {
+            setRestoredFile(file, false);
+        }
+    }
+
+    private boolean loadFile(Path file, boolean manual) {
+        Path candidate = file.toAbsolutePath().normalize();
+        if (!candidate.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".json")
+                || !Files.isRegularFile(candidate) || !Files.isReadable(candidate)) {
+            status.setText("Selecciona un archivo JSON accesible.");
+            status.pseudoClassStateChanged(PseudoClass.getPseudoClass("error"), true);
+            return false;
+        }
+        JsonEditorViewer viewer = null;
+        if (readyMessage != null) {
+            try {
+                viewer = new JsonEditorViewer(candidate, false);
+            } catch (IOException exception) {
+                status.setText("No se pudo mostrar el modelo JSON seleccionado.");
+                status.pseudoClassStateChanged(PseudoClass.getPseudoClass("error"), true);
+                return false;
+            }
+        }
+        selectedFile = candidate;
+        manuallySelected = manual;
+        filename.setText(candidate.getFileName().toString());
+        path.setText(candidate.toString());
+        fileCard.pseudoClassStateChanged(PseudoClass.getPseudoClass("selected"), true);
+        if (viewer == null) {
+            preview.getChildren().clear();
+            preview.setVisible(false);
+            preview.setManaged(false);
+            status.setText("");
+        } else {
+            preview.getChildren().setAll(viewer.getView());
+            preview.setVisible(true);
+            preview.setManaged(true);
+            status.setText(readyMessage);
+        }
+        status.pseudoClassStateChanged(PseudoClass.getPseudoClass("error"), false);
+        return true;
+    }
+
+    private void clearFile() {
+        selectedFile = null;
+        filename.setText("Ningún archivo seleccionado.");
+        path.setText("");
+        fileCard.pseudoClassStateChanged(PseudoClass.getPseudoClass("selected"), false);
+        preview.getChildren().clear();
+        preview.setVisible(false);
+        preview.setManaged(false);
+        status.setText("");
+        status.pseudoClassStateChanged(PseudoClass.getPseudoClass("error"), false);
     }
 }

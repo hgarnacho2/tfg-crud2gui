@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -74,13 +75,15 @@ public final class DotEnv {
     public static String getStringVar(String clave, String defaultValue) {
         String envVal = System.getenv(clave);
         if (envVal != null && !envVal.isBlank()) {
-            logDebug("Clave '" + clave + "' encontrada en variable de entorno del S.O. Valor: '" + envVal.trim() + "'");
+            logDebug("Clave '" + clave + "' encontrada en variable de entorno del S.O. Valor: '"
+                    + diagnosticValue(clave, envVal) + "'");
             return envVal.trim();
         }
 
         String propVal = System.getProperty(clave);
         if (propVal != null && !propVal.isBlank()) {
-            logDebug("Clave '" + clave + "' encontrada en propiedad del sistema Java (-D). Valor: '" + propVal.trim() + "'");
+            logDebug("Clave '" + clave + "' encontrada en propiedad del sistema Java (-D). Valor: '"
+                    + diagnosticValue(clave, propVal) + "'");
             return propVal.trim();
         }
 
@@ -97,7 +100,8 @@ public final class DotEnv {
             if (dotEnvMap.containsKey(clave)) {
                 String val = dotEnvMap.get(clave);
                 if (val != null && !val.isBlank()) {
-                    logDebug("Clave '" + clave + "' encontrada con éxito. Valor: '" + val.trim() + "'");
+                    logDebug("Clave '" + clave + "' encontrada con éxito. Valor: '"
+                            + diagnosticValue(clave, val) + "'");
                     return val.trim();
                 }
             } else {
@@ -107,8 +111,20 @@ public final class DotEnv {
             logDebug("Error leyendo los ficheros de entorno para la clave '" + clave + "': " + e.getMessage());
         }
 
-        logDebug("Clave '" + clave + "' no encontrada en ninguna fuente. Aplicando valor por defecto: " + defaultValue);
+        logDebug("Clave '" + clave + "' no encontrada en ninguna fuente. Aplicando valor por defecto: "
+                + diagnosticValue(clave, defaultValue));
         return defaultValue;
+    }
+
+    static String diagnosticValue(String key, String value) {
+        if (value == null) {
+            return "null";
+        }
+        String normalizedKey = key == null ? "" : key.toUpperCase(Locale.ROOT);
+        boolean sensitive = normalizedKey.contains("KEY") || normalizedKey.contains("TOKEN")
+                || normalizedKey.contains("SECRET") || normalizedKey.contains("PASSWORD")
+                || normalizedKey.contains("CREDENTIAL") || normalizedKey.contains("PRIVATE");
+        return sensitive ? "<redacted>" : value.trim();
     }
 
     /**

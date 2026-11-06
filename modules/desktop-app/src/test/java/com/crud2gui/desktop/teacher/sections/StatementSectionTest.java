@@ -1,5 +1,6 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import com.crud2gui.desktop.ui.PdfViewer;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
@@ -51,6 +52,28 @@ class StatementSectionTest {
         }
         started.get(10, TimeUnit.SECONDS);
         Platform.setImplicitExit(false);
+    }
+
+    @Test
+    void restoresPreviouslySelectedPdfFromPersistedWorkflowContext() throws Exception {
+        Path pdf = createPdf("restored-statement.pdf", "Enunciado restaurado.", false);
+        Path stateFile = directory.resolve("workflow.json");
+        TeacherWorkflowContext saved = new TeacherWorkflowContext(stateFile);
+        saved.selectStatementPdf(pdf);
+        TeacherWorkflowContext restored = new TeacherWorkflowContext(stateFile);
+
+        onFx(() -> {
+            StatementSection section = new StatementSection(owner -> null, (owner, current) -> null,
+                    path -> true, restored);
+            section.applyCss();
+
+            var fileCard = section.lookup(".statement-file-card");
+            assertEquals("restored-statement.pdf", ((Label) fileCard.lookup(".statement-file-name")).getText());
+            assertEquals(pdf.toAbsolutePath().normalize().toString(),
+                    ((Label) fileCard.lookup(".statement-file-path")).getText());
+            assertFalse(((Button) section.lookup(".statement-extract")).isDisabled());
+            return null;
+        });
     }
 
     @Test

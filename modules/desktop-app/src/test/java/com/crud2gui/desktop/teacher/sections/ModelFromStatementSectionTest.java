@@ -1,5 +1,6 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import com.crud2gui.statementanalyzer.client.ModelClientProvider;
 import com.crud2gui.statementanalyzer.client.ModelClient;
 import com.crud2gui.statementanalyzer.model.GenerationOptions;
@@ -259,6 +260,68 @@ class ModelFromStatementSectionTest {
             assertTrue(((Button) section.lookup("#statement-step-4")).isDisabled());
             assertTrue(((Button) section.lookup("#statement-step-2")).getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("completed")));
+            return null;
+        });
+    }
+
+    @Test
+    void restoresPromptFromPersistedWorkflowContext() throws Exception {
+        Path promptFile = directory.resolve("persisted-prompt.txt");
+        String prompt = "Instrucciones persistidas para inferir el modelo.";
+        Files.writeString(promptFile, prompt);
+        Path stateFile = directory.resolve("workflow.json");
+        TeacherWorkflowContext saved = new TeacherWorkflowContext(stateFile);
+        saved.selectPromptFile(promptFile);
+        TeacherWorkflowContext restored = new TeacherWorkflowContext(stateFile);
+
+        onFx(() -> {
+            ModelFromStatementSection section = new ModelFromStatementSection(restored);
+            StackPane root = new StackPane(section);
+            new Scene(root, 1200, 900);
+            root.applyCss();
+            root.layout();
+
+            TextArea promptText = (TextArea) section.lookup("#model-statement-prompt-text");
+            Label promptPath = (Label) section.lookup("#model-statement-prompt-source");
+            Label promptName = (Label) section.lookup("#model-statement-prompt-card .statement-file-name");
+            assertEquals(prompt, promptText.getText());
+            assertTrue(promptText.isVisible());
+            assertEquals(promptFile.toAbsolutePath().normalize().toString(), promptPath.getText());
+            assertEquals(promptFile.getFileName().toString(), promptName.getText());
+            return null;
+        });
+    }
+
+    @Test
+    void restoresLlmProviderAndAvailableModelAfterModelListLoads() throws Exception {
+        FakeProvider provider = new FakeProvider();
+        Path stateFile = directory.resolve("llm-workflow.json");
+        TeacherWorkflowContext saved = new TeacherWorkflowContext(stateFile);
+        saved.selectModelProvider(provider.id());
+        saved.selectModel("fake-model");
+        TeacherWorkflowContext restored = new TeacherWorkflowContext(stateFile);
+
+        ModelFromStatementSection section = onFx(() -> {
+            ModelFromStatementSection created = new ModelFromStatementSection(owner -> null, owner -> null,
+                    (owner, current) -> null, List.of(provider), directory.resolve("output"), restored);
+            StackPane root = new StackPane(created);
+            new Scene(root, 1200, 900);
+            root.applyCss();
+            root.layout();
+            return created;
+        });
+
+        Label status = onFx(() -> (Label) section.lookup("#model-statement-llm-status"));
+        awaitStatus(status, "Puedes continuar con el paso 4: Obtener modelo.");
+        onFx(() -> {
+            @SuppressWarnings("unchecked")
+            ComboBox<ModelClientProvider> providers =
+                    (ComboBox<ModelClientProvider>) section.lookup("#model-statement-provider");
+            @SuppressWarnings("unchecked")
+            ComboBox<ModelInfo> models = (ComboBox<ModelInfo>) section.lookup("#model-statement-model");
+            assertEquals(provider, providers.getValue());
+            assertEquals("fake-model", models.getValue().id());
+            assertFalse(((Button) section.lookup("#statement-step-4")).isDisabled());
             return null;
         });
     }

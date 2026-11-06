@@ -4,6 +4,7 @@ import com.crud2gui.desktop.ui.JsonEditorViewer;
 import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
+import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import com.crud2gui.model.ModelIO;
 import com.crud2gui.model.ProjectModel;
 import com.crud2gui.statementanalyzer.client.ModelClient;
@@ -49,6 +50,10 @@ public final class ModelFromStatementSection extends Section {
 
     private final Function<Window, File> chooseTextFile;
     private final Function<Window, File> choosePromptFile;
+    private final TeacherWorkflowContext workflow;
+    private Path selectedStatementPath;
+    private boolean statementInputManual;
+    private boolean loadingModels;
         private final Label selectedTextName = UiComponents.labelWithGraphic(
             "Ningún texto filtrado seleccionado.", List.of("statement-file-name"),
             UiComponents.label("TXT", List.of("statement-file-badge", "statement-neutral-badge")), 12);
@@ -117,6 +122,13 @@ public final class ModelFromStatementSection extends Section {
                 ModelClients.providers(), defaultOutputDirectory());
     }
 
+    public ModelFromStatementSection(TeacherWorkflowContext workflow) {
+        this(owner -> chooseTextFile(owner, "Seleccionar texto filtrado del enunciado"),
+                owner -> chooseTextFile(owner, "Seleccionar prompt de análisis"),
+                (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Carpeta de salida del modelo"),
+                ModelClients.providers(), defaultOutputDirectory(), workflow);
+    }
+
     ModelFromStatementSection(Function<Window, File> chooseTextFile) {
         this(chooseTextFile, owner -> chooseTextFile(owner, "Seleccionar prompt de análisis"),
                 (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Carpeta de salida del modelo"),
@@ -141,12 +153,21 @@ public final class ModelFromStatementSection extends Section {
                       Function<Window, File> choosePromptFile,
                       BiFunction<Window, Path, File> chooseOutputFolder,
                       List<ModelClientProvider> providers, Path outputDirectory) {
+        this(chooseTextFile, choosePromptFile, chooseOutputFolder, providers, outputDirectory, null);
+        }
+
+        ModelFromStatementSection(Function<Window, File> chooseTextFile,
+                  Function<Window, File> choosePromptFile,
+                  BiFunction<Window, Path, File> chooseOutputFolder,
+                  List<ModelClientProvider> providers, Path outputDirectory,
+                  TeacherWorkflowContext workflow) {
         super("MODELO DESDE ENUNCIADO", "Modelo desde enunciado",
                 "Generación de un modelo de clases a partir del texto filtrado de un enunciado.");
         setMinHeight(Region.USE_PREF_SIZE);
         this.chooseTextFile = Objects.requireNonNull(chooseTextFile, "chooseTextFile");
         this.choosePromptFile = Objects.requireNonNull(choosePromptFile, "choosePromptFile");
         this.chooseOutputFolder = Objects.requireNonNull(chooseOutputFolder, "chooseOutputFolder");
+        this.workflow = workflow;
         this.outputFolder = Objects.requireNonNull(outputDirectory, "outputDirectory")
             .toAbsolutePath().normalize();
         Button selectTextButton = UiComponents.actionButton("Seleccionar texto filtrado",
@@ -317,12 +338,46 @@ public final class ModelFromStatementSection extends Section {
         for (int i = 1; i < steps.size(); i++) {
             steps.get(i).setDisable(true);
         }
-        providerSelector.setOnAction(event -> refreshModels());
-        modelSelector.valueProperty().addListener((observable, previous, selected) -> updateModelSelection());
+        String savedProviderId = workflow == null ? null : workflow.getSelectedModelProviderId();
+        ModelClientProvider restoredProvider = savedProviderId == null ? null : providerSelector.getItems().stream()
+            .filter(provider -> provider.id().equals(savedProviderId))
+            .findFirst().orElse(null);
+        if (restoredProvider != null) {
+            providerSelector.setValue(restoredProvider);
+        }
+        providerSelector.setOnAction(event -> {
+            if (workflow != null) {
+                ModelClientProvider selectedProvider = providerSelector.getValue();
+                workflow.selectModelProvider(selectedProvider == null ? null : selectedProvider.id());
+            }
+            refreshModels();
+        });
+        modelSelector.valueProperty().addListener((observable, previous, selected) -> {
+            updateModelSelection();
+            if (workflow != null && !loadingModels) {
+                workflow.selectModel(selected == null ? null : selected.id());
+            }
+        });
         if (providerSelector.getItems().isEmpty()) {
             showStatus(modelStatus, "No hay clientes LLM registrados.", true);
+        } else if (savedProviderId != null && restoredProvider == null) {
+            showStatus(modelStatus, "El proveedor guardado ya no está disponible. Selecciona otro.", false);
         }
         showStep(0);
+        if (restoredProvider != null) {
+            refreshModels();
+        }
+        if (workflow != null) {
+            statementInputManual = workflow.isStatementTextManual();
+            Path restoredInput = workflow.getSelectedStatementText();
+            if (restoredInput != null) {
+                loadStatementText(restoredInput, statementInputManual);
+            }
+            Path restoredPrompt = workflow.getSelectedPromptFile();
+            if (restoredPrompt != null) {
+                loadPromptFile(restoredPrompt, false);
+            }
+        }
     }
 
     private static VBox placeholderPanel(String title, String description) {
@@ -407,15 +462,49 @@ public final class ModelFromStatementSection extends Section {
         if (file == null) {
             return;
         }
+        loadStatementText(file.toPath(), true);
+    }
+
+    public void refreshStatementInput() {
+        if (workflow == null || statementInputManual) {
+            return;
+        }
+        Path suggested = workflow.getSelectedStatementText();
+        if (!Objects.equals(selectedStatementPath, suggested)) {
+            if (suggested == null) {
+                selectedStatementPath = null;
+                statementText.clear();
+                statementText.setVisible(false);
+                statementText.setManaged(false);
+                selectedTextName.setText("Ningún texto filtrado seleccionado.");
+                selectedFile.setText("Selecciona el fichero de texto filtrado para comenzar.");
+                selectedTextCard.pseudoClassStateChanged(SELECTED, false);
+                invalidateGeneratedModel();
+                updateRequestSummary();
+                steps.get(0).pseudoClassStateChanged(COMPLETED, false);
+                steps.get(1).setDisable(true);
+            } else {
+                loadStatementText(suggested, false);
+            }
+        }
+    }
+
+    private void loadStatementText(Path path, boolean manual) {
         try {
-            String text = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+            Path normalizedPath = path.toAbsolutePath().normalize();
+            String text = Files.readString(normalizedPath, StandardCharsets.UTF_8);
             statementText.setText(text);
             statementText.positionCaret(0);
             statementText.setVisible(true);
             statementText.setManaged(true);
-            selectedTextName.setText(file.getName());
-            selectedFile.setText(file.getAbsolutePath());
+            selectedStatementPath = normalizedPath;
+            statementInputManual = manual;
+            selectedTextName.setText(normalizedPath.getFileName().toString());
+            selectedFile.setText(normalizedPath.toString());
             selectedTextCard.pseudoClassStateChanged(SELECTED, true);
+            if (manual && workflow != null) {
+                workflow.selectStatementText(normalizedPath);
+            }
             updateRequestSummary();
             invalidateGeneratedModel();
             showStatus(status, "Texto del enunciado cargado correctamente. "
@@ -434,16 +523,31 @@ public final class ModelFromStatementSection extends Section {
         if (file == null) {
             return;
         }
+        loadPromptFile(file.toPath(), true);
+    }
+
+    /**
+     * Lee el prompt UTF-8 y actualiza su tarjeta y visor.
+     * Restaurar una ruta guardada no invalida el modelo generado anteriormente.
+     *
+     * @param path archivo de prompt que se leerá
+     * @param manual {@code true} si el usuario acaba de elegir el archivo
+     */
+    private void loadPromptFile(Path path, boolean manual) {
         try {
-            String text = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+            Path normalizedPath = path.toAbsolutePath().normalize();
+            String text = Files.readString(normalizedPath, StandardCharsets.UTF_8);
             promptText.setText(text);
             promptText.positionCaret(0);
             promptText.setVisible(true);
             promptText.setManaged(true);
-            selectedPromptName.setText(file.getName());
-            selectedPromptFile.setText(file.getAbsolutePath());
+            selectedPromptName.setText(normalizedPath.getFileName().toString());
+            selectedPromptFile.setText(normalizedPath.toString());
             selectedPromptCard.pseudoClassStateChanged(SELECTED, true);
             updateRequestSummary();
+            if (manual && workflow != null) {
+                workflow.selectPromptFile(normalizedPath);
+            }
             invalidateGeneratedModel();
             showStatus(promptStatus, "Prompt cargado correctamente. "
                     + "Puedes continuar con el paso 3: Seleccionar LLM.", false);
@@ -464,8 +568,13 @@ public final class ModelFromStatementSection extends Section {
         selectedClient = null;
         updateRequestSummary();
         invalidateGeneratedModel();
-        modelSelector.getItems().clear();
-        modelSelector.setValue(null);
+        loadingModels = true;
+        try {
+            modelSelector.getItems().clear();
+            modelSelector.setValue(null);
+        } finally {
+            loadingModels = false;
+        }
         modelSelector.setDisable(true);
         steps.get(3).setDisable(true);
         steps.get(2).pseudoClassStateChanged(COMPLETED, false);
@@ -482,8 +591,18 @@ public final class ModelFromStatementSection extends Section {
             if (available.models().isEmpty()) {
                 showStatus(modelStatus, "El cliente no tiene modelos disponibles.", false);
             } else {
-                showStatus(modelStatus, "Se encontraron " + available.models().size()
-                        + " modelos. Selecciona uno.", false);
+                String savedModelId = workflow == null ? null : workflow.getSelectedModelId();
+                ModelInfo restoredModel = savedModelId == null ? null : available.models().stream()
+                        .filter(model -> model.id().equals(savedModelId))
+                        .findFirst().orElse(null);
+                if (restoredModel != null) {
+                    modelSelector.setValue(restoredModel);
+                } else if (savedModelId != null) {
+                    showStatus(modelStatus, "El modelo guardado ya no está disponible. Selecciona otro.", false);
+                } else {
+                    showStatus(modelStatus, "Se encontraron " + available.models().size()
+                            + " modelos. Selecciona uno.", false);
+                }
             }
         }, failure -> {
             selectedClient = null;
@@ -584,6 +703,9 @@ public final class ModelFromStatementSection extends Section {
             generationOutputPath.setText("Resultado: " + result.outputPath());
             showStatus(generationStatus, successSummary(result.analysis().response()), false);
             steps.get(3).pseudoClassStateChanged(COMPLETED, true);
+            if (workflow != null) {
+                workflow.recordGeneratedStatementModel(result.outputPath());
+            }
             openModelEditor(result.outputPath());
         }, failure -> {
             logger.error("MODEL_STATEMENT_GENERATION_ERROR | No se pudo generar el modelo.", failure);
@@ -662,6 +784,9 @@ public final class ModelFromStatementSection extends Section {
         showStatus(diagramStatus, "Diagrama de clases generado correctamente. Flujo completado.", false);
         showStatus(refineStatus, "Modelo confirmado y guardado en: " + validatedPath
                 + "\nPuedes continuar con el paso 6: Diagrama de clases.", false);
+        if (workflow != null) {
+            workflow.recordConfirmedStatementModel(validatedPath);
+        }
         steps.get(4).pseudoClassStateChanged(COMPLETED, true);
         steps.get(5).setDisable(false);
     }

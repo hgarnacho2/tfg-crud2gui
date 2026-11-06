@@ -4,6 +4,7 @@ import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.PdfViewer;
+import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import com.crud2gui.common.utils.DotEnv;
 import com.crud2gui.statement.extractor.StatementExtractor;
 import com.crud2gui.statement.filter.StatementFilter;
@@ -71,6 +72,7 @@ public final class StatementSection extends Section {
             UiComponents.label("TXT", List.of("statement-file-badge")), 12);
     private final BiFunction<Window, Path, File> chooseFolder;
     private final Predicate<Path> confirmOverwrite;
+    private final TeacherWorkflowContext workflow;
     private final Label filename = UiComponents.labelWithGraphic("Ningún PDF seleccionado.",
             List.of("statement-file-name"),
             UiComponents.label("PDF", List.of("statement-file-badge", "statement-pdf-badge")), 12);
@@ -103,8 +105,12 @@ public final class StatementSection extends Section {
      * el paso de selección y no se carga ningún documento.
      */
     public StatementSection() {
+        this((TeacherWorkflowContext) null);
+    }
+
+    public StatementSection(TeacherWorkflowContext workflow) {
         this(owner -> FileDialogs.chooseFile(owner, "Seleccionar enunciado PDF",
-                new FileChooser.ExtensionFilter("Documentos PDF", "*.pdf", "*.PDF")));
+                new FileChooser.ExtensionFilter("Documentos PDF", "*.pdf", "*.PDF")), workflow);
     }
 
     /**
@@ -116,7 +122,12 @@ public final class StatementSection extends Section {
      */
     StatementSection(Function<Window, File> chooseFile) {
         this(chooseFile, (owner, current) -> FileDialogs.chooseDirectory(
-                owner, current, "Carpeta de salida de los enunciados"), FileDialogs::confirmOverwrite);
+                owner, current, "Carpeta de salida de los enunciados"), FileDialogs::confirmOverwrite, null);
+    }
+
+    private StatementSection(Function<Window, File> chooseFile, TeacherWorkflowContext workflow) {
+        this(chooseFile, (owner, current) -> FileDialogs.chooseDirectory(
+                owner, current, "Carpeta de salida de los enunciados"), FileDialogs::confirmOverwrite, workflow);
     }
 
     /**
@@ -132,10 +143,16 @@ public final class StatementSection extends Section {
      */
     StatementSection(Function<Window, File> chooseFile, BiFunction<Window, Path, File> chooseFolder,
                      Predicate<Path> confirmOverwrite) {
+        this(chooseFile, chooseFolder, confirmOverwrite, null);
+        }
+
+        StatementSection(Function<Window, File> chooseFile, BiFunction<Window, Path, File> chooseFolder,
+                 Predicate<Path> confirmOverwrite, TeacherWorkflowContext workflow) {
         super("ENUNCIADO", "Enunciado",
                 "Extracción de información del enunciado paso a paso: selecciona el PDF, extrae el texto y aplica el filtro para optimizar el texto obtenido.");
         this.chooseFolder = chooseFolder;
         this.confirmOverwrite = confirmOverwrite;
+        this.workflow = workflow;
         selectPDFButton = UiComponents.actionButton("Seleccionar PDF", List.of("statement-select"), () -> {
             File file = chooseFile.apply(getScene() == null ? null : getScene().getWindow());
             if (file != null) {
@@ -200,6 +217,12 @@ public final class StatementSection extends Section {
         getChildren().addAll(flow, panelHost, progress);
         showStep(0);
         updateState();
+        if (workflow != null) {
+            Path savedPdf = workflow.getStatementPdf();
+            if (savedPdf != null) {
+                selectPdf(savedPdf.toFile());
+            }
+        }
     }
 
     /**
@@ -256,6 +279,9 @@ public final class StatementSection extends Section {
      */
     private void selectPdf(File file) {
         selectedPdf = file.toPath().toAbsolutePath().normalize();
+        if (workflow != null) {
+            workflow.selectStatementPdf(selectedPdf);
+        }
         outputFolder = selectedPdf.getParent();
         updateOutputFolderLabel();
         filename.setText(file.getName());
@@ -387,6 +413,9 @@ public final class StatementSection extends Section {
         Path pdf = selectedPdf;
         resetExtract();
         resetFilter();
+        if (workflow != null) {
+            workflow.beginStatementExtraction();
+        }
         runTask(1, () -> {
             String result = StatementExtractor.extractText(pdf);
             if (!result.isBlank()) {
@@ -400,6 +429,9 @@ public final class StatementSection extends Section {
             }
             extractedText.setText(result);
             extractedText.positionCaret(0);
+            if (workflow != null) {
+                workflow.recordExtractedText(output.path());
+            }
             showStatus(1, "Texto extraído correctamente. Puedes continuar con el paso 3: Filtrar texto."
                     + "\nArchivo generado: " + output.path(), false);
         }, "No se pudo extraer el texto. Comprueba que el PDF sea válido, legible "
@@ -420,6 +452,9 @@ public final class StatementSection extends Section {
         }
         String original = extractedText.getText();
         resetFilter();
+        if (workflow != null) {
+            workflow.beginStatementFiltering();
+        }
         runTask(2, () -> {
             var config = StatementFilterConfigJson.read(filterConfigurationPath());
             StatementFilter.Result result = StatementFilter.filter(original, config);
@@ -429,6 +464,9 @@ public final class StatementSection extends Section {
             filteredText.setText(result.text());
             filteredText.positionCaret(0);
             filterCompleted = result.structureRecognized();
+            if (filterCompleted && workflow != null) {
+                workflow.recordFilteredText(output.path());
+            }
             showStatus(2, (filterCompleted ? "Texto filtrado correctamente. Flujo completado."
                     : "No se ha reconocido la estructura del enunciado. Se conserva el texto original sin filtrar.")
                     + "\nArchivo generado: " + output.path(),

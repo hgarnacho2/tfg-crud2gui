@@ -59,4 +59,11 @@ class DotEnvTest {
         assertEquals(1, result.size());
         assertEquals("public_key_value", result.get("API_KEY"));
     }
+
+    @Test
+    void redactsSecretValuesFromDiagnosticOutput() {
+        assertEquals("<redacted>", DotEnv.diagnosticValue("GROQ_API_KEY", "secret-value"));
+        assertEquals("<redacted>", DotEnv.diagnosticValue("AZURE_CLIENT_SECRET", "secret-value"));
+        assertEquals("INFO", DotEnv.diagnosticValue("LOG_LEVEL", " INFO "));
+    }
 }
