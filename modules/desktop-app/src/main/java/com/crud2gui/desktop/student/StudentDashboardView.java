@@ -1,10 +1,9 @@
 package com.crud2gui.desktop.student;
 
 import com.crud2gui.authenticator.entraid.AuthenticatedUser;
-import com.crud2gui.desktop.student.sections.DeliveriesSection;
-import com.crud2gui.desktop.student.sections.ModelsSection;
-import com.crud2gui.desktop.student.sections.OverviewSection;
-import com.crud2gui.desktop.student.sections.PracticesSection;
+import com.crud2gui.desktop.student.sections.CrudSection;
+import com.crud2gui.desktop.student.sections.ModelFromCodeSection;
+import com.crud2gui.desktop.student.sections.ModelValidationSection;
 import com.crud2gui.desktop.ui.UiComponents;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -23,48 +22,58 @@ public final class StudentDashboardView extends BorderPane {
     private final ObjectProperty<StudentSection> selectedSection = new SimpleObjectProperty<>();
     private final Map<StudentSection, Node> pages = new EnumMap<>(StudentSection.class);
     private final ScrollPane content = new ScrollPane();
+    private final StudentWorkflowContext workflow;
 
     /**
-     * Monta la navegacion y muestra el resumen inicial.
+    * Monta la navegación y muestra el primer flujo de trabajo.
      *
      * @param user identidad autenticada
      * @param onSignOut accion de cierre de sesion
      */
     public StudentDashboardView(AuthenticatedUser user, Runnable onSignOut) {
+        this(user, onSignOut, new StudentWorkflowContext(Objects.requireNonNull(user, "user").objectId()));
+    }
+
+    /** Crea el panel alumno usando el contexto de trabajo ya resuelto por la navegación. */
+    public StudentDashboardView(AuthenticatedUser user, Runnable onSignOut, StudentWorkflowContext workflow) {
         Objects.requireNonNull(user, "user");
         Objects.requireNonNull(onSignOut, "onSignOut");
-        setStyle("-fx-background-color: #f3f7f5; -fx-font-family: 'Segoe UI';");
+        this.workflow = Objects.requireNonNull(workflow, "workflow");
+        getStyleClass().add("dashboard-root");
         setLeft(UiComponents.dashboardSidebar("Panel alumno",
                 UiComponents.currentUserCard(user, "alumno", onSignOut),
                 List.of(StudentSection.values()), StudentSection::label, selectedSection));
 
         content.setFitToWidth(true);
         content.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        content.setStyle("-fx-background: #f3f7f5; -fx-background-color: #f3f7f5;");
+        content.getStyleClass().add("dashboard-scroll");
         setCenter(content);
         selectedSection.addListener((observable, previous, current) -> showSection(current));
-        selectedSection.set(StudentSection.OVERVIEW);
+        selectedSection.set(StudentSection.MODEL_FROM_CODE);
     }
 
     private void showSection(StudentSection section) {
-        content.setContent(pages.computeIfAbsent(section, this::createSection));
+        content.setFitToHeight(section == StudentSection.MODEL_FROM_CODE);
+        Node page = pages.computeIfAbsent(section, this::createSection);
+        if (page instanceof ModelValidationSection validation) {
+            validation.refreshModelSelections();
+        }
+        content.setContent(page);
     }
 
     private Node createSection(StudentSection section) {
         return switch (section) {
-            case OVERVIEW -> new OverviewSection(() -> selectedSection.set(StudentSection.PRACTICES));
-            case PRACTICES -> new PracticesSection();
-            case DELIVERIES -> new DeliveriesSection();
-            case MODELS -> new ModelsSection();
+            case MODEL_FROM_CODE -> new ModelFromCodeSection(workflow);
+            case MODEL_VALIDATION -> new ModelValidationSection(workflow);
+            case CRUD -> new CrudSection(workflow);
         };
     }
 
-    /** Secciones disponibles en el menu del alumno, en orden de presentacion. */
+    /** Secciones disponibles en el menú del alumno, en orden de presentación. */
     private enum StudentSection {
-        OVERVIEW("Resumen"),
-        PRACTICES("Mis prácticas"),
-        DELIVERIES("Mis entregas"),
-        MODELS("Mis modelos");
+        MODEL_FROM_CODE("C\u00f3digo >> Modelo"),
+        MODEL_VALIDATION("Validar modelos"),
+        CRUD("CRUD");
 
         private final String label;
 
@@ -72,7 +81,7 @@ public final class StudentDashboardView extends BorderPane {
             this.label = label;
         }
 
-        /** @return nombre visible en el menu y en la ruta de la cabecera */
+        /** @return nombre visible en el menú y en la ruta de la cabecera */
         private String label() {
             return label;
         }

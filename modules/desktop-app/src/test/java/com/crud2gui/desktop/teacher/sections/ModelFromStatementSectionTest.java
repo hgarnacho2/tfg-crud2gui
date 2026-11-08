@@ -1,5 +1,6 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.desktop.ui.ClassDiagramView;
 import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import com.crud2gui.statementanalyzer.client.ModelClientProvider;
 import com.crud2gui.statementanalyzer.client.ModelClient;
@@ -257,7 +258,7 @@ class ModelFromStatementSectionTest {
             assertTrue(promptStatus.getText().contains("cargado correctamente"));
             assertTrue(promptStatus.getText().contains("Puedes continuar con el paso 3: Seleccionar LLM."));
             assertFalse(((Button) section.lookup("#statement-step-3")).isDisabled());
-            assertTrue(((Button) section.lookup("#statement-step-4")).isDisabled());
+            assertFalse(((Button) section.lookup("#statement-step-4")).isDisabled());
             assertTrue(((Button) section.lookup("#statement-step-2")).getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("completed")));
             return null;
@@ -593,6 +594,56 @@ class ModelFromStatementSectionTest {
         });
     }
 
+
+    @Test
+    void loadsLocalModelWithoutLlmAndContinuesThroughConfirmation() throws Exception {
+    Path textFile = Files.writeString(directory.resolve("enunciado-local.txt"), "Texto del enunciado.");
+    Path promptFile = Files.writeString(directory.resolve("prompt-local.txt"), "Instrucciones del modelo.");
+    Path invalidModel = Files.writeString(directory.resolve("invalido.json"), "no es JSON");
+    Path localModel = Files.writeString(directory.resolve("modelo-local.json"), MODEL_JSON);
+    AtomicReference<File> selectedLocalModel = new AtomicReference<>(invalidModel.toFile());
+
+    onFx(() -> {
+        ModelFromStatementSection section = new ModelFromStatementSection(
+            owner -> textFile.toFile(), owner -> promptFile.toFile(),
+            (owner, current) -> null, List.of(), directory.resolve("output"), null,
+            owner -> selectedLocalModel.get());
+        StackPane root = new StackPane(section);
+        new Scene(root, 1200, 900);
+        root.applyCss();
+        root.layout();
+        ((Button) section.lookup("#model-statement-select-text")).fire();
+        ((Button) section.lookup("#model-statement-select-prompt")).fire();
+
+        Button generationStep = (Button) section.lookup("#statement-step-4");
+        Button refineStep = (Button) section.lookup("#statement-step-5");
+        Button localModelButton = (Button) section.lookup("#model-statement-use-local-model");
+        Label generationStatus = (Label) section.lookup("#model-statement-generation-status");
+        assertEquals("Obtener modelo mediante LLM",
+            ((Button) section.lookup("#model-statement-generate-model")).getText());
+        assertEquals("Trabajar con modelo local", localModelButton.getText());
+        assertFalse(generationStep.isDisabled());
+        generationStep.fire();
+
+        localModelButton.fire();
+        assertTrue(generationStatus.getText().contains("No se pudo cargar el modelo local"));
+        assertTrue(refineStep.isDisabled());
+
+        selectedLocalModel.set(localModel.toFile());
+        localModelButton.fire();
+        assertTrue(generationStatus.getText().contains("Modelo local cargado correctamente"));
+        assertFalse(refineStep.isDisabled());
+        assertTrue(((TextArea) section.lookup("#model-statement-generated-json")).getText()
+            .contains("\"expectedManagerId\""));
+
+        refineStep.fire();
+        ((Button) section.lookup("#model-statement-confirm-model")).fire();
+        Path validatedModel = directory.resolve("modelo-local-validated.json");
+        assertTrue(Files.isRegularFile(validatedModel));
+        assertFalse(((Button) section.lookup("#statement-step-6")).isDisabled());
+        return null;
+    });
+    }
     private static void awaitStatus(Label status, String expectedText) throws Exception {
         CompletableFuture<Void> completed = new CompletableFuture<>();
         onFx(() -> {

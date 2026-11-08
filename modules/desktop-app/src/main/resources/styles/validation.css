@@ -1,0 +1,236 @@
+.model-validation-result {
+    -fx-spacing: 12px;
+}
+
+.model-validation-result-panel {
+    -fx-spacing: 14px;
+}
+
+.validation-block-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #173e33;
+}
+
+.validation-options {
+    -fx-padding: 0 0 14px 0;
+    -fx-border-color: #d8e3de;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.validation-options-group-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.validation-options .check-box {
+    -fx-font-size: 14px;
+    -fx-min-width: 175px;
+    -fx-pref-width: 210px;
+    -fx-wrap-text: true;
+}
+
+.model-validation-outcome {
+    -fx-alignment: center-left;
+    -fx-spacing: 14px;
+    -fx-padding: 14px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+}
+
+.model-validation-outcome-valid {
+    -fx-background-color: -fx-app-mint;
+    -fx-border-color: #86b8a5;
+}
+
+.model-validation-outcome-invalid {
+    -fx-background-color: #fff0f0;
+    -fx-border-color: #d89b9f;
+}
+
+.model-validation-outcome-icon {
+    -fx-min-width: 34px;
+    -fx-min-height: 34px;
+    -fx-alignment: center;
+    -fx-background-radius: 18px;
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+}
+
+.model-validation-outcome-valid .model-validation-outcome-icon {
+    -fx-background-color: -fx-brand-accent;
+    -fx-text-fill: white;
+}
+
+.model-validation-outcome-invalid .model-validation-outcome-icon {
+    -fx-background-color: #a12b32;
+    -fx-text-fill: white;
+}
+
+.model-validation-outcome-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.model-validation-outcome-subtitle {
+    -fx-text-fill: -fx-text-muted;
+}
+
+.model-validation-readiness {
+    -fx-padding: 7px 10px;
+    -fx-background-radius: 4px;
+    -fx-font-weight: bold;
+}
+
+.model-validation-readiness-ready {
+    -fx-background-color: -fx-brand-accent;
+    -fx-text-fill: white;
+}
+
+.model-validation-readiness-pending {
+    -fx-background-color: #fff2d6;
+    -fx-text-fill: #76500a;
+}
+
+.model-validation-summary {
+    -fx-spacing: 10px;
+}
+
+.model-validation-metric {
+    -fx-spacing: 4px;
+    -fx-padding: 12px;
+    -fx-background-color: white;
+    -fx-background-radius: 5px;
+    -fx-border-color: #d8e3de;
+    -fx-border-radius: 5px;
+}
+
+.model-validation-metric-count {
+    -fx-font-size: 23px;
+    -fx-font-weight: bold;
+}
+
+.model-validation-metric-title {
+    -fx-text-fill: -fx-text-muted;
+}
+
+.model-validation-metric-errors .model-validation-metric-count {
+    -fx-text-fill: #a12b32;
+}
+
+.model-validation-metric-warnings .model-validation-metric-count {
+    -fx-text-fill: #875d08;
+}
+
+.model-validation-metric-info .model-validation-metric-count {
+    -fx-text-fill: #386478;
+}
+
+.model-validation-manager,
+.model-validation-relation,
+.model-validation-finding {
+    -fx-font-size: 14px;
+    -fx-spacing: 10px;
+    -fx-padding: 12px;
+    -fx-background-color: #f8faf9;
+    -fx-background-radius: 5px;
+    -fx-border-color: #d8e3de;
+    -fx-border-radius: 5px;
+}
+
+.model-validation-block-title,
+.model-validation-relation-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: #173e33;
+}
+
+.model-validation-subheading {
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.model-validation-detail,
+.model-validation-manager-state,
+.model-validation-finding-message {
+    -fx-text-fill: #344a42;
+}
+
+.model-validation-pending-badge {
+    -fx-padding: 5px 8px;
+    -fx-background-color: #fff2d6;
+    -fx-background-radius: 4px;
+    -fx-text-fill: #76500a;
+    -fx-font-weight: bold;
+}
+
+.model-validation-severity {
+    -fx-padding: 5px 7px;
+    -fx-background-radius: 3px;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.model-validation-severity-error {
+    -fx-background-color: #a12b32;
+    -fx-text-fill: white;
+}
+
+.model-validation-severity-warning {
+    -fx-background-color: #fff2d6;
+    -fx-text-fill: #76500a;
+}
+
+.model-validation-severity-info {
+    -fx-background-color: #e7f1f5;
+    -fx-text-fill: #386478;
+}
+
+.model-validation-finding-path {
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.model-validation-finding-code,
+.model-validation-report-path {
+    -fx-font-family: Consolas, monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #65766f;
+}
+
+.model-validation-finding-code {
+    -fx-font-size: 12px;
+}
+
+.model-validation-details {
+    -fx-font-size: 14px;
+    -fx-border-color: #d8e3de;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.model-validation-details > .title {
+    -fx-font-weight: bold;
+    -fx-text-fill: #173e33;
+    -fx-background-color: #f1f6f3;
+    -fx-background-radius: 6px;
+    -fx-padding: 10px 12px;
+}
+
+.model-validation-details > .content {
+    -fx-background-color: white;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-width: 0;
+    -fx-padding: 12px;
+}
+
+.model-validation-error {
+    -fx-text-fill: #a12b32;
+    -fx-background-color: #fff0f0;
+    -fx-padding: 12px;
+    -fx-wrap-text: true;
+}
+

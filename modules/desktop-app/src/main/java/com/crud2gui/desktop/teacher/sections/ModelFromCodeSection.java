@@ -1,11 +1,12 @@
 package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.desktop.ui.JavaCodeViewer;
+import com.crud2gui.desktop.ui.ClassDiagramView;
 import com.crud2gui.desktop.ui.JsonEditorViewer;
 import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.UiComponents;
-import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
+import com.crud2gui.desktop.workflow.WorkflowContext;
 import com.crud2gui.javamodelextractor.ProjectParser;
 import com.crud2gui.model.ManagerCandidate;
 import com.crud2gui.model.ModelIO;
@@ -46,11 +47,11 @@ import java.util.function.Function;
 import java.util.function.BiFunction;
 
 /** Sección para extraer un modelo de clases desde código fuente Java. */
-public final class ModelFromCodeSection extends Section {
+public class ModelFromCodeSection extends Section {
 
     private final Function<Window, File> chooseCodeFolder;
     private final BiFunction<Window, Path, File> chooseOutputFolder;
-    private final TeacherWorkflowContext workflow;
+    private final WorkflowContext workflow;
     private Path outputFolder;
     private final Label outputFilename = UiComponents.labelWithGraphic("Resultado JSON con fecha y hora",
             List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
@@ -102,16 +103,22 @@ public final class ModelFromCodeSection extends Section {
         this(owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"), null);
     }
 
-    public ModelFromCodeSection(TeacherWorkflowContext workflow) {
+    public ModelFromCodeSection(WorkflowContext workflow) {
         this(owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"), workflow);
+    }
+
+    public ModelFromCodeSection(String breadcrumb, WorkflowContext workflow) {
+        this(breadcrumb, owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"),
+                (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Seleccionar carpeta de salida"),
+                defaultOutputDirectory(), workflow);
     }
 
     ModelFromCodeSection(Function<Window, File> chooseCodeFolder) {
         this(chooseCodeFolder, null);
     }
 
-    private ModelFromCodeSection(Function<Window, File> chooseCodeFolder, TeacherWorkflowContext workflow) {
-        this(chooseCodeFolder,
+    private ModelFromCodeSection(Function<Window, File> chooseCodeFolder, WorkflowContext workflow) {
+        this("MODELO DESDE CÓDIGO", chooseCodeFolder,
                 (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Seleccionar carpeta de salida"),
                 defaultOutputDirectory(), workflow);
     }
@@ -123,8 +130,14 @@ public final class ModelFromCodeSection extends Section {
 
     private ModelFromCodeSection(Function<Window, File> chooseCodeFolder,
                         BiFunction<Window, Path, File> chooseOutputFolder, Path outputDirectory,
-                        TeacherWorkflowContext workflow) {
-        super("MODELO DESDE CÓDIGO", "Modelo desde código",
+                        WorkflowContext workflow) {
+        this("MODELO DESDE CÓDIGO", chooseCodeFolder, chooseOutputFolder, outputDirectory, workflow);
+    }
+
+    private ModelFromCodeSection(String breadcrumb, Function<Window, File> chooseCodeFolder,
+                        BiFunction<Window, Path, File> chooseOutputFolder, Path outputDirectory,
+                        WorkflowContext workflow) {
+        super(breadcrumb, "Modelo desde código",
                 "Extracción de un modelo de clases a partir de código fuente Java.");
         this.chooseCodeFolder = Objects.requireNonNull(chooseCodeFolder, "chooseCodeFolder");
         this.chooseOutputFolder = Objects.requireNonNull(chooseOutputFolder, "chooseOutputFolder");
@@ -276,6 +289,7 @@ public final class ModelFromCodeSection extends Section {
         steps.get(1).setDisable(true);
         steps.get(2).setDisable(true);
         showStep(0);
+        restoreCodeFolder();
     }
 
     private void showStep(int index) {
@@ -306,24 +320,43 @@ public final class ModelFromCodeSection extends Section {
             showStatus(selectionStatus, "La ruta seleccionada no es una carpeta.", true);
             return;
         }
-        sourceFolder = folder.toPath().toAbsolutePath().normalize();
-        if (workflow != null) {
+        showCodeFolder(folder.toPath().toAbsolutePath().normalize(), true);
+    }
+
+    private void restoreCodeFolder() {
+        if (workflow == null) {
+            return;
+        }
+        Path savedFolder = workflow.getSelectedCodeFolder();
+        if (savedFolder != null && Files.isDirectory(savedFolder) && Files.isReadable(savedFolder)) {
+            showCodeFolder(savedFolder, false);
+        }
+    }
+
+    private void showCodeFolder(Path selectedFolder, boolean persistSelection) {
+        sourceFolder = selectedFolder;
+        if (persistSelection && workflow != null) {
             workflow.selectCodeFolder(sourceFolder);
         }
-        Path selectedFolder = sourceFolder;
-        selectedFolderName.setText(folder.getName().isBlank() ? sourceFolder.toString() : folder.getName());
+            Path folderName = sourceFolder.getFileName();
+            selectedFolderName.setText(folderName == null || folderName.toString().isBlank()
+                    ? sourceFolder.toString() : folderName.toString());
         selectedFolderPath.setText(sourceFolder.toString());
         selectedFolderCard.setVisible(true);
         selectedFolderCard.setManaged(true);
         selectedFolderCard.pseudoClassStateChanged(SELECTED, true);
-        invalidateModel();
+        if (persistSelection) {
+            invalidateModel();
+        }
         folderTree.setRoot(null);
         codeViewer.clear();
         setCodeBrowserVisible(true);
         folderTreeStatus.setVisible(true);
         folderTreeStatus.setManaged(true);
         folderTreeStatus.setText("Leyendo contenido de la carpeta...");
-        showStatus(selectionStatus, "Leyendo contenido de la carpeta seleccionada...", false);
+        showStatus(selectionStatus, persistSelection
+            ? "Leyendo contenido de la carpeta seleccionada..."
+            : "Leyendo contenido de la carpeta guardada...", false);
         steps.get(0).pseudoClassStateChanged(COMPLETED, true);
         steps.get(1).setDisable(false);
         loadingFolderContents = true;
@@ -393,6 +426,7 @@ public final class ModelFromCodeSection extends Section {
                     + "\nResultado: " + result.outputPath(), false);
             steps.get(1).pseudoClassStateChanged(COMPLETED, true);
             steps.get(2).setDisable(false);
+            showStep(2);
         }, failure -> {
             logger.error("MODEL_CODE_EXTRACTION_ERROR | No se pudo obtener o guardar el modelo.", failure);
             String detail = failure.getMessage() == null

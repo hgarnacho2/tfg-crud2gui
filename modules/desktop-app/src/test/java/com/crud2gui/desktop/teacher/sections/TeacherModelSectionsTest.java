@@ -3,6 +3,7 @@ package com.crud2gui.desktop.teacher.sections;
 import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import com.crud2gui.desktop.teacher.TeacherDashboardView;
 import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
+import com.crud2gui.desktop.teacher.sections.TeacherContextSection;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.scene.Node;
@@ -11,6 +12,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -303,10 +305,15 @@ class TeacherModelSectionsTest {
                     Set.of("docente"), null);
             TeacherDashboardView dashboard = new TeacherDashboardView(user, () -> { });
             attach(dashboard);
+            Button context = navigation(dashboard, "Contexto");
             Button validation = navigation(dashboard, "Validar modelos");
             Button crud = navigation(dashboard, "CRUD");
-            validation.fire();
             ScrollPane content = (ScrollPane) dashboard.getCenter();
+            Node contextPage = content.getContent();
+            assertTrue(contextPage instanceof TeacherContextSection);
+            context.fire();
+            assertSame(contextPage, content.getContent());
+            validation.fire();
             Node validationPage = content.getContent();
             assertTrue(validationPage instanceof ModelValidationSection);
             crud.fire();
@@ -321,15 +328,74 @@ class TeacherModelSectionsTest {
         });
     }
 
+        @Test
+        void rendersWorkflowFilesInSeparateContextBranches() throws Exception {
+        Path pdf = Files.writeString(directory.resolve("enunciado.pdf"), "pdf");
+        Path extracted = Files.writeString(directory.resolve("enunciado.txt"), "texto");
+        Path filtered = Files.writeString(directory.resolve("enunciado-filtrado.txt"), "filtrado");
+        Path inferred = Files.writeString(directory.resolve("modelo-enunciado.json"), "{}");
+        Path refined = Files.writeString(directory.resolve("modelo-enunciado-validated.json"), "{}");
+        Path codeFolder = Files.createDirectory(directory.resolve("src"));
+        Path codeModel = Files.writeString(directory.resolve("modelo-codigo.json"), "{}");
+        Path report = Files.writeString(directory.resolve("validacion.json"), "{}");
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("workflow.json"));
+        workflow.selectStatementPdf(pdf);
+        workflow.recordExtractedText(extracted);
+        workflow.recordFilteredText(filtered);
+        workflow.recordGeneratedStatementModel(inferred);
+        workflow.recordConfirmedStatementModel(refined);
+        workflow.selectCodeFolder(codeFolder);
+        workflow.recordCodeModel(codeModel);
+        workflow.recordValidationReport(report);
+
+        onFx(() -> {
+            TeacherContextSection section = new TeacherContextSection(workflow);
+            StackPane root = new StackPane(section);
+            new Scene(root, 1200, 900);
+            root.resize(1200, 900);
+            root.applyCss();
+            root.layout();
+            assertEquals("enunciado.pdf",
+                ((Label) section.lookup("#teacher-context-stage-statement-pdf-file")).getText());
+            assertEquals("enunciado.txt",
+                ((Label) section.lookup("#teacher-context-stage-statement-extracted-file")).getText());
+            assertEquals("enunciado-filtrado.txt",
+                ((Label) section.lookup("#teacher-context-stage-statement-filtered-file")).getText());
+            assertEquals("modelo-enunciado.json",
+                ((Label) section.lookup("#teacher-context-stage-statement-model-file")).getText());
+            assertEquals("modelo-enunciado-validated.json",
+                ((Label) section.lookup("#teacher-context-stage-statement-refined-model-file")).getText());
+            assertEquals("src",
+                ((Label) section.lookup("#teacher-context-stage-code-folder-file")).getText());
+            assertEquals(((VBox) section.lookup("#teacher-context-stage-statement-pdf")).getWidth(),
+                    ((VBox) section.lookup("#teacher-context-stage-code-folder")).getWidth(), 1);
+            assertEquals("modelo-codigo.json",
+                ((Label) section.lookup("#teacher-context-stage-code-model-file")).getText());
+            assertEquals("validacion.json",
+                ((Label) section.lookup("#teacher-context-stage-validation-report-file")).getText());
+            assertTrue(((Label) section.lookup("#teacher-context-stage-crud-file")).getText()
+                .contains("más adelante"));
+            assertNull(section.lookup(".teacher-context-convergence"));
+                assertTrue(section.lookup("#teacher-context-merge-code").getBoundsInLocal().getHeight()
+                    > section.lookup("#teacher-context-merge-statement").getBoundsInLocal().getHeight());
+                assertNotNull(section.lookup("#teacher-context-merge-junction"));
+                assertNotNull(section.lookup("#teacher-context-validation-arrow"));
+                assertNull(section.lookup(".teacher-context-arrow-head"));
+            return null;
+        });
+        }
+
     @Test
     void validationRestoresLatestModelsFromWorkflowContext() throws Exception {
         Path statement = Files.writeString(directory.resolve("filtered.txt"), "statement");
         Path javaModel = Files.writeString(directory.resolve("java-model.json"), "{}");
         Path inferredModel = Files.writeString(directory.resolve("inferred-model-validated.json"), "{}");
+        Path validationReport = Files.writeString(directory.resolve("validation-report.json"), "{}");
         TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("workflow.json"));
         workflow.recordFilteredText(statement);
         workflow.recordCodeModel(javaModel);
         workflow.recordConfirmedStatementModel(inferredModel);
+        workflow.recordValidationReport(validationReport);
 
         onFx(() -> {
             ModelFromStatementSection inference = new ModelFromStatementSection(workflow);
@@ -344,7 +410,35 @@ class TeacherModelSectionsTest {
             ModelJsonSelection inferred = (ModelJsonSelection) section.lookup("#model-validation-statement");
             assertEquals(javaModel, source.getSelectedFile());
             assertEquals(inferredModel, inferred.getSelectedFile());
+            assertEquals(validationReport, workflow.getValidationReport());
             assertFalse(button(section, "model-validation-run").isDisabled());
+            return null;
+        });
+    }
+
+    @Test
+    void expandsModelJsonPreviewToFillAvailableVerticalSpace() throws Exception {
+        Path model = Files.writeString(directory.resolve("model.json"), "{\"root\":{\"value\":\"model\"}}");
+
+        onFx(() -> {
+            ModelValidationSection section = new ModelValidationSection(owner -> model.toFile());
+            StackPane root = new StackPane(section);
+            new Scene(root, 1200, 800);
+            root.resize(1200, 800);
+            root.applyCss();
+            root.layout();
+            button(section, "model-validation-java-select").fire();
+            root.layout();
+
+            StackPane panelHost = (StackPane) section.getChildren().get(2);
+            VBox panel = (VBox) panelHost.getChildren().get(0);
+            ModelJsonSelection selection = (ModelJsonSelection) section.lookup("#model-validation-java");
+            VBox preview = (VBox) selection.lookup("#model-validation-java-preview");
+            var editor = selection.lookup(".json-editor");
+            assertTrue(panelHost.getHeight() > 500);
+            assertEquals(panelHost.getHeight(), panel.getHeight(), 1);
+            assertTrue(preview.getHeight() > 300);
+            assertTrue(editor.getBoundsInParent().getHeight() > 300);
             return null;
         });
     }

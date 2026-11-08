@@ -1,6 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.desktop.ui.JsonEditorViewer;
+import com.crud2gui.desktop.ui.ClassDiagramView;
 import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
@@ -82,6 +83,7 @@ public final class ModelFromStatementSection extends Section {
         private final Label modelStatus = UiComponents.statusLabel("model-statement-llm-status");
         private ModelClient selectedClient;
         private final BiFunction<Window, Path, File> chooseOutputFolder;
+        private final Function<Window, File> chooseLocalModelFile;
         private Path outputFolder;
         private final Label outputFilename = UiComponents.labelWithGraphic("Resultado JSON con fecha y hora",
             List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
@@ -95,7 +97,9 @@ public final class ModelFromStatementSection extends Section {
         private final Label requestPrompt = requestValue("model-statement-request-prompt");
         private final Label requestStatement = requestValue("model-statement-request-statement");
         private final Button generateModelButton = UiComponents.actionButton(
-            "Obtener modelo", List.of("statement-select"), this::generateModel);
+            "Obtener modelo mediante LLM", List.of("statement-select"), this::generateModel);
+    private final Button useLocalModelButton = UiComponents.actionButton(
+            "Trabajar con modelo local", List.of("statement-select", "secondary-button"), this::useLocalModel);
         private final Label generationStatus = UiComponents.statusLabel("model-statement-generation-status");
         private final Label diagramStatus = UiComponents.statusLabel("model-statement-diagram-status");
         private final Label generationOutputPath = UiComponents.label(
@@ -161,12 +165,22 @@ public final class ModelFromStatementSection extends Section {
                   BiFunction<Window, Path, File> chooseOutputFolder,
                   List<ModelClientProvider> providers, Path outputDirectory,
                   TeacherWorkflowContext workflow) {
+        this(chooseTextFile, choosePromptFile, chooseOutputFolder, providers,
+            outputDirectory, workflow, ModelJsonSelection::chooseJson);
+        }
+
+        ModelFromStatementSection(Function<Window, File> chooseTextFile,
+              Function<Window, File> choosePromptFile,
+              BiFunction<Window, Path, File> chooseOutputFolder,
+              List<ModelClientProvider> providers, Path outputDirectory,
+              TeacherWorkflowContext workflow, Function<Window, File> chooseLocalModelFile) {
         super("MODELO DESDE ENUNCIADO", "Modelo desde enunciado",
                 "Generación de un modelo de clases a partir del texto filtrado de un enunciado.");
         setMinHeight(Region.USE_PREF_SIZE);
         this.chooseTextFile = Objects.requireNonNull(chooseTextFile, "chooseTextFile");
         this.choosePromptFile = Objects.requireNonNull(choosePromptFile, "choosePromptFile");
         this.chooseOutputFolder = Objects.requireNonNull(chooseOutputFolder, "chooseOutputFolder");
+        this.chooseLocalModelFile = Objects.requireNonNull(chooseLocalModelFile, "chooseLocalModelFile");
         this.workflow = workflow;
         this.outputFolder = Objects.requireNonNull(outputDirectory, "outputDirectory")
             .toAbsolutePath().normalize();
@@ -223,6 +237,7 @@ public final class ModelFromStatementSection extends Section {
         modelStatus.setText(providerSelector.getItems().isEmpty()
                 ? "No hay clientes LLM registrados." : "Selecciona un cliente para consultar sus modelos.");
         generateModelButton.setId("model-statement-generate-model");
+        useLocalModelButton.setId("model-statement-use-local-model");
         changeOutputFolderButton.setId("model-statement-change-output-folder");
         openOutputFolderButton.setId("model-statement-open-output-folder");
         outputFolderLabel.setId("model-statement-output-folder");
@@ -273,7 +288,7 @@ public final class ModelFromStatementSection extends Section {
                     "Envía el prompt y el enunciado al cliente seleccionado."),
                 requestSummary, UiComponents.outputSettings(outputFilename, outputFolderLabel,
                     changeOutputFolderButton),
-                generateModelButton, generationOutputPath,
+                generateModelButton, useLocalModelButton, generationOutputPath,
                 openOutputFolderButton, generatedModel, generationStatus);
             VBox.setVgrow(generatedModel, Priority.ALWAYS);
             VBox.setVgrow(generationContent, Priority.ALWAYS);
@@ -511,6 +526,7 @@ public final class ModelFromStatementSection extends Section {
                     + "Puedes continuar con el paso 2: Seleccionar prompt.", false);
             steps.get(0).pseudoClassStateChanged(COMPLETED, true);
             steps.get(1).setDisable(false);
+                updateGenerationStepAvailability();
         } catch (IOException | SecurityException exception) {
             logger.error("MODEL_STATEMENT_TEXT_READ_ERROR | No se pudo leer el texto del enunciado.", exception);
             showStatus(status, "No se pudo leer el fichero seleccionado. Comprueba que sea un archivo de texto UTF-8.",
@@ -553,6 +569,7 @@ public final class ModelFromStatementSection extends Section {
                     + "Puedes continuar con el paso 3: Seleccionar LLM.", false);
             steps.get(1).pseudoClassStateChanged(COMPLETED, true);
             steps.get(2).setDisable(false);
+                updateGenerationStepAvailability();
         } catch (IOException | SecurityException exception) {
             logger.error("MODEL_STATEMENT_PROMPT_READ_ERROR | No se pudo leer el prompt seleccionado.", exception);
             showStatus(promptStatus, "No se pudo leer el fichero seleccionado. Comprueba que sea un archivo de texto UTF-8.",
@@ -568,6 +585,7 @@ public final class ModelFromStatementSection extends Section {
         selectedClient = null;
         updateRequestSummary();
         invalidateGeneratedModel();
+        updateGenerationStepAvailability();
         loadingModels = true;
         try {
             modelSelector.getItems().clear();
@@ -576,7 +594,6 @@ public final class ModelFromStatementSection extends Section {
             loadingModels = false;
         }
         modelSelector.setDisable(true);
-        steps.get(3).setDisable(true);
         steps.get(2).pseudoClassStateChanged(COMPLETED, false);
         providerSelector.setDisable(true);
         refreshModelsButton.setDisable(true);
@@ -620,8 +637,8 @@ public final class ModelFromStatementSection extends Section {
         boolean selected = provider != null
             && selectedClient != null
             && model != null;
-        steps.get(3).setDisable(!selected);
         steps.get(2).pseudoClassStateChanged(COMPLETED, selected);
+        updateGenerationStepAvailability();
         updateRequestSummary();
         invalidateGeneratedModel();
         generateModelButton.setDisable(!selected || generationBusy);
@@ -642,6 +659,14 @@ public final class ModelFromStatementSection extends Section {
         requestStatement.setText(selectedTextCard.getPseudoClassStates().contains(SELECTED)
                 ? selectedTextName.getText() + "\n" + selectedFile.getText() : "Sin seleccionar");
     }
+
+        private void updateGenerationStepAvailability() {
+        boolean hasLlmModel = providerSelector.getValue() != null
+            && selectedClient != null && modelSelector.getValue() != null;
+        boolean hasLocalModelInputs = selectedTextCard.getPseudoClassStates().contains(SELECTED)
+            && selectedPromptCard.getPseudoClassStates().contains(SELECTED);
+        steps.get(3).setDisable(generationBusy || !(hasLlmModel || hasLocalModelInputs));
+        }
 
     private void invalidateGeneratedModel() {
         steps.get(4).setDisable(true);
@@ -724,6 +749,48 @@ public final class ModelFromStatementSection extends Section {
         });
     }
 
+    private void useLocalModel() {
+        File file = chooseLocalModelFile.apply(getScene() == null ? null : getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+        Path candidate = file.toPath().toAbsolutePath().normalize();
+        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".json")
+                || !Files.isRegularFile(candidate) || !Files.isReadable(candidate)) {
+            showStatus(generationStatus, "Selecciona un archivo JSON local accesible.", true);
+            return;
+        }
+
+        String json;
+        try {
+            json = Files.readString(candidate, StandardCharsets.UTF_8);
+            ModelIO.fromJson(json);
+        } catch (IOException | RuntimeException exception) {
+            logger.error("MODEL_STATEMENT_LOCAL_MODEL_ERROR | No se pudo cargar el modelo local.", exception);
+            String detail = exception.getMessage() == null
+                    ? exception.getClass().getSimpleName() : exception.getMessage();
+            showStatus(generationStatus, "No se pudo cargar el modelo local. Comprueba que el JSON sea válido: "
+                    + detail, true);
+            return;
+        }
+
+        invalidateGeneratedModel();
+        generatedModel.setText(json);
+        generatedModel.positionCaret(0);
+        generatedModel.setVisible(true);
+        generatedModel.setManaged(true);
+        generationOutputPath.setText("Modelo local: " + candidate);
+        openModelEditor(candidate);
+        if (modelEditor == null) {
+            return;
+        }
+        if (workflow != null) {
+            workflow.recordGeneratedStatementModel(candidate);
+        }
+        showStatus(generationStatus,
+                "Modelo local cargado correctamente. Puedes continuar con el paso 5: Afinar modelo.", false);
+    }
+
     private void updateGenerationControls() {
         boolean hasModel = providerSelector.getValue() != null
                 && selectedClient != null && modelSelector.getValue() != null;
@@ -734,7 +801,7 @@ public final class ModelFromStatementSection extends Section {
         steps.get(0).setDisable(generationBusy);
         steps.get(1).setDisable(generationBusy || !selectedTextCard.getPseudoClassStates().contains(SELECTED));
         steps.get(2).setDisable(generationBusy || !selectedPromptCard.getPseudoClassStates().contains(SELECTED));
-        steps.get(3).setDisable(generationBusy || !hasModel);
+        updateGenerationStepAvailability();
     }
 
     private String successSummary(com.crud2gui.statementanalyzer.model.ModelResponse response) {
@@ -744,7 +811,8 @@ public final class ModelFromStatementSection extends Section {
                 + " | " + String.format(Locale.getDefault(), "%.1f", seconds) + " s"
                 + " | tokens entrada/salida: " + tokenCount(response.inputTokens())
                 + "/" + tokenCount(response.outputTokens())
-                + " | fin: " + (response.finishReason() == null ? "desconocido" : response.finishReason());
+                + " | Estado de la petición: "
+                + (response.finishReason() == null ? "desconocido" : response.finishReason());
     }
 
     private void openModelEditor(Path modelPath) {

@@ -1,5 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.desktop.ui.ClassDiagramView;
+import com.crud2gui.desktop.workflow.WorkflowContext;
 import com.crud2gui.model.ModelIO;
 import com.crud2gui.model.ManagerCandidate;
 import com.crud2gui.model.Confidence;
@@ -138,6 +140,14 @@ class ModelFromCodeSectionTest {
             assertEquals(3, ModelIO.fromJson(Files.readString(results.get(0))).types().size());
         }
         onFx(() -> {
+            StackPane panelHost = (StackPane) section.getChildren().get(2);
+            Button diagramStep = (Button) section.lookup("#statement-step-3");
+            assertFalse(diagramStep.isDisabled());
+            assertTrue(diagramStep.getPseudoClassStates().stream()
+                    .anyMatch(state -> state.getPseudoClassName().equals("selected")));
+            assertTrue(panelHost.getChildren().get(2).isVisible());
+            ((Button) section.lookup("#statement-step-2")).fire();
+            root.layout();
             Label folderName = (Label) section.lookup(".statement-file-name");
             Label folderBadge = (Label) folderName.getGraphic();
             assertEquals("FOLDER", folderBadge.getText());
@@ -163,11 +173,9 @@ class ModelFromCodeSectionTest {
             assertTrue(jsonText.contains("\"name\" : \"Gestor\""));
             assertTrue(jsonText.contains("\"packageName\" : \"demo\""));
             assertEquals("demo", ModelIO.fromJson(jsonText).types().get(0).packageName());
-            Button diagramStep = (Button) section.lookup("#statement-step-3");
             diagramStep.fire();
             assertTrue(diagramStep.getPseudoClassStates().stream()
                     .anyMatch(state -> state.getPseudoClassName().equals("selected")));
-            StackPane panelHost = (StackPane) section.getChildren().get(2);
             VBox diagramPanel = (VBox) panelHost.getChildren().get(2);
             VBox diagramContent = (VBox) diagramPanel.getChildren().get(0);
             ComboBox<?> managerSelector = (ComboBox<?>) diagramContent.getChildren().get(2);
@@ -315,6 +323,76 @@ class ModelFromCodeSectionTest {
             assertTrue(card.isVisible());
             assertTrue(card.isManaged());
             assertTrue(((Button) section.lookup("#statement-step-2")).isDisabled());
+            return null;
+        });
+    }
+
+    @Test
+    void restoresSavedFolderAndLoadsItsTree() throws Exception {
+        Path sourceFile = Files.writeString(directory.resolve("Restored.java"), "class Restored {}");
+        WorkflowContext workflow = new WorkflowContext() {
+            @Override
+            public void selectCodeFolder(Path path) {
+                throw new AssertionError("Restoring a folder must not change the saved workflow.");
+            }
+
+            @Override
+            public Path getSelectedCodeFolder() {
+                return directory;
+            }
+
+            @Override
+            public void recordCodeModel(Path path) {
+            }
+
+            @Override
+            public Path getSelectedJavaModel() {
+                return null;
+            }
+
+            @Override
+            public boolean isJavaModelManual() {
+                return false;
+            }
+
+            @Override
+            public void selectJavaModel(Path path) {
+            }
+
+            @Override
+            public Path getSelectedInferredModel() {
+                return null;
+            }
+
+            @Override
+            public boolean isInferredModelManual() {
+                return false;
+            }
+
+            @Override
+            public void selectInferredModel(Path path) {
+            }
+
+            @Override
+            public void recordValidationReport(Path path) {
+            }
+
+            @Override
+            public Path getValidationReport() {
+                return null;
+            }
+        };
+        ModelFromCodeSection section = onFx(() -> new ModelFromCodeSection("MODELO DESDE CÓDIGO", workflow));
+
+        awaitFolderTree(section);
+        onFx(() -> {
+            assertEquals(directory.getFileName().toString(),
+                    ((Label) section.lookup(".statement-file-name")).getText());
+            assertEquals(directory.toAbsolutePath().normalize().toString(),
+                    ((Label) section.lookup(".statement-file-path")).getText());
+            assertFalse(((Button) section.lookup("#statement-step-2")).isDisabled());
+            assertTrue(((TreeView<?>) section.lookup("#model-code-folder-tree")).getRoot().getChildren().stream()
+                    .anyMatch(item -> item.getValue().toString().contains(sourceFile.getFileName().toString())));
             return null;
         });
     }

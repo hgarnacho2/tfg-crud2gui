@@ -127,9 +127,8 @@ public final class UiComponents {
      */
     public static VBox surface(Node content) {
         VBox surface = new VBox(content);
+        surface.getStyleClass().add("ui-surface");
         surface.setPadding(new Insets(20));
-        surface.setStyle("-fx-background-color: white; -fx-background-radius: 7px; "
-                + "-fx-border-color: #e5ece8; -fx-border-radius: 7px;");
         return surface;
     }
 
@@ -156,7 +155,8 @@ public final class UiComponents {
     public static VBox panelHeading(
             String titleText, String subtitleText, double titleSize, double spacing) {
         Label title = new Label(titleText);
-        title.setStyle("-fx-text-fill: #17212b; -fx-font-size: " + titleSize + "px; -fx-font-weight: bold;");
+        title.getStyleClass().add("panel-heading-title");
+        title.setStyle("-fx-font-size: " + titleSize + "px;");
         Label subtitle = mutedText(subtitleText);
         subtitle.getStyleClass().add("panel-subtitle");
         return new VBox(spacing, title, subtitle);

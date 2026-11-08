@@ -22,8 +22,10 @@ class TeacherWorkflowContextTest {
         Path extracted = Files.writeString(directory.resolve("statement.txt"), "statement");
         Path filtered = Files.writeString(directory.resolve("statement-filtered.txt"), "filtered");
         Path inferred = Files.writeString(directory.resolve("inferred-validated.json"), "{}");
+        Path generated = Files.writeString(directory.resolve("inferred-generated.json"), "{}");
         Path javaModel = Files.writeString(directory.resolve("java.json"), "{}");
         Path manualJavaModel = Files.writeString(directory.resolve("manual-java.json"), "{}");
+        Path validationReport = Files.writeString(directory.resolve("validation-report.json"), "{}");
         Path prompt = Files.writeString(directory.resolve("prompt.txt"), "instructions");
 
         TeacherWorkflowContext context = new TeacherWorkflowContext(stateFile);
@@ -33,19 +35,37 @@ class TeacherWorkflowContextTest {
         context.selectPromptFile(prompt);
         context.selectModelProvider("fake-provider");
         context.selectModel("fake-model");
+        context.recordGeneratedStatementModel(generated);
         context.recordConfirmedStatementModel(inferred);
         context.recordCodeModel(javaModel);
         context.selectJavaModel(manualJavaModel);
+        context.recordValidationReport(validationReport);
 
         TeacherWorkflowContext restored = new TeacherWorkflowContext(stateFile);
 
         assertEquals(filtered, restored.getSelectedStatementText());
+        assertEquals(extracted, restored.getExtractedText());
+        assertEquals(filtered, restored.getFilteredText());
+        assertEquals(generated, restored.getGeneratedStatementModel());
         assertEquals(inferred, restored.getSelectedInferredModel());
+        assertEquals(validationReport, restored.getValidationReport());
         assertEquals(prompt, restored.getSelectedPromptFile());
         assertEquals("fake-provider", restored.getSelectedModelProviderId());
         assertEquals("fake-model", restored.getSelectedModelId());
         assertEquals(manualJavaModel, restored.getSelectedJavaModel());
         assertEquals(javaModel, restored.getSuggestedJavaModel());
+    }
+
+    @Test
+    void persistsAndRestoresSelectedCodeFolder() throws Exception {
+        Path stateFile = directory.resolve("workflow.json");
+        Path codeFolder = Files.createDirectory(directory.resolve("src"));
+        TeacherWorkflowContext context = new TeacherWorkflowContext(stateFile);
+
+        context.selectCodeFolder(codeFolder);
+
+        TeacherWorkflowContext restored = new TeacherWorkflowContext(stateFile);
+        assertEquals(codeFolder, restored.getSelectedCodeFolder());
     }
 
     @Test

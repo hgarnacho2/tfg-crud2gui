@@ -7,6 +7,8 @@ import javafx.css.PseudoClass;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
@@ -55,6 +57,8 @@ final class ModelJsonSelection extends VBox {
         path.setId(id + "-path");
         path.setWrapText(true);
         preview.setId(id + "-preview");
+        preview.setMaxHeight(Double.MAX_VALUE);
+        VBox.setVgrow(preview, Priority.ALWAYS);
         preview.setVisible(false);
         preview.setManaged(false);
         status = UiComponents.statusLabel(id + "-status");
@@ -132,7 +136,10 @@ final class ModelJsonSelection extends VBox {
             preview.setManaged(false);
             status.setText("");
         } else {
-            preview.getChildren().setAll(viewer.getView());
+            Region view = (Region) viewer.getView();
+            view.setMaxHeight(Double.MAX_VALUE);
+            VBox.setVgrow(view, Priority.ALWAYS);
+            preview.getChildren().setAll(view);
             preview.setVisible(true);
             preview.setManaged(true);
             status.setText(readyMessage);

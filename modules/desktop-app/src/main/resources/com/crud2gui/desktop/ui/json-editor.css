@@ -1,20 +1,22 @@
+@import "../../../../styles/theme.css";
+
 /* ==========================================================
    JsonEditorViewer · tema claro verde (a juego con CRUD2GUI)
    Paleta:
-     verde oscuro  #123b35   verde acento  #087e65 (hover #066a55)
-     fondo         #f3f7f5   menta         #e4f3ec
+     verde oscuro  #123b35   verde acento  -fx-brand-accent (hover #066a55)
+     fondo         -fx-app-background   menta         -fx-app-mint
      borde suave   #dbe5e0   borde botón   #cfe0d8
      texto         #1a1f1d   texto suave   #5d6a66
    ========================================================== */
 
 .json-editor {
-    -fx-background-color: #f3f7f5;
+    -fx-background-color: -fx-app-background;
     -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     -fx-font-size: 13px;
     -fx-base: #f1f6f4;
     -fx-control-inner-background: #ffffff;
-    -fx-accent: #087e65;
-    -fx-focus-color: #087e65;
+    -fx-accent: -fx-brand-accent;
+    -fx-focus-color: -fx-brand-accent;
     -fx-faint-focus-color: transparent;
     -fx-text-fill: #1a1f1d;
 }
@@ -23,7 +25,7 @@
 
 /* ---------- Cabecera ---------- */
 .json-editor .toolbar {
-    -fx-background-color: #f3f7f5;
+    -fx-background-color: -fx-app-background;
     -fx-padding: 18 24 12 24;
 }
 .json-editor .title    { -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1a1f1d; }
@@ -36,18 +38,18 @@
     -fx-border-width: 1;
     -fx-background-radius: 6;
     -fx-border-radius: 6;
-    -fx-text-fill: #087e65;
+    -fx-text-fill: -fx-brand-accent;
     -fx-font-weight: bold;
     -fx-padding: 7 14 7 14;
     -fx-cursor: hand;
 }
-.json-editor .button:hover    { -fx-background-color: #e4f3ec; -fx-border-color: #a8d5c5; }
+.json-editor .button:hover    { -fx-background-color: -fx-app-mint; -fx-border-color: #a8d5c5; }
 .json-editor .button:pressed  { -fx-background-color: #d3ebdf; }
 .json-editor .button:disabled { -fx-opacity: 0.45; }
 
 .json-editor .button.primary {
-    -fx-background-color: #087e65;
-    -fx-border-color: #087e65;
+    -fx-background-color: -fx-brand-accent;
+    -fx-border-color: -fx-brand-accent;
     -fx-text-fill: #ffffff;
 }
 .json-editor .button.primary:hover   { -fx-background-color: #066a55; -fx-border-color: #066a55; }
@@ -67,9 +69,9 @@
     -fx-border-color: transparent;
     -fx-border-width: 0 0 2 0;
 }
-.json-editor .tab:selected { -fx-border-color: #087e65; }
+.json-editor .tab:selected { -fx-border-color: -fx-brand-accent; }
 .json-editor .tab .tab-label { -fx-text-fill: #5d6a66; -fx-font-weight: bold; }
-.json-editor .tab:selected .tab-label { -fx-text-fill: #087e65; }
+.json-editor .tab:selected .tab-label { -fx-text-fill: -fx-brand-accent; }
 .json-editor .tab:hover .tab-label { -fx-text-fill: #066a55; }
 .json-editor .tab-pane > .tab-content-area {
     -fx-background-color: #ffffff;
@@ -91,7 +93,7 @@
     -fx-background-radius: 6;
 }
 .json-editor .tree-cell:hover    { -fx-background-color: #f1f6f4; }
-.json-editor .tree-cell:selected { -fx-background-color: #e4f3ec; }
+.json-editor .tree-cell:selected { -fx-background-color: -fx-app-mint; }
 .json-editor .tree-cell .tree-disclosure-node .arrow { -fx-background-color: #5d6a66; }
 
 .json-editor .key   { -fx-text-fill: #1a1f1d; -fx-font-weight: bold; }
@@ -109,14 +111,14 @@
 }
 .json-editor .kind-object  { -fx-text-fill: #7a4fae; }
 .json-editor .kind-array   { -fx-text-fill: #a86a08; }
-.json-editor .kind-string  { -fx-text-fill: #087e65; }
+.json-editor .kind-string  { -fx-text-fill: -fx-brand-accent; }
 .json-editor .kind-number  { -fx-text-fill: #1f6fb2; }
 .json-editor .kind-boolean { -fx-text-fill: #c2570c; }
 .json-editor .kind-null    { -fx-text-fill: #6b7773; }
 
 .json-editor .badge.kind-object  { -fx-background-color: #f0e8f8; }
 .json-editor .badge.kind-array   { -fx-background-color: #fbf0d9; }
-.json-editor .badge.kind-string  { -fx-background-color: #e4f3ec; }
+.json-editor .badge.kind-string  { -fx-background-color: -fx-app-mint; }
 .json-editor .badge.kind-number  { -fx-background-color: #e3eef9; }
 .json-editor .badge.kind-boolean { -fx-background-color: #fbe9dc; }
 .json-editor .badge.kind-null    { -fx-background-color: #eceeed; }
@@ -138,7 +140,7 @@
 .json-editor .combo-box .list-cell { -fx-text-fill: #1a1f1d; -fx-background-color: transparent; }
 .json-editor .combo-box .arrow { -fx-background-color: #5d6a66; }
 .json-editor .text-field:focused,
-.json-editor .combo-box:focused { -fx-border-color: #087e65; }
+.json-editor .combo-box:focused { -fx-border-color: -fx-brand-accent; }
 .json-editor .text-field:disabled { -fx-opacity: 1; -fx-background-color: #f1f6f4; -fx-text-fill: #5d6a66; }
 
 .json-editor .text-area {
@@ -148,7 +150,7 @@
     -fx-border-radius: 6;
 }
 .json-editor .text-area .content { -fx-background-color: #ffffff; -fx-background-radius: 6; }
-.json-editor .text-area:focused  { -fx-border-color: #087e65; }
+.json-editor .text-area:focused  { -fx-border-color: -fx-brand-accent; }
 .json-editor .text-area:invalid  { -fx-border-color: #c0392b; }
 .json-editor .text-area.code {
     -fx-font-family: "Consolas", "Menlo", "Monospaced";
@@ -163,17 +165,17 @@
     -fx-background-radius: 4;
     -fx-border-radius: 4;
 }
-.json-editor .check-box:selected .box { -fx-background-color: #087e65; -fx-border-color: #087e65; }
+.json-editor .check-box:selected .box { -fx-background-color: -fx-brand-accent; -fx-border-color: -fx-brand-accent; }
 .json-editor .check-box .mark { -fx-background-color: #ffffff; }
 
 /* ---------- Barra de estado (como los avisos de la app) ---------- */
 .json-editor .statusbar {
-    -fx-background-color: #f3f7f5, #e4f3ec;
+    -fx-background-color: -fx-app-background, -fx-app-mint;
     -fx-background-insets: 0, 12 24 18 24;
     -fx-background-radius: 0, 8;
     -fx-padding: 22 40 28 40;
 }
-.json-editor .status { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #087e65; }
+.json-editor .status { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: -fx-brand-accent; }
 
 /* ---------- Scrollbars discretas ---------- */
 .json-editor .scroll-bar { -fx-background-color: transparent; }

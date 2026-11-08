@@ -1,4 +1,4 @@
-package com.crud2gui.desktop.teacher.sections;
+package com.crud2gui.desktop.ui;
 
 import com.crud2gui.model.MethodInfo;
 import com.crud2gui.model.Modifier;
@@ -108,7 +108,7 @@ public final class ClassDiagramView extends Pane {
         return model;
     }
 
-    static List<Relation> filterDiagramRelations(ProjectModel model, Set<String> visibleTypeIds) {
+    public static List<Relation> filterDiagramRelations(ProjectModel model, Set<String> visibleTypeIds) {
         if (model == null) {
             return List.of();
         }

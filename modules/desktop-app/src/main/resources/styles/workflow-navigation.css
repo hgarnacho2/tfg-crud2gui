@@ -1,0 +1,108 @@
+.statement-flow, .statement-step-graphic, .statement-feedback {
+    -fx-alignment: center-left;
+}
+
+.statement-step {
+    -fx-min-height: 88px;
+    -fx-pref-height: 88px;
+    -fx-max-height: 88px;
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-border-color: -fx-border-subtle;
+    -fx-border-radius: 12px;
+    -fx-padding: 12px 14px;
+    -fx-alignment: center-left;
+}
+
+.statement-step:hover {
+    -fx-background-color: #edf6f1;
+    -fx-border-color: #91b9aa;
+}
+
+.statement-step:completed {
+    -fx-border-color: #68a58f;
+}
+
+.statement-step:selected {
+    -fx-background-color: -fx-app-mint;
+    -fx-border-color: -fx-brand-accent;
+    -fx-effect: dropshadow(gaussian, rgba(8, 126, 101, 0.12), 10, 0, 0, 3);
+}
+
+.statement-step:focused {
+    -fx-border-color: -fx-brand-accent;
+    -fx-border-width: 2px;
+    -fx-padding: 11px 13px;
+}
+
+.statement-step:selected:hover {
+    -fx-background-color: #d3ebdf;
+    -fx-effect: dropshadow(gaussian, rgba(8, 126, 101, 0.22), 12, 0, 0, 4);
+}
+
+.statement-step:pressed,
+.statement-step:selected:pressed {
+    -fx-background-color: #c4e3d4;
+    -fx-effect: null;
+}
+
+.statement-step:disabled {
+    -fx-opacity: 0.55;
+    -fx-background-color: #eef1ef;
+    -fx-effect: null;
+}
+
+.statement-step-number {
+    -fx-min-width: 34px;
+    -fx-pref-width: 34px;
+    -fx-max-width: 34px;
+    -fx-min-height: 34px;
+    -fx-pref-height: 34px;
+    -fx-max-height: 34px;
+    -fx-alignment: center;
+    -fx-background-color: #e8eeeb;
+    -fx-background-radius: 17px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.statement-step:selected .statement-step-number,
+.statement-step:completed .statement-step-number {
+    -fx-background-color: -fx-brand-accent;
+    -fx-text-fill: white;
+}
+
+.statement-step-labels {
+    -fx-spacing: 5px;
+}
+
+.statement-step-title {
+    -fx-text-fill: #173e33;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-wrap-text: true;
+}
+
+.statement-step-description {
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-size: 13px;
+    -fx-wrap-text: true;
+}
+
+.statement-connector {
+    -fx-min-width: 20px;
+    -fx-pref-width: 20px;
+    -fx-max-width: 20px;
+    -fx-min-height: 26px;
+    -fx-pref-height: 26px;
+    -fx-max-height: 26px;
+}
+
+.statement-connector-arrow {
+    -fx-fill: transparent;
+    -fx-stroke: -fx-brand-accent;
+    -fx-stroke-width: 3.5px;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}

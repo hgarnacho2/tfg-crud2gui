@@ -42,6 +42,20 @@ import static org.junit.jupiter.api.Assertions.*;
 class UiComponentsTest {
 
     @Test
+    void resolvesSharedBrandColorFromThemeStylesheet() throws Exception {
+        onJavaFxThread(() -> {
+            Button button = UiComponents.actionButton("Acción", List.of(), () -> { });
+            VBox root = new VBox(button);
+            styledScene(root);
+            root.applyCss();
+            root.layout();
+
+            Color background = (Color) button.getBackground().getFills().get(0).getFill();
+            assertEquals(Color.web("#087e65"), background);
+        });
+    }
+
+    @Test
     void keepsStepHeightConsistentAcrossSectionsAndStates() throws Exception {
         onJavaFxThread(() -> {
             Button plain = UiComponents.stepButton(0, "SELECCIONAR PDF", "Documento de origen", ignored -> {});
@@ -65,6 +79,33 @@ class UiComponentsTest {
                 }
             }
         });
+    }
+
+    @Test
+    void contextChoiceViewOffersKeepAndResetActions() throws Exception {
+        AtomicInteger kept = new AtomicInteger();
+        AtomicInteger reset = new AtomicInteger();
+        onJavaFxThread(() -> {
+            WorkflowContextChoiceView view = new WorkflowContextChoiceView(
+                    "alumno", kept::incrementAndGet, reset::incrementAndGet);
+            styledScene(view);
+            Button keep = (Button) view.lookup("#workflow-context-keep");
+            Button resetButton = (Button) view.lookup("#workflow-context-reset");
+                Label description = (Label) view.lookup(".login-description");
+                Label resetNote = (Label) view.lookup(".text-muted");
+
+            assertEquals("Mantener contexto", keep.getText());
+            assertEquals("Reiniciar contexto", resetButton.getText());
+                assertEquals("Se ha encontrado un contexto de trabajo guardado para el perfil alumno. "
+                    + "Puedes continuar trabajando con los ficheros de entrada y salida de cada etapa "
+                    + "del contexto guardado, o comenzar con un nuevo contexto en blanco.", description.getText());
+                assertEquals("Reiniciar elimina las selecciones guardadas, pero no borra los archivos.",
+                    resetNote.getText());
+            keep.fire();
+            resetButton.fire();
+        });
+        assertEquals(1, kept.get());
+        assertEquals(1, reset.get());
     }
 
     @Test
@@ -195,19 +236,37 @@ class UiComponentsTest {
                     assertEquals(15, button.getFont().getSize(), 0.01);
                     assertTrue(button.getFont().getStyle().contains("Bold"));
                 }
-                assertEquals(dashboard instanceof TeacherDashboardView ? 5 : 4, buttons.size());
+                assertEquals(dashboard instanceof TeacherDashboardView ? 6 : 3, buttons.size());
                 if (dashboard instanceof TeacherDashboardView) {
-                    assertEquals(List.of("Enunciado", "Enunciado >> Modelo", "Código >> Modelo",
+                    assertEquals(List.of("Contexto", "Enunciado", "Enunciado >> Modelo", "Código >> Modelo",
                             "Validar modelos", "CRUD"), buttons.stream().map(Button::getText).toList());
+                        assertNotNull(dashboard.getCenter().lookup("#teacher-context-diagram"));
+                } else {
+                    assertEquals(List.of("Código >> Modelo", "Validar modelos", "CRUD"),
+                            buttons.stream().map(Button::getText).toList());
                 }
                 ScrollPane content = (ScrollPane) dashboard.getCenter();
                 java.util.Map<Button, Node> visited = new java.util.LinkedHashMap<>();
                 for (Button button : buttons) {
                     button.fire();
+                    if (dashboard instanceof StudentDashboardView) {
+                        assertEquals("Código >> Modelo".equals(button.getText()), content.isFitToHeight());
+                    }
                     dashboard.applyCss();
                     Node page = content.getContent();
                     assertNotNull(page.lookup(".section-breadcrumb"));
                     assertInstanceOf(Section.class, page);
+                        if (dashboard instanceof StudentDashboardView) {
+                        switch (button.getText()) {
+                            case "Código >> Modelo" -> assertInstanceOf(
+                                com.crud2gui.desktop.student.sections.ModelFromCodeSection.class, page);
+                            case "Validar modelos" -> assertInstanceOf(
+                                com.crud2gui.desktop.student.sections.ModelValidationSection.class, page);
+                            case "CRUD" -> assertInstanceOf(
+                                com.crud2gui.desktop.student.sections.CrudSection.class, page);
+                            default -> throw new AssertionError("Sección de alumno inesperada: " + button.getText());
+                        }
+                        }
                     assertEquals(20, ((Section) page).getSpacing(), 0.01);
                     assertNotNull(((Section) page).getChildren().get(0).lookup(".section-title"));
                     assertEquals(new Insets(32, 38, 36, 38), ((VBox) page).getPadding());
@@ -222,11 +281,7 @@ class UiComponentsTest {
                 }
                 buttons.get(0).fire();
                 if (dashboard instanceof StudentDashboardView) {
-                    Button shortcut = content.getContent().lookupAll(".button").stream()
-                            .filter(node -> node instanceof Button button
-                                    && "Abrir mis prácticas".equals(button.getText()))
-                            .map(Button.class::cast).findFirst().orElseThrow();
-                    shortcut.fire();
+                    buttons.get(1).fire();
                     assertSame(visited.get(buttons.get(1)), content.getContent());
                     assertTrue(buttons.get(1).getPseudoClassStates().contains(javafx.css.PseudoClass.getPseudoClass("selected")));
                     assertFalse(buttons.get(0).getPseudoClassStates().contains(javafx.css.PseudoClass.getPseudoClass("selected")));

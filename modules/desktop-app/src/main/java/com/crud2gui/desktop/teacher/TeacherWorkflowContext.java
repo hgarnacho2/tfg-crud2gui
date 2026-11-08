@@ -3,6 +3,7 @@ package com.crud2gui.desktop.teacher;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.crud2gui.desktop.workflow.WorkflowContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ import java.util.Objects;
  * la instancia y se escribe en un JSON versionado después de cada cambio. Los archivos
  * referenciados no se copian ni se eliminan al reiniciar el contexto.</p>
  */
-public final class TeacherWorkflowContext {
+public final class TeacherWorkflowContext implements WorkflowContext {
 
     /** Registrador de errores de lectura y escritura del estado persistido. */
     private static final Logger logger = LoggerFactory.getLogger(TeacherWorkflowContext.class);
@@ -51,6 +52,8 @@ public final class TeacherWorkflowContext {
     private Path confirmedStatementModel;
     /** Último modelo de clases extraído del código Java. */
     private Path codeModel;
+    /** Último informe JSON de comparación de modelos. */
+    private Path validationReport;
     /** Texto actualmente seleccionado como entrada para la inferencia. */
     private Path selectedStatementText;
     /** Modelo Java seleccionado actualmente para la comparación. */
@@ -109,7 +112,7 @@ public final class TeacherWorkflowContext {
         return statementPdf != null || codeSourceFolder != null || extractedText != null || filteredText != null
                 || generatedStatementModel != null || confirmedStatementModel != null || codeModel != null
             || selectedPromptFile != null || selectedStatementText != null
-            || selectedJavaModel != null || selectedInferredModel != null
+                || selectedJavaModel != null || selectedInferredModel != null || validationReport != null
                 || selectedModelProviderId != null || selectedModelId != null
                 || statementTextManual || javaModelManual || inferredModelManual;
     }
@@ -127,6 +130,7 @@ public final class TeacherWorkflowContext {
         generatedStatementModel = null;
         confirmedStatementModel = null;
         codeModel = null;
+        validationReport = null;
         selectedStatementText = null;
         selectedJavaModel = null;
         selectedInferredModel = null;
@@ -180,6 +184,16 @@ public final class TeacherWorkflowContext {
     public Path getSuggestedStatementText() {
         Path preferred = usable(filteredText);
         return preferred != null ? preferred : usable(extractedText);
+    }
+
+    /** @return texto extraído del PDF si sigue disponible */
+    public Path getExtractedText() {
+        return usable(extractedText);
+    }
+
+    /** @return texto filtrado del enunciado si sigue disponible */
+    public Path getFilteredText() {
+        return usable(filteredText);
     }
 
     /**
@@ -237,6 +251,11 @@ public final class TeacherWorkflowContext {
      */
     public Path getSuggestedInferredModel() {
         return usable(confirmedStatementModel);
+    }
+
+    /** @return último JSON inferido, confirmado o pendiente de confirmación, si sigue disponible */
+    public Path getGeneratedStatementModel() {
+        return usable(generatedStatementModel);
     }
 
     /**
@@ -337,8 +356,15 @@ public final class TeacherWorkflowContext {
             codeModel = null;
             selectedJavaModel = null;
             javaModelManual = false;
+            validationReport = null;
             persist();
         }
+    }
+
+    @Override
+    public Path getSelectedCodeFolder() {
+        return codeSourceFolder != null && Files.isDirectory(codeSourceFolder) && Files.isReadable(codeSourceFolder)
+                ? codeSourceFolder : null;
     }
 
     /**
@@ -424,6 +450,7 @@ public final class TeacherWorkflowContext {
      */
     public void recordGeneratedStatementModel(Path path) {
         generatedStatementModel = normalize(path);
+        validationReport = null;
         confirmedStatementModel = null;
         if (!inferredModelManual) {
             selectedInferredModel = null;
@@ -448,6 +475,7 @@ public final class TeacherWorkflowContext {
      */
     public void recordConfirmedStatementModel(Path path) {
         confirmedStatementModel = normalize(path);
+        validationReport = null;
         if (!inferredModelManual) {
             selectedInferredModel = confirmedStatementModel;
         }
@@ -462,6 +490,7 @@ public final class TeacherWorkflowContext {
      */
     public void recordCodeModel(Path path) {
         codeModel = normalize(path);
+        validationReport = null;
         if (!javaModelManual) {
             selectedJavaModel = codeModel;
         }
@@ -476,6 +505,7 @@ public final class TeacherWorkflowContext {
     public void selectJavaModel(Path path) {
         selectedJavaModel = normalize(path);
         javaModelManual = true;
+        validationReport = null;
         persist();
     }
 
@@ -487,7 +517,19 @@ public final class TeacherWorkflowContext {
     public void selectInferredModel(Path path) {
         selectedInferredModel = normalize(path);
         inferredModelManual = true;
+        validationReport = null;
         persist();
+    }
+
+    @Override
+    public void recordValidationReport(Path path) {
+        validationReport = normalize(path);
+        persist();
+    }
+
+    @Override
+    public Path getValidationReport() {
+        return usable(validationReport);
     }
 
     /** Limpia las rutas de modelos inferidos y conserva una selección manual vigente. */
@@ -504,6 +546,7 @@ public final class TeacherWorkflowContext {
         inferredModelManual = false;
         selectedInferredModel = null;
         clearStatementModels();
+        validationReport = null;
     }
 
     /**
@@ -587,6 +630,7 @@ public final class TeacherWorkflowContext {
             generatedStatementModel = readPath(root, "generatedStatementModel");
             confirmedStatementModel = readPath(root, "confirmedStatementModel");
             codeModel = readPath(root, "codeModel");
+            validationReport = readPath(root, "validationReport");
             selectedStatementText = readPath(root, "selectedStatementText");
             selectedJavaModel = readPath(root, "selectedJavaModel");
             selectedInferredModel = readPath(root, "selectedInferredModel");
@@ -625,6 +669,7 @@ public final class TeacherWorkflowContext {
         writePath(root, "generatedStatementModel", generatedStatementModel);
         writePath(root, "confirmedStatementModel", confirmedStatementModel);
         writePath(root, "codeModel", codeModel);
+        writePath(root, "validationReport", validationReport);
         writePath(root, "selectedStatementText", selectedStatementText);
         writePath(root, "selectedJavaModel", selectedJavaModel);
         writePath(root, "selectedInferredModel", selectedInferredModel);

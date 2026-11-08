@@ -2,7 +2,7 @@ package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.modelvalidator.ModelComparisonMain;
 import com.crud2gui.modelvalidator.ValidationOptions;
-import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
+import com.crud2gui.desktop.workflow.WorkflowContext;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.UiComponents;
@@ -13,6 +13,7 @@ import javafx.beans.binding.Bindings;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -28,11 +29,11 @@ import java.util.function.Function;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public final class ModelValidationSection extends Section {
+public class ModelValidationSection extends Section {
 
     private final List<Button> steps;
     private final List<VBox> panels;
-    private final TeacherWorkflowContext workflow;
+    private final WorkflowContext workflow;
     private ModelJsonSelection sourceSelection;
     private ModelJsonSelection inferredSelection;
         private final BiFunction<Window, Path, File> chooseOutputFolder;
@@ -51,25 +52,31 @@ public final class ModelValidationSection extends Section {
     private final ValidationOptionsView optionsView;
 
     public ModelValidationSection() {
-        this((TeacherWorkflowContext) null);
+        this((WorkflowContext) null);
     }
 
-    public ModelValidationSection(TeacherWorkflowContext workflow) {
+    public ModelValidationSection(WorkflowContext workflow) {
         this(ModelJsonSelection::chooseJson, workflow);
     }
 
-    private ModelValidationSection(Function<Window, File> chooseFile, TeacherWorkflowContext workflow) {
+    public ModelValidationSection(String breadcrumb, WorkflowContext workflow) {
+        this(breadcrumb, ModelJsonSelection::chooseJson, ModelValidationSection::defaultReportOutputDirectory,
+                (owner, current) -> FileDialogs.chooseDirectory(
+                        owner, current, "Carpeta de salida de los informes de validación"), workflow);
+    }
+
+    private ModelValidationSection(Function<Window, File> chooseFile, WorkflowContext workflow) {
         this(chooseFile, ModelValidationSection::defaultReportOutputDirectory, workflow);
     }
 
     private ModelValidationSection(Function<Window, File> chooseFile, Supplier<Path> reportOutputDirectory,
-                                  TeacherWorkflowContext workflow) {
+                                  WorkflowContext workflow) {
         this(chooseFile, reportOutputDirectory, (owner, current) -> FileDialogs.chooseDirectory(
                 owner, current, "Carpeta de salida de los informes de validación"), workflow);
     }
 
     ModelValidationSection(Function<Window, File> chooseFile) {
-        this(chooseFile, ModelValidationSection::defaultReportOutputDirectory, (TeacherWorkflowContext) null);
+        this(chooseFile, ModelValidationSection::defaultReportOutputDirectory, (WorkflowContext) null);
     }
 
     ModelValidationSection(Function<Window, File> chooseFile, Supplier<Path> reportOutputDirectory) {
@@ -83,8 +90,15 @@ public final class ModelValidationSection extends Section {
         }
 
         private ModelValidationSection(Function<Window, File> chooseFile, Supplier<Path> reportOutputDirectory,
-            BiFunction<Window, Path, File> chooseOutputFolder, TeacherWorkflowContext workflow) {
-        super("VALIDAR MODELOS", "Validar modelos",
+            BiFunction<Window, Path, File> chooseOutputFolder, WorkflowContext workflow) {
+            this("VALIDAR MODELOS", chooseFile, reportOutputDirectory, chooseOutputFolder, workflow);
+        }
+
+        private ModelValidationSection(String breadcrumb, Function<Window, File> chooseFile,
+                                      Supplier<Path> reportOutputDirectory,
+                                      BiFunction<Window, Path, File> chooseOutputFolder,
+                                      WorkflowContext workflow) {
+            super(breadcrumb, "Validar modelos",
             "Selecciona los modelos JSON de código y enunciado para preparar su validación.");
         Objects.requireNonNull(chooseFile, "chooseFile");
         this.workflow = workflow;
@@ -144,10 +158,15 @@ public final class ModelValidationSection extends Section {
             UiComponents.label("Salida", List.of("validation-block-title")),
                 UiComponents.outputSettings(outputName, outputPath, changeFolder),
             validateModels, validationStatus, resultGroup);
-        panels = List.of(UiComponents.surface(sourceSelection), UiComponents.surface(inferredSelection),
-            UiComponents.surface(result));
+        VBox sourcePanel = UiComponents.surface(sourceSelection);
+        VBox inferredPanel = UiComponents.surface(inferredSelection);
+        VBox.setVgrow(sourceSelection, Priority.ALWAYS);
+        VBox.setVgrow(inferredSelection, Priority.ALWAYS);
+        sourceSelection.setMaxHeight(Double.MAX_VALUE);
+        inferredSelection.setMaxHeight(Double.MAX_VALUE);
+        panels = List.of(sourcePanel, inferredPanel, UiComponents.surface(result));
         for (VBox panel : panels) {
-            panel.setMaxHeight(Region.USE_PREF_SIZE);
+            panel.setMaxHeight(Double.MAX_VALUE);
             StackPane.setAlignment(panel, javafx.geometry.Pos.TOP_LEFT);
         }
         HBox flow = new HBox(8,
@@ -157,6 +176,7 @@ public final class ModelValidationSection extends Section {
         flow.setMaxWidth(Region.USE_PREF_SIZE);
         StackPane panelHost = new StackPane();
         panelHost.getChildren().addAll(panels);
+        VBox.setVgrow(panelHost, Priority.ALWAYS);
         getChildren().addAll(flow, panelHost);
         showStep(0);
         if (workflow != null) {
@@ -197,6 +217,9 @@ public final class ModelValidationSection extends Section {
         steps.get(2).setDisable(true);
         steps.get(2).pseudoClassStateChanged(COMPLETED, false);
         resultHost.getChildren().clear();
+        if (workflow != null) {
+            workflow.recordValidationReport(null);
+        }
         showStatus(validationStatus, "Comparando los modelos y generando el informe...", false);
         runTask(() -> {
             Path reportFile = ModelComparisonMain.defaultReportPath(expectedModel,
@@ -208,6 +231,9 @@ public final class ModelValidationSection extends Section {
             outputName.setText(output.reportFile().getFileName().toString());
             outputPath.setText(output.reportFile().toAbsolutePath().normalize().toString());
             resultHost.getChildren().setAll(new ModelValidationResultView(output.report(), output.reportFile()));
+            if (workflow != null) {
+                workflow.recordValidationReport(output.reportFile());
+            }
             showStatus(validationStatus, "", false);
             steps.get(2).setDisable(false);
             steps.get(2).pseudoClassStateChanged(COMPLETED, true);

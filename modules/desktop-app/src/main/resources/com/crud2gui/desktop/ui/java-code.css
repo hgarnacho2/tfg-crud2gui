@@ -1,3 +1,5 @@
+@import "../../../../styles/theme.css";
+
 /* JavaCodeViewer · tema claro verde (a juego con CRUD2GUI) */
 
 .java-code {
@@ -10,7 +12,7 @@
 
 /* Cabecera */
 .java-code .code-header {
-    -fx-background-color: #f3f7f5;
+    -fx-background-color: -fx-app-background;
     -fx-background-radius: 8 8 0 0;
     -fx-padding: 10 14 10 14;
     -fx-border-color: #dbe5e0;
@@ -19,7 +21,7 @@
 .java-code .chip {
     -fx-font-size: 10px;
     -fx-font-weight: bold;
-    -fx-text-fill: #087e65;
+    -fx-text-fill: -fx-brand-accent;
     -fx-background-color: #ffffff;
     -fx-border-color: #cfe0d8;
     -fx-border-radius: 4;
@@ -43,14 +45,14 @@
 
 /* Números de línea */
 .java-code .lineno {
-    -fx-background-color: #f3f7f5;
+    -fx-background-color: -fx-app-background;
     -fx-text-fill: #8a9792;
     -fx-font-family: "Consolas", "Menlo", "Monospaced";
     -fx-padding: 0 10 0 12;
 }
 
 /* Colores del código */
-.java-code .tok-keyword    { -fx-fill: #087e65; -fx-font-weight: bold; }
+.java-code .tok-keyword    { -fx-fill: -fx-brand-accent; -fx-font-weight: bold; }
 .java-code .tok-type       { -fx-fill: #1f6fb2; -fx-font-weight: bold; }
 .java-code .tok-literal    { -fx-fill: #c2570c; -fx-font-weight: bold; }
 .java-code .tok-string     { -fx-fill: #b4540a; }

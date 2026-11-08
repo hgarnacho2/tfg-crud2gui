@@ -1,0 +1,10 @@
+/* Shared CRUD2GUI palette. */
+.root {
+    -fx-brand-accent: #087e65;
+    -fx-app-background: #f3f7f5;
+    -fx-text-primary: #17212b;
+    -fx-text-muted: #52675d;
+    -fx-border-subtle: #d7e3dd;
+    -fx-surface-border: #e5ece8;
+    -fx-app-mint: #e4f3ec;
+}

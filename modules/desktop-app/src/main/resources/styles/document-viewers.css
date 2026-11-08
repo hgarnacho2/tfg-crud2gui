@@ -1,0 +1,32 @@
+.file-content > .title {
+    -fx-background-color: #f1f6f3;
+    -fx-padding: 10px 12px;
+}
+
+.file-content > .content {
+    -fx-padding: 12px;
+    -fx-background-color: white;
+}
+
+.file-content-text {
+    -fx-font-family: Consolas, monospace;
+    -fx-font-size: 13px;
+}
+
+.statement-file-path,
+.file-content-path {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-wrap-text: true;
+}
+
+.pdf-preview-toolbar {
+    -fx-alignment: center-left;
+}
+
+.pdf-preview-page {
+    -fx-text-fill: #173e33;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
