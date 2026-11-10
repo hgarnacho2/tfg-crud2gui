@@ -205,6 +205,28 @@
     -fx-text-fill: #84938d;
 }
 
+.uml-relation-legend {
+    -fx-spacing: 8px;
+    -fx-padding: 10px 12px;
+    -fx-background-color: #f7faf8;
+    -fx-background-radius: 4px;
+}
+
+.uml-relation-legend-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #173e33;
+}
+
+.uml-relation-legend-item {
+    -fx-spacing: 6px;
+}
+
+.uml-relation-legend-item-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #344a42;
+}
+
 .statement-file-badge {
     -fx-padding: 6px 8px;
     -fx-background-color: -fx-brand-accent;

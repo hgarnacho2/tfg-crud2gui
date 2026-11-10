@@ -2,6 +2,7 @@ package com.crud2gui.desktop.student;
 
 import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import com.crud2gui.desktop.student.sections.CrudSection;
+import com.crud2gui.desktop.student.sections.StudentContextSection;
 import com.crud2gui.desktop.student.sections.ModelFromCodeSection;
 import com.crud2gui.desktop.student.sections.ModelValidationSection;
 import com.crud2gui.desktop.ui.UiComponents;
@@ -49,13 +50,15 @@ public final class StudentDashboardView extends BorderPane {
         content.getStyleClass().add("dashboard-scroll");
         setCenter(content);
         selectedSection.addListener((observable, previous, current) -> showSection(current));
-        selectedSection.set(StudentSection.MODEL_FROM_CODE);
+        selectedSection.set(StudentSection.CONTEXT);
     }
 
     private void showSection(StudentSection section) {
-        content.setFitToHeight(section == StudentSection.MODEL_FROM_CODE);
+        content.setFitToHeight(section == StudentSection.CONTEXT || section == StudentSection.MODEL_FROM_CODE);
         Node page = pages.computeIfAbsent(section, this::createSection);
-        if (page instanceof ModelValidationSection validation) {
+        if (page instanceof StudentContextSection context) {
+            context.refresh();
+        } else if (page instanceof ModelValidationSection validation) {
             validation.refreshModelSelections();
         }
         content.setContent(page);
@@ -63,6 +66,7 @@ public final class StudentDashboardView extends BorderPane {
 
     private Node createSection(StudentSection section) {
         return switch (section) {
+            case CONTEXT -> new StudentContextSection(workflow);
             case MODEL_FROM_CODE -> new ModelFromCodeSection(workflow);
             case MODEL_VALIDATION -> new ModelValidationSection(workflow);
             case CRUD -> new CrudSection(workflow);
@@ -71,7 +75,8 @@ public final class StudentDashboardView extends BorderPane {
 
     /** Secciones disponibles en el menú del alumno, en orden de presentación. */
     private enum StudentSection {
-        MODEL_FROM_CODE("C\u00f3digo >> Modelo"),
+        CONTEXT("Contexto"),
+        MODEL_FROM_CODE("Modelo desde C\u00f3digo"),
         MODEL_VALIDATION("Validar modelos"),
         CRUD("CRUD");
 

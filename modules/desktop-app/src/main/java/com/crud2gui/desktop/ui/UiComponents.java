@@ -171,10 +171,19 @@ public final class UiComponents {
      * @return selector de carpeta del panel
      */
     public static VBox outputSettings(Label nameLabel, Label folderLabel, Button changeButton) {
+        return outputSettings(nameLabel, folderLabel, changeButton, null);
+    }
+
+    public static VBox outputSettings(Label nameLabel, Label folderLabel, Button changeButton, Button openButton) {
         folderLabel.setMaxWidth(Double.MAX_VALUE);
         VBox card = vBox(List.of("statement-file-card"), nameLabel, folderLabel);
         card.pseudoClassStateChanged(PseudoClass.getPseudoClass("selected"), true);
-        return vBox(List.of("statement-output-settings"), card, changeButton);
+        Node actions = openButton == null ? changeButton : hBox(List.of("statement-output-actions"),
+                changeButton, openButton);
+        if (actions instanceof HBox buttons) {
+            buttons.setSpacing(8);
+        }
+        return vBox(List.of("statement-output-settings"), card, actions);
     }
 
     /**

@@ -50,7 +50,7 @@ public final class TeacherContextSection extends Section {
         super("CONTEXTO", "Contexto", "Ficheros asociados a las etapas del trabajo docente.");
         this.workflow = Objects.requireNonNull(workflow, "workflow");
         diagram.setId("teacher-context-diagram");
-        diagram.getStyleClass().add("teacher-context-diagram");
+        diagram.getStyleClass().add("workflow-context-diagram");
         connectorLayer.setId("teacher-context-connectors");
         connectorLayer.setMouseTransparent(true);
         flowContent.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -63,7 +63,7 @@ public final class TeacherContextSection extends Section {
     /** Actualiza los nombres de archivo cuando se vuelve a abrir esta vista. */
     public void refresh() {
         stages.clear();
-        VBox statement = lane("RAMA DEL ENUNCIADO", "Del documento original al modelo inferido");
+        VBox statement = lane("MODELO DE REFERENCIA", "Modelo de datos válido para la validación");
         addStage(statement, "statement-pdf", "Enunciado original", "PDF", workflow.getStatementPdf(),
             "Todavía no se ha seleccionado un PDF.");
         addStage(statement, "statement-extracted", "Texto del enunciado", "TXT", workflow.getExtractedText(),
@@ -75,22 +75,21 @@ public final class TeacherContextSection extends Section {
         addStage(statement, "statement-refined-model", "Modelo afinado del enunciado", "JSON",
             workflow.getSuggestedInferredModel(), "Todavía no se ha confirmado el modelo afinado.");
 
-        VBox code = lane("RAMA DEL CÓDIGO", "Fuentes Java y modelo extraído");
+        VBox code = lane("CÓDIGO FUENTE", "Fuentes Java y modelo generado");
         addStage(code, "code-folder", "Clases de código Java", "CARPETA", workflow.getSelectedCodeFolder(),
             "Todavía no se ha seleccionado una carpeta.");
         addStage(code, "code-model", "Modelo obtenido del código", "JSON", workflow.getSuggestedJavaModel(),
             "Todavía no se ha generado el modelo.");
 
-        String validationInputs = "Entradas: código " + filename(workflow.getSelectedJavaModel())
-                + " · enunciado " + filename(workflow.getSelectedInferredModel());
         VBox validation = stage("validation-report", "Validación de modelos", "INFORME JSON",
-            workflow.getValidationReport(), "Todavía no se ha generado el informe.", validationInputs);
+            workflow.getValidationReport(), "Todavía no se ha generado el informe.", null);
+        validation.getChildren().add(validationInputs());
         VBox crud = stage("crud", "CRUD", "JAVA", null,
                 "Los ficheros asociados se incorporarán más adelante.", null);
 
         GridPane branches = new GridPane();
         branches.setHgap(20);
-        branches.getStyleClass().add("teacher-context-branches");
+        branches.getStyleClass().add("workflow-context-branches");
         ColumnConstraints statementColumn = new ColumnConstraints();
         statementColumn.setPercentWidth(50);
         statementColumn.setHgrow(Priority.ALWAYS);
@@ -123,12 +122,33 @@ public final class TeacherContextSection extends Section {
 
     private VBox lane(String title, String description) {
         Label heading = new Label(title);
-        heading.getStyleClass().add("teacher-context-lane-title");
+        heading.getStyleClass().add("workflow-context-lane-title");
         Label subtitle = new Label(description);
-        subtitle.getStyleClass().add("teacher-context-lane-description");
+        subtitle.getStyleClass().add("workflow-context-lane-description");
         VBox lane = new VBox(22, heading, subtitle);
-        lane.getStyleClass().add("teacher-context-lane");
+        lane.getStyleClass().add("workflow-context-lane");
         return lane;
+    }
+
+    private VBox validationInputs() {
+        VBox inputs = new VBox(6,
+            validationInput("CODIGO", "code", workflow.getSelectedJavaModel()),
+            validationInput("ENUNCIADO", "statement", workflow.getSelectedInferredModel()));
+        inputs.getStyleClass().add("workflow-context-validation-inputs");
+        return inputs;
+    }
+
+    private HBox validationInput(String text, String id, Path model) {
+        Label badge = new Label(text);
+        badge.setId("teacher-context-validation-input-" + id + "-badge");
+        badge.getStyleClass().addAll("workflow-context-input-badge", "workflow-context-input-" + id);
+        Label fileName = new Label(model == null ? "Sin modelo seleccionado" : filename(model));
+        fileName.setId("teacher-context-validation-input-" + id + "-file");
+        fileName.getStyleClass().add("workflow-context-input-file");
+        fileName.setWrapText(true);
+        HBox row = new HBox(8, badge, fileName);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
     }
 
     private void addStage(VBox lane, String id, String title, String type, Path file, String emptyMessage) {
@@ -137,33 +157,33 @@ public final class TeacherContextSection extends Section {
 
     private VBox stage(String id, String title, String type, Path file, String emptyMessage, String details) {
         Label marker = new Label(type);
-        marker.getStyleClass().add("teacher-context-stage-type");
+        marker.getStyleClass().add("workflow-context-stage-type");
         Label heading = new Label(title);
-        heading.getStyleClass().add("teacher-context-stage-title");
+        heading.getStyleClass().add("workflow-context-stage-title");
         HBox header = new HBox(10, marker, heading);
         header.setAlignment(Pos.CENTER_LEFT);
 
         Label artifact = new Label(file == null ? emptyMessage : filename(file));
         artifact.setId("teacher-context-stage-" + id + "-file");
         artifact.getStyleClass().add(file == null
-                ? "teacher-context-stage-empty" : "teacher-context-stage-file");
+            ? "workflow-context-stage-empty" : "workflow-context-stage-file");
         artifact.setWrapText(true);
         Label location = new Label(file == null ? "" : file.toAbsolutePath().normalize().toString());
         location.setId("teacher-context-stage-" + id + "-path");
-        location.getStyleClass().add("teacher-context-stage-path");
+        location.getStyleClass().add("workflow-context-stage-path");
         location.setWrapText(true);
         location.setVisible(file != null);
         location.setManaged(file != null);
 
         VBox block = new VBox(8, header, artifact, location);
         block.setId("teacher-context-stage-" + id);
-        block.getStyleClass().add("teacher-context-stage");
+        block.getStyleClass().add("workflow-context-stage");
         if (file == null) {
-            block.getStyleClass().add("teacher-context-stage-pending");
+            block.getStyleClass().add("workflow-context-stage-pending");
         }
         if (details != null) {
             Label detail = new Label(details);
-            detail.getStyleClass().add("teacher-context-stage-details");
+            detail.getStyleClass().add("workflow-context-stage-details");
             detail.setWrapText(true);
             block.getChildren().add(detail);
         }
@@ -217,7 +237,7 @@ public final class TeacherContextSection extends Section {
                 new MoveTo(sourceX, source.getMaxY()),
                 new LineTo(sourceX, joinY),
                 new LineTo(joinX, joinY));
-        path.getStyleClass().add("teacher-context-merge-connector");
+        path.getStyleClass().add("workflow-context-merge-connector");
         return path;
     }
 
@@ -236,7 +256,7 @@ public final class TeacherContextSection extends Section {
     private javafx.scene.shape.Path connectorPath(String id, PathElement... elements) {
         javafx.scene.shape.Path path = new javafx.scene.shape.Path(elements);
         path.setId(id);
-        path.getStyleClass().add("teacher-context-connector");
+        path.getStyleClass().add("workflow-context-connector");
         path.setFill(Color.TRANSPARENT);
         path.setStroke(Color.web("#087e65"));
         path.setStrokeWidth(2.5);

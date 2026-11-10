@@ -7,9 +7,11 @@ extrae del codigo Java real.
 Proveedores actuales: **Gemini** (remoto) y **Ollama** (local, p. ej. `qwen3:8b`).
 
 El modelo esperado incluye `expectedManagerId` cuando el enunciado designa explícitamente una clase gestora; si no, el campo es `null`. Esta expectativa se mantiene separada de `analysis`, que corresponde a la detección del código.
-El prompt de referencia `src/test/resources/prompts/prompt-v5.txt` incluye ese campo
+El prompt de referencia `src/test/resources/prompts/prompt-v6.txt` incluye ese campo
 tambien en su ejemplo JSON y exige que coincida con un id de `types` cuando no sea
-`null`. El visor lo utiliza para resaltar la gestora y organizar el diagrama.
+`null`. v6 aclara cómo aplicar una declaración de composición a las colecciones
+enumeradas en una etapa; v5 se conserva para reproducir análisis anteriores.
+El visor utiliza `expectedManagerId` para resaltar la gestora y organizar el diagrama.
 Tras actualizar el prompt, vuelve a seleccionarlo y genera de nuevo el modelo:
 los JSON anteriores no se modifican automaticamente.
 

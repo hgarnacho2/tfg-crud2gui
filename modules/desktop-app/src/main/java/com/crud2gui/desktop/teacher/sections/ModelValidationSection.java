@@ -9,6 +9,7 @@ import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.ValidationOptionsView;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.awt.Desktop;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -45,6 +46,8 @@ public class ModelValidationSection extends Section {
         private final Label outputPath = UiComponents.label("", List.of("statement-file-path"));
         private final Button changeFolder = UiComponents.actionButton("Cambiar carpeta de salida",
             List.of("statement-change-folder", "secondary-button"), this::changeOutputFolder);
+        private final Button openFolder = UiComponents.actionButton("Abrir carpeta de salida",
+            List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
         private final Button validateModels = UiComponents.actionButton("Validar modelos",
             List.of("statement-select"), () -> compareModels(actualModelFile, expectedModelFile));
     private final Label validationStatus = UiComponents.statusLabel("model-validation-status");
@@ -110,6 +113,7 @@ public class ModelValidationSection extends Section {
         outputPath.setId("model-validation-output-path");
         outputName.setId("model-validation-output-name");
         changeFolder.setId("model-validation-change-output-folder");
+        openFolder.setId("model-validation-open-output-folder");
         validateModels.setId("model-validation-run");
         validateModels.setDisable(true);
         steps = List.of(
@@ -128,10 +132,9 @@ public class ModelValidationSection extends Section {
                     if (workflow != null) {
                         workflow.selectJavaModel(selected);
                     }
-                    steps.get(0).pseudoClassStateChanged(COMPLETED, true);
-                    steps.get(1).setDisable(false);
-                    steps.get(1).pseudoClassStateChanged(COMPLETED, false);
                     invalidateResult();
+                    expectedModelFile = inferredSelection.getSelectedFile();
+                    updateSelectionState();
             }, chooseFile,
             "Modelo cargado correctamente. Puedes continuar con el paso 2: Modelo inferido enunciado.");
         inferredSelection = new ModelJsonSelection("model-validation-statement",
@@ -143,9 +146,7 @@ public class ModelValidationSection extends Section {
                 if (workflow != null) {
                     workflow.selectInferredModel(selected);
                 }
-                steps.get(1).pseudoClassStateChanged(COMPLETED, true);
-                steps.get(2).setDisable(false);
-                validateModels.setDisable(false);
+                updateSelectionState();
             }, chooseFile,
             "Modelo inferido cargado correctamente. Puedes continuar con el paso 3: Resultado de la validación.");
         Label resultTitle = UiComponents.label("Resultado de la validación", List.of("validation-block-title"));
@@ -156,7 +157,7 @@ public class ModelValidationSection extends Section {
         VBox result = UiComponents.vBox(List.of("model-validation-result-panel"),
             UiComponents.label("Configuración del validador", List.of("validation-block-title")), optionsView,
             UiComponents.label("Salida", List.of("validation-block-title")),
-                UiComponents.outputSettings(outputName, outputPath, changeFolder),
+                UiComponents.outputSettings(outputName, outputPath, changeFolder, openFolder),
             validateModels, validationStatus, resultGroup);
         VBox sourcePanel = UiComponents.surface(sourceSelection);
         VBox inferredPanel = UiComponents.surface(inferredSelection);
@@ -201,11 +202,16 @@ public class ModelValidationSection extends Section {
         }
         actualModelFile = selectedActual;
         expectedModelFile = selectedExpected;
+        updateSelectionState();
+    }
+
+    private void updateSelectionState() {
         steps.get(0).pseudoClassStateChanged(COMPLETED, actualModelFile != null);
         steps.get(1).setDisable(actualModelFile == null);
         steps.get(1).pseudoClassStateChanged(COMPLETED, expectedModelFile != null);
-        steps.get(2).setDisable(actualModelFile == null || expectedModelFile == null);
-        validateModels.setDisable(actualModelFile == null || expectedModelFile == null);
+        boolean canValidate = actualModelFile != null && expectedModelFile != null;
+        steps.get(2).setDisable(!canValidate);
+        validateModels.setDisable(!canValidate);
     }
 
     private void compareModels(Path actualModel, Path expectedModel) {
@@ -253,6 +259,7 @@ public class ModelValidationSection extends Section {
     private void setBusy(boolean busy) {
         optionsView.setDisable(busy);
         changeFolder.setDisable(busy);
+        openFolder.setDisable(busy);
         validateModels.setDisable(busy || expectedModelFile == null || actualModelFile == null);
         panels.get(0).setDisable(busy);
         panels.get(1).setDisable(busy);
@@ -269,8 +276,25 @@ public class ModelValidationSection extends Section {
         }
     }
 
+    private void openOutputFolder() {
+        Path folder = outputFolder;
+        setBusy(true);
+        runTask(() -> {
+            if (!Files.isDirectory(folder)) {
+                throw new IOException("La carpeta de salida no existe: " + folder);
+            }
+            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                throw new IOException("El sistema no permite abrir carpetas desde la aplicación.");
+            }
+            Desktop.getDesktop().open(folder.toFile());
+            return folder;
+        }, opened -> { },
+                failure -> showStatus(validationStatus,
+                        "No se pudo abrir la carpeta de salida: " + folder, true),
+                () -> setBusy(false));
+    }
+
     private void invalidateResult() {
-        expectedModelFile = null;
         validateModels.setDisable(true);
         steps.get(2).setDisable(true);
         steps.get(2).pseudoClassStateChanged(COMPLETED, false);

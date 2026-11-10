@@ -33,6 +33,7 @@ class StudentWorkflowContextTest {
         StudentWorkflowContext restored = new StudentWorkflowContext(stateFile);
         assertTrue(restored.hasSavedContext());
         assertEquals(codeFolder, restored.getSelectedCodeFolder());
+        assertEquals(javaModel, restored.getGeneratedCodeModel());
         assertEquals(javaModel, restored.getSelectedJavaModel());
         assertEquals(expectedModel, restored.getSelectedInferredModel());
         assertEquals(validationReport, restored.getValidationReport());

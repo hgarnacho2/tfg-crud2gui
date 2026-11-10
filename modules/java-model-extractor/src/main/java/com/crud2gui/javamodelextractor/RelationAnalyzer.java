@@ -64,12 +64,13 @@ final class RelationAnalyzer {
             if (declaration == null) continue;
             for (FieldInfo field : owner.fields()) {
                 for (String targetId : projectTypes(field.type())) {
-                    Evidence evidence = inspectField(declaration.declaration(), declaration.context(), field, targetId);
+                    Evidence evidence = inspectField(declaration.declaration(), declaration.context(), field,
+                            targetId, typesById);
                     TypeInfo target = typesById.get(targetId);
                     RelationKind kind = target != null && target.kind() == TypeKind.ENUM
                         ? RelationKind.ASSOCIATION : fieldKind(evidence);
                     boolean requiredByConstructor = assignedInConstructor(
-                        declaration.declaration(), declaration.context(), field, targetId);
+                        declaration.declaration(), declaration.context(), field, targetId, typesById);
                     String multiplicity = multiplicity(field.type(), requiredByConstructor);
                         Confidence confidence = kind == RelationKind.ASSOCIATION ? Confidence.LOW
                             : evidence.createdWithNew() && evidence.assignedFromParameter()
@@ -124,7 +125,7 @@ final class RelationAnalyzer {
     }
 
     private Evidence inspectField(TypeDeclaration<?> declaration, ResolutionContext context,
-                                  FieldInfo field, String targetId) {
+                                  FieldInfo field, String targetId, Map<String, TypeInfo> typesById) {
         boolean created = false;
         boolean assignedFromParameter = false;
         boolean exposedBySetter = false;
@@ -133,19 +134,19 @@ final class RelationAnalyzer {
             if (member instanceof FieldDeclaration fields) {
                 for (VariableDeclarator variable : fields.getVariables()) {
                     if (variable.getNameAsString().equals(field.name()) && variable.getInitializer().isPresent()) {
-                        created |= containsCreation(variable.getInitializer().get(), context, targetId);
+                        created |= containsCreation(variable.getInitializer().get(), context, targetId, typesById);
                     }
                 }
             } else if (member instanceof ConstructorDeclaration constructor) {
                 BodyEvidence body = inspectBody(constructor.getBody(), constructor.getParameters(),
-                        context, field.name(), targetId, false);
+                    context, field.name(), targetId, false, typesById);
                 created |= body.created();
                 assignedFromParameter |= body.assignedFromParameter();
             } else if (member instanceof MethodDeclaration method && method.getBody().isPresent()) {
                 BodyEvidence body = inspectBody(method.getBody().get(), method.getParameters(),
                         context, field.name(), targetId,
                         method.getAccessSpecifier() == com.github.javaparser.ast.AccessSpecifier.PUBLIC
-                                && method.getNameAsString().startsWith("set"));
+                        && method.getNameAsString().startsWith("set"), typesById);
                 created |= body.created();
                 assignedFromParameter |= body.assignedFromParameter();
                 exposedBySetter |= body.exposedBySetter();
@@ -155,11 +156,11 @@ final class RelationAnalyzer {
     }
 
     private boolean assignedInConstructor(TypeDeclaration<?> declaration, ResolutionContext context,
-                                          FieldInfo field, String targetId) {
+                                          FieldInfo field, String targetId, Map<String, TypeInfo> typesById) {
         for (BodyDeclaration<?> member : declaration.getMembers()) {
             if (member instanceof ConstructorDeclaration constructor) {
                 BodyEvidence body = inspectBody(constructor.getBody(), constructor.getParameters(),
-                        context, field.name(), targetId, false);
+                    context, field.name(), targetId, false, typesById);
                 if (body.assignedFromParameter()) return true;
             }
         }
@@ -168,7 +169,7 @@ final class RelationAnalyzer {
 
     private BodyEvidence inspectBody(Node body, List<Parameter> parameters,
                                      ResolutionContext context, String fieldName, String targetId,
-                                     boolean setter) {
+                                     boolean setter, Map<String, TypeInfo> typesById) {
         Map<String, Set<String>> parameterTypes = new LinkedHashMap<>();
         for (Parameter parameter : parameters) {
             parameterTypes.put(parameter.getNameAsString(), projectTypes(resolver.resolve(parameter.getType(), context)));
@@ -197,7 +198,7 @@ final class RelationAnalyzer {
         for (AssignExpr assignment : body.findAll(AssignExpr.class)) {
             if (!isField(assignment.getTarget(), fieldName)) continue;
             Origins origins = origins(assignment.getValue(), context, parameterTypes, localOrigins);
-            created |= origins.created().contains(targetId);
+            created |= matchesTarget(origins.created(), targetId, typesById);
             assigned |= origins.parameters().contains(targetId);
             exposed |= setter && origins.parameters().contains(targetId);
         }
@@ -205,7 +206,7 @@ final class RelationAnalyzer {
             if (call.getScope().isEmpty() || !scopeName(call.getScope().get()).equals(fieldName)) continue;
             for (Expression argument : call.getArguments()) {
                 Origins origins = origins(argument, context, parameterTypes, localOrigins);
-                created |= origins.created().contains(targetId);
+                created |= matchesTarget(origins.created(), targetId, typesById);
                 assigned |= origins.parameters().contains(targetId);
             }
         }
@@ -234,8 +235,25 @@ final class RelationAnalyzer {
         return targets;
     }
 
-    private boolean containsCreation(Expression expression, ResolutionContext context, String targetId) {
-        return createdTypes(expression, context).contains(targetId);
+    private boolean containsCreation(Expression expression, ResolutionContext context, String targetId,
+                                     Map<String, TypeInfo> typesById) {
+        return matchesTarget(createdTypes(expression, context), targetId, typesById);
+    }
+
+    private static boolean matchesTarget(Set<String> candidates, String targetId,
+                                         Map<String, TypeInfo> typesById) {
+        for (String candidate : candidates) {
+            Set<String> visited = new LinkedHashSet<>();
+            String currentId = candidate;
+            while (currentId != null && visited.add(currentId)) {
+                if (currentId.equals(targetId)) return true;
+                TypeInfo current = typesById.get(currentId);
+                TypeRef superclass = current == null ? null : current.superclass();
+                currentId = superclass != null && superclass.projectType()
+                        ? superclass.qualifiedName() : null;
+            }
+        }
+        return false;
     }
 
     private void addDependencies(TypeInfo owner, DeclarationContext declaration, Set<TypePair> structuralPairs,

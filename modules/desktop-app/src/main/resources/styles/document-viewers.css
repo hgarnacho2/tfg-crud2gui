@@ -30,3 +30,13 @@
     -fx-font-weight: bold;
 }
 
+.pdf-preview-paper {
+    -fx-padding: 18px;
+    -fx-background-color: #e4eae7;
+}
+
+.pdf-preview-viewport {
+    -fx-background-color: #e4eae7;
+    -fx-background-radius: 8px;
+}
+

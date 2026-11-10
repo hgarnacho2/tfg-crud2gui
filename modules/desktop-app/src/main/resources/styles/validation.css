@@ -76,6 +76,7 @@
 }
 
 .model-validation-outcome-subtitle {
+    -fx-font-size: 14px;
     -fx-text-fill: -fx-text-muted;
 }
 
@@ -114,6 +115,7 @@
 }
 
 .model-validation-metric-title {
+    -fx-font-size: 15px;
     -fx-text-fill: -fx-text-muted;
 }
 
@@ -147,6 +149,10 @@
     -fx-text-fill: #173e33;
 }
 
+.model-validation-block-title {
+    -fx-font-size: 16px;
+}
+
 .model-validation-subheading {
     -fx-font-weight: bold;
     -fx-text-fill: -fx-text-muted;
@@ -164,6 +170,52 @@
     -fx-background-radius: 4px;
     -fx-text-fill: #76500a;
     -fx-font-weight: bold;
+}
+
+.model-validation-relation-property {
+    -fx-alignment: center-left;
+    -fx-spacing: 6px;
+}
+
+.model-validation-relation-attribute-badge {
+    -fx-padding: 3px 6px;
+    -fx-background-color: #e7f1f5;
+    -fx-background-radius: 3px;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #386478;
+}
+
+.model-validation-relation-kinds {
+    -fx-hgap: 12px;
+    -fx-vgap: 6px;
+}
+
+.model-validation-relation-kind-group {
+    -fx-alignment: center-left;
+    -fx-spacing: 6px;
+}
+
+.model-validation-relation-origin-badge {
+    -fx-padding: 3px 6px;
+    -fx-background-radius: 3px;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.model-validation-relation-origin-enunciado {
+    -fx-background-color: #e4f3ec;
+    -fx-text-fill: -fx-brand-accent;
+}
+
+.model-validation-relation-origin-code {
+    -fx-background-color: #e7f1f5;
+    -fx-text-fill: #386478;
+}
+
+.model-validation-relation-kind-value {
+    -fx-font-weight: bold;
+    -fx-text-fill: #344a42;
 }
 
 .model-validation-severity {
@@ -217,6 +269,15 @@
     -fx-background-color: #f1f6f3;
     -fx-background-radius: 6px;
     -fx-padding: 10px 12px;
+}
+
+#model-validation-relationships > .title {
+    -fx-font-size: 16px;
+}
+
+#model-validation-confirmations > .title,
+#model-validation-findings > .title {
+    -fx-font-size: 16px;
 }
 
 .model-validation-details > .content {

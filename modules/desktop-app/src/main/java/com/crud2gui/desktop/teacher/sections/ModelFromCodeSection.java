@@ -137,7 +137,7 @@ public class ModelFromCodeSection extends Section {
     private ModelFromCodeSection(String breadcrumb, Function<Window, File> chooseCodeFolder,
                         BiFunction<Window, Path, File> chooseOutputFolder, Path outputDirectory,
                         WorkflowContext workflow) {
-        super(breadcrumb, "Modelo desde código",
+        super(breadcrumb, "Modelo desde Código",
                 "Extracción de un modelo de clases a partir de código fuente Java.");
         this.chooseCodeFolder = Objects.requireNonNull(chooseCodeFolder, "chooseCodeFolder");
         this.chooseOutputFolder = Objects.requireNonNull(chooseOutputFolder, "chooseOutputFolder");
@@ -260,7 +260,7 @@ public class ModelFromCodeSection extends Section {
                 UiComponents.panelHeading("Diagrama de clases UML",
                         "Representación visual del modelo extraído del código."),
                 managerSelectionPrompt, managerSelector,
-                diagramScroll, diagramStatus);
+                diagramScroll, ClassDiagramView.relationshipLegend(), diagramStatus);
         VBox.setVgrow(diagramScroll, Priority.ALWAYS);
         VBox.setVgrow(diagramContent, Priority.ALWAYS);
         VBox diagramPanel = UiComponents.surface(diagramContent);

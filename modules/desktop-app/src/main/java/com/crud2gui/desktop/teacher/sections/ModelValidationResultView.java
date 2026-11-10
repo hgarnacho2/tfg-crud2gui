@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TitledPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -120,32 +121,74 @@ final class ModelValidationResultView extends VBox {
             for (JsonNode decision : decisions) {
                 Label relation = UiComponents.label(decision.path("from").asText() + " → "
                         + decision.path("to").asText(), List.of("model-validation-relation-title"));
-                Label property = UiComponents.label("Atributo: " + decision.path("via").asText("-"),
+                Label propertyBadge = UiComponents.label("ATRIBUTO",
+                        List.of("model-validation-relation-attribute-badge"));
+                Label propertyValue = UiComponents.label(decision.path("via").asText("-"),
                         List.of("model-validation-detail"));
-                Label kinds = UiComponents.label(decision.path("expectedKind").asText() + " → "
-                        + decision.path("inferredKind").asText(), List.of("model-validation-relation-kinds"));
-                Label state = UiComponents.label(decision.path("status").asText(),
+                HBox property = UiComponents.hBox(List.of("model-validation-relation-property"),
+                        propertyBadge, propertyValue);
+                FlowPane kinds = new FlowPane(12, 6);
+                kinds.getStyleClass().add("model-validation-relation-kinds");
+                kinds.getChildren().addAll(
+                        relationKindGroup("ENUNCIADO", relationKindName(decision.path("expectedKind").asText()),
+                                "enunciado", "statement"),
+                        relationKindGroup("CÓDIGO", relationKindName(decision.path("inferredKind").asText()),
+                                "code", "source"));
+                Label state = UiComponents.label(relationStatus(decision.path("status").asText()),
                         List.of("model-validation-pending-badge"));
+                state.setWrapText(true);
+                state.setMaxWidth(250);
                 rows.getChildren().add(UiComponents.hBox(List.of("model-validation-relation"),
                         UiComponents.vBox(List.of("model-validation-relation-details"), relation, property, kinds),
                         state));
             }
         }
-        TitledPane pane = detailsPane("Decisiones de relaciones (" + arraySize(decisions) + ")", rows,
-                decisions.isArray() && !decisions.isEmpty());
+        TitledPane pane = detailsPane("Avisos de relaciones entre clases (" + arraySize(decisions) + ")", rows,
+                true);
         pane.setId("model-validation-relationships");
         return pane;
     }
 
+        private static HBox relationKindGroup(String origin, String kind, String originStyle, String kindStyle) {
+                Label badge = UiComponents.label(origin,
+                                List.of("model-validation-relation-origin-badge", "model-validation-relation-origin-" + originStyle));
+                Label value = UiComponents.label(kind,
+                                List.of("model-validation-relation-kind-value", "model-validation-relation-kind-" + kindStyle));
+                return UiComponents.hBox(List.of("model-validation-relation-kind-group"), badge, value);
+        }
+
+        private static String relationKindName(String kind) {
+                return switch (kind) {
+                        case "ASSOCIATION" -> "Asociación";
+                        case "COMPOSITION" -> "Composición";
+                        case "AGGREGATION" -> "Agregación";
+                        case "INHERITANCE" -> "Herencia";
+                        case "REALIZATION" -> "Realización";
+                        case "DEPENDENCY" -> "Dependencia";
+                        default -> kind;
+                };
+        }
+
+        private static String relationStatus(String status) {
+                return switch (status) {
+                        case "PENDING_CONFIRMATION" -> "Se confirmará al generar el CRUD";
+                        default -> status;
+                };
+        }
+
     private static TitledPane confirmations(JsonNode confirmations) {
         VBox rows = new VBox(8);
-        for (JsonNode confirmation : confirmations) {
-            String description = confirmation.path("type").asText("Confirmación") + " · "
-                    + confirmation.path("stage").asText("") + " · "
-                    + confirmation.path("status").asText("Pendiente");
-            Label item = UiComponents.label(description, List.of("model-validation-detail"));
-            item.setWrapText(true);
-            rows.getChildren().add(item);
+                if (!confirmations.isArray() || confirmations.isEmpty()) {
+                        rows.getChildren().add(UiComponents.mutedText("No hay confirmaciones pendientes."));
+                } else {
+                        for (JsonNode confirmation : confirmations) {
+                                String description = confirmation.path("type").asText("Confirmación") + " · "
+                                                + confirmation.path("stage").asText("") + " · "
+                                                + confirmation.path("status").asText("Pendiente");
+                                Label item = UiComponents.label(description, List.of("model-validation-detail"));
+                                item.setWrapText(true);
+                                rows.getChildren().add(item);
+                        }
         }
         TitledPane pane = detailsPane("Confirmaciones pendientes (" + arraySize(confirmations) + ")",
                 rows, true);
@@ -175,7 +218,7 @@ final class ModelValidationResultView extends VBox {
                 rows.getChildren().add(UiComponents.hBox(List.of("model-validation-finding"), badge, detail));
             }
         }
-        TitledPane pane = detailsPane("Hallazgos (" + arraySize(findings) + ")", rows,
+        TitledPane pane = detailsPane("Informe de la validación (" + arraySize(findings) + ")", rows,
                 findings.isArray() && !findings.isEmpty());
         pane.setId("model-validation-findings");
         return pane;

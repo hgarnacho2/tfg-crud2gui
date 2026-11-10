@@ -99,6 +99,11 @@ public final class StudentWorkflowContext implements WorkflowContext {
         return usable(selectedJavaModel);
     }
 
+    /** Devuelve el último modelo generado desde código, aunque haya una selección manual activa. */
+    public Path getGeneratedCodeModel() {
+        return usable(codeModel);
+    }
+
     @Override
     public boolean isJavaModelManual() {
         return javaModelManual;

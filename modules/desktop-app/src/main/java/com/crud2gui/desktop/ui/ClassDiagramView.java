@@ -15,6 +15,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -55,6 +56,61 @@ public final class ClassDiagramView extends Pane {
         getChildren().add(relationships);
         setMinSize(1000, 700);
         setPrefSize(1500, 1000);
+    }
+
+    public static VBox relationshipLegend() {
+        FlowPane items = new FlowPane(18, 8);
+        items.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        items.setId("uml-relation-legend-items");
+        for (RelationKind kind : List.of(RelationKind.ASSOCIATION, RelationKind.COMPOSITION,
+                RelationKind.AGGREGATION, RelationKind.INHERITANCE, RelationKind.REALIZATION,
+                RelationKind.DEPENDENCY)) {
+            Label label = UiComponents.label(relationName(kind), List.of("uml-relation-legend-item-label"));
+            HBox item = UiComponents.hBox(List.of("uml-relation-legend-item"), relationSample(kind), label);
+            item.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            items.getChildren().add(item);
+        }
+        Label title = UiComponents.label("Leyenda de relaciones", List.of("uml-relation-legend-title"));
+        VBox legend = UiComponents.vBox(List.of("uml-relation-legend"), title, items);
+        legend.setId("uml-relation-legend");
+        return legend;
+    }
+
+    private static Canvas relationSample(RelationKind kind) {
+        Canvas sample = new Canvas(68, 24);
+        GraphicsContext graphics = sample.getGraphicsContext2D();
+        Color color = relationColor(kind);
+        graphics.setStroke(color);
+        graphics.setFill(color);
+        graphics.setLineWidth(kind == RelationKind.COMPOSITION ? 2.2 : 1.8);
+        boolean dashed = kind == RelationKind.DEPENDENCY || kind == RelationKind.REALIZATION;
+        if (dashed) {
+            graphics.setLineDashes(8, 6);
+        }
+        double startX = kind == RelationKind.COMPOSITION || kind == RelationKind.AGGREGATION ? 35 : 5;
+        double endX = 62;
+        if (kind == RelationKind.COMPOSITION || kind == RelationKind.AGGREGATION) {
+            drawDiamond(graphics, startX, 12, 1, 0, kind == RelationKind.COMPOSITION);
+        }
+        graphics.strokeLine(startX, 12, endX, 12);
+        graphics.setLineDashes();
+        if (kind == RelationKind.INHERITANCE || kind == RelationKind.REALIZATION) {
+            drawTriangle(graphics, endX, 12, 1, 0);
+        } else if (kind == RelationKind.DEPENDENCY) {
+            drawOpenArrow(graphics, endX, 12, 1, 0);
+        }
+        return sample;
+    }
+
+    private static String relationName(RelationKind kind) {
+        return switch (kind) {
+            case ASSOCIATION -> "Asociación";
+            case COMPOSITION -> "Composición";
+            case AGGREGATION -> "Agregación";
+            case INHERITANCE -> "Herencia";
+            case REALIZATION -> "Realización";
+            case DEPENDENCY -> "Dependencia";
+        };
     }
 
     /** Sustituye el modelo dibujado y reconstruye sus tarjetas y relaciones. */

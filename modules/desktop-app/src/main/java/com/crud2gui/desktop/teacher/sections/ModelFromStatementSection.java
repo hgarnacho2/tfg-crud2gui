@@ -174,7 +174,7 @@ public final class ModelFromStatementSection extends Section {
               BiFunction<Window, Path, File> chooseOutputFolder,
               List<ModelClientProvider> providers, Path outputDirectory,
               TeacherWorkflowContext workflow, Function<Window, File> chooseLocalModelFile) {
-        super("MODELO DESDE ENUNCIADO", "Modelo desde enunciado",
+        super("MODELO DESDE ENUNCIADO", "Modelo desde Enunciado",
                 "Generación de un modelo de clases a partir del texto filtrado de un enunciado.");
         setMinHeight(Region.USE_PREF_SIZE);
         this.chooseTextFile = Objects.requireNonNull(chooseTextFile, "chooseTextFile");
@@ -316,7 +316,7 @@ public final class ModelFromStatementSection extends Section {
             VBox diagramContent = new VBox(14,
                 UiComponents.panelHeading("Diagrama de clases UML",
                     "La clase gestora se sitúa en el centro; las relaciones enlazan las clases del modelo."),
-                diagramScroll, diagramStatus);
+                diagramScroll, ClassDiagramView.relationshipLegend(), diagramStatus);
             VBox.setVgrow(diagramScroll, Priority.ALWAYS);
             VBox.setVgrow(diagramContent, Priority.ALWAYS);
             VBox diagramPanel = UiComponents.surface(diagramContent);

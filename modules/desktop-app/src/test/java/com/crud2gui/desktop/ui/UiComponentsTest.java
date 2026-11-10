@@ -236,21 +236,23 @@ class UiComponentsTest {
                     assertEquals(15, button.getFont().getSize(), 0.01);
                     assertTrue(button.getFont().getStyle().contains("Bold"));
                 }
-                assertEquals(dashboard instanceof TeacherDashboardView ? 6 : 3, buttons.size());
+                assertEquals(dashboard instanceof TeacherDashboardView ? 6 : 4, buttons.size());
                 if (dashboard instanceof TeacherDashboardView) {
-                    assertEquals(List.of("Contexto", "Enunciado", "Enunciado >> Modelo", "Código >> Modelo",
+                        assertEquals(List.of("Contexto", "Enunciado", "Modelo desde Enunciado", "Modelo desde Código",
                             "Validar modelos", "CRUD"), buttons.stream().map(Button::getText).toList());
                         assertNotNull(dashboard.getCenter().lookup("#teacher-context-diagram"));
                 } else {
-                    assertEquals(List.of("Código >> Modelo", "Validar modelos", "CRUD"),
+                        assertEquals(List.of("Contexto", "Modelo desde Código", "Validar modelos", "CRUD"),
                             buttons.stream().map(Button::getText).toList());
+                    assertNotNull(dashboard.getCenter().lookup("#student-context-diagram"));
                 }
                 ScrollPane content = (ScrollPane) dashboard.getCenter();
                 java.util.Map<Button, Node> visited = new java.util.LinkedHashMap<>();
                 for (Button button : buttons) {
                     button.fire();
                     if (dashboard instanceof StudentDashboardView) {
-                        assertEquals("Código >> Modelo".equals(button.getText()), content.isFitToHeight());
+                        assertEquals("Contexto".equals(button.getText())
+                            || "Modelo desde Código".equals(button.getText()), content.isFitToHeight());
                     }
                     dashboard.applyCss();
                     Node page = content.getContent();
@@ -258,7 +260,9 @@ class UiComponentsTest {
                     assertInstanceOf(Section.class, page);
                         if (dashboard instanceof StudentDashboardView) {
                         switch (button.getText()) {
-                            case "Código >> Modelo" -> assertInstanceOf(
+                            case "Contexto" -> assertInstanceOf(
+                                com.crud2gui.desktop.student.sections.StudentContextSection.class, page);
+                            case "Modelo desde Código" -> assertInstanceOf(
                                 com.crud2gui.desktop.student.sections.ModelFromCodeSection.class, page);
                             case "Validar modelos" -> assertInstanceOf(
                                 com.crud2gui.desktop.student.sections.ModelValidationSection.class, page);

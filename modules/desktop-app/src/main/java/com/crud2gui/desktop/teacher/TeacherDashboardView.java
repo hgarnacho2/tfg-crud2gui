@@ -26,8 +26,8 @@ public final class TeacherDashboardView extends BorderPane {
     private enum TeacherSection {
         CONTEXT("Contexto"),
         STATEMENT("Enunciado"),
-        MODEL_FROM_STATEMENT("Enunciado >> Modelo"),
-        MODEL_FROM_CODE("Código >> Modelo"),
+        MODEL_FROM_STATEMENT("Modelo desde Enunciado"),
+        MODEL_FROM_CODE("Modelo desde Código"),
         MODEL_VALIDATION("Validar modelos"),
         CRUD("CRUD");
 

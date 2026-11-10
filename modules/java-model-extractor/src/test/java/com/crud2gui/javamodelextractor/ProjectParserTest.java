@@ -223,6 +223,16 @@ class ProjectParserTest {
         assertEquals("1", state.multiplicity());
     }
 
+    @Test
+    void practica2023V2DetectaComposicionDesdeLasClasesPropietarias() throws Exception {
+        ProjectModel practice = parse("practica-2023-v2");
+
+        assertEquals(RelationKind.COMPOSITION,
+                relation(practice, "PlataformaCompraVenta", "Usuario", "usuarios").kind());
+        assertEquals(RelationKind.COMPOSITION,
+                relation(practice, "Usuario", "Producto", "productos").kind());
+    }
+
     /** El detector generaliza a colecciones variadas, jerarquias, ciclos y gestores sin colecciones. */
     @Test
     void detectaGestorasEnProyectosEstructuralmenteDistintos() throws Exception {

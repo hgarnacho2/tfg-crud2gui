@@ -192,6 +192,7 @@ class ModelFromCodeSectionTest {
             }
             ClassDiagramView diagram = (ClassDiagramView)
                     ((ScrollPane) diagramContent.getChildren().get(3)).getContent();
+                assertEquals(6, diagramContent.lookupAll(".uml-relation-legend-item").size());
             assertEquals(2, diagram.getChildren().stream()
                     .filter(node -> node.getStyleClass().contains("uml-class-card")).count());
             assertEquals(1, diagram.getChildren().stream()

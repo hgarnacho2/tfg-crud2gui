@@ -158,6 +158,9 @@ class TeacherModelSectionsTest {
             button(section, "model-validation-change-output-folder").fire();
             assertEquals(reportDirectory.toString(),
                     ((Label) section.lookup("#model-validation-output-path")).getText());
+                Button openOutputFolder = button(section, "model-validation-open-output-folder");
+                assertEquals("Abrir carpeta de salida", openOutputFolder.getText());
+                assertTrue(openOutputFolder.isVisible());
             result.disabledProperty().addListener((observable, wasDisabled, isDisabled) -> {
                 if (!isDisabled) {
                     validationFinished.complete(null);
@@ -187,13 +190,27 @@ class TeacherModelSectionsTest {
                 assertEquals(15, savedStatus.getFont().getSize());
                 assertEquals(javafx.scene.paint.Color.web("#e4f3ec"),
                     savedStatus.getBackground().getFills().get(0).getFill());
-                assertEquals(14, ((Label) reportView.lookup(".model-validation-block-title")).getFont().getSize());
+                assertEquals(16, ((Label) reportView.lookup(".model-validation-block-title")).getFont().getSize());
                 var accordion = (javafx.scene.control.TitledPane) reportView.lookup("#model-validation-findings");
-                assertEquals(14, accordion.getFont().getSize());
+                assertTrue(accordion.getText().startsWith("Informe de la validación ("));
+                assertEquals(16, accordion.getFont().getSize());
                 assertEquals(6, accordion.getBorder().getStrokes().get(0).getRadii().getTopLeftHorizontalRadius());
                 assertTrue(accordion.lookup(".title .text") instanceof javafx.scene.text.Text);
                 assertTrue(((javafx.scene.text.Text) accordion.lookup(".title .text")).getFont().getStyle()
                     .contains("Bold"));
+                assertEquals(16, ((javafx.scene.text.Text) accordion.lookup(".title .text")).getFont().getSize());
+                var confirmations = (javafx.scene.control.TitledPane)
+                    reportView.lookup("#model-validation-confirmations");
+                assertEquals(16, ((javafx.scene.text.Text) confirmations.lookup(".title .text"))
+                    .getFont().getSize());
+                assertEquals("No hay confirmaciones pendientes.",
+                    ((Label) confirmations.lookup(".text-muted")).getText());
+                var relationships = (javafx.scene.control.TitledPane)
+                    reportView.lookup("#model-validation-relationships");
+                var relationshipsTitle = (javafx.scene.text.Text) relationships.lookup(".title .text");
+                assertTrue(relationships.getText().startsWith("Avisos de relaciones entre clases ("));
+                assertTrue(relationships.isExpanded());
+                assertEquals(16, relationshipsTitle.getFont().getSize());
             assertEquals("Estructura válida",
                     ((Label) reportView.lookup("#model-validation-outcome-title")).getText());
             assertEquals("Listo para CRUD",
@@ -239,8 +256,85 @@ class TeacherModelSectionsTest {
         }
     }
 
-    @Test
-    void configuresEveryValidatorOptionVisually() throws Exception {
+        @Test
+        void showsTheSourceOfEachRelationshipKind() throws Exception {
+                var report = new com.fasterxml.jackson.databind.ObjectMapper().readTree("""
+                                {
+                                    "valid": true,
+                                    "readyForCrud": false,
+                                    "summary": {"errors": 0, "warnings": 1, "info": 0},
+                                    "managerSelection": {},
+                                    "relationshipDecisions": [{
+                                        "from": "Usuario",
+                                        "to": "Producto",
+                                        "via": "productos",
+                                        "expectedKind": "COMPOSITION",
+                                        "inferredKind": "ASSOCIATION",
+                                        "status": "PENDING_CONFIRMATION"
+                                    }],
+                                    "crudConfirmations": [],
+                                    "findings": []
+                                }
+                                """);
+
+                onFx(() -> {
+                        ModelValidationResultView view = new ModelValidationResultView(report, directory.resolve("report.json"));
+                        attach(view);
+
+                        var relationships = (javafx.scene.control.TitledPane) view.lookup("#model-validation-relationships");
+                        assertEquals("ATRIBUTO", ((Label) relationships.lookup(
+                            ".model-validation-relation-attribute-badge")).getText());
+                        assertEquals("productos", ((Label) relationships.lookup(".model-validation-detail"))
+                            .getText());
+                        assertEquals("Se confirmará al generar el CRUD",
+                            ((Label) relationships.lookup(".model-validation-pending-badge")).getText());
+                    var kinds = relationships.lookup(".model-validation-relation-kinds");
+                    assertEquals("ENUNCIADO", ((Label) kinds.lookup(".model-validation-relation-origin-enunciado"))
+                        .getText());
+                    assertEquals("Composición", ((Label) kinds.lookup(".model-validation-relation-kind-statement"))
+                        .getText());
+                    assertEquals("CÓDIGO", ((Label) kinds.lookup(".model-validation-relation-origin-code"))
+                        .getText());
+                    assertEquals("Asociación", ((Label) kinds.lookup(".model-validation-relation-kind-source"))
+                        .getText());
+                        return null;
+                });
+        }
+
+        @Test
+        void changingSourceModelKeepsSelectedExpectedModelAndEnablesResultStep() throws Exception {
+        Path source = Files.writeString(directory.resolve("source.json"), "{}");
+        Path replacement = Files.writeString(directory.resolve("source-replacement.json"), "{}");
+        Path inferred = Files.writeString(directory.resolve("inferred.json"), "{}");
+        AtomicReference<File> selection = new AtomicReference<>(source.toFile());
+
+        onFx(() -> {
+            ModelValidationSection section = new ModelValidationSection(owner -> selection.get(),
+                () -> directory, (owner, current) -> null);
+            attach(section);
+
+            button(section, "model-validation-java-select").fire();
+            button(section, "model-validation-step-statement").fire();
+            selection.set(inferred.toFile());
+            button(section, "model-validation-statement-select").fire();
+            assertFalse(button(section, "model-validation-step-result").isDisabled());
+
+            button(section, "model-validation-step-java").fire();
+            selection.set(replacement.toFile());
+            button(section, "model-validation-java-select").fire();
+
+            assertEquals(replacement, ((ModelJsonSelection) section.lookup("#model-validation-java"))
+                .getSelectedFile());
+            assertEquals(inferred, ((ModelJsonSelection) section.lookup("#model-validation-statement"))
+                .getSelectedFile());
+            assertFalse(button(section, "model-validation-step-result").isDisabled());
+            assertFalse(button(section, "model-validation-run").isDisabled());
+            return null;
+        });
+        }
+
+        @Test
+        void configuresEveryValidatorOptionVisually() throws Exception {
         onFx(() -> {
             var initial = com.crud2gui.modelvalidator.ValidationOptions.defaults();
             var editor = new com.crud2gui.desktop.ui.ValidationOptionsView(initial);
@@ -373,6 +467,16 @@ class TeacherModelSectionsTest {
                 ((Label) section.lookup("#teacher-context-stage-code-model-file")).getText());
             assertEquals("validacion.json",
                 ((Label) section.lookup("#teacher-context-stage-validation-report-file")).getText());
+            Label codeBadge = (Label) section.lookup("#teacher-context-validation-input-code-badge");
+            Label statementBadge = (Label) section.lookup("#teacher-context-validation-input-statement-badge");
+            assertEquals("CODIGO", codeBadge.getText());
+            assertEquals("ENUNCIADO", statementBadge.getText());
+            assertTrue(codeBadge.getStyleClass().contains("workflow-context-input-badge"));
+            assertTrue(statementBadge.getStyleClass().contains("workflow-context-input-badge"));
+            assertEquals("modelo-codigo.json",
+                ((Label) section.lookup("#teacher-context-validation-input-code-file")).getText());
+            assertEquals("modelo-enunciado-validated.json",
+                ((Label) section.lookup("#teacher-context-validation-input-statement-file")).getText());
             assertTrue(((Label) section.lookup("#teacher-context-stage-crud-file")).getText()
                 .contains("más adelante"));
             assertNull(section.lookup(".teacher-context-convergence"));

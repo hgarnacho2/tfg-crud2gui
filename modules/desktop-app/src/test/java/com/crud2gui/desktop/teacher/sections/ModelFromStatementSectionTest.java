@@ -458,6 +458,7 @@ class ModelFromStatementSectionTest {
                 VBox diagramContent = (VBox) diagramPanel.getChildren().get(0);
                 ScrollPane diagramScroll = (ScrollPane) diagramContent.getChildren().get(1);
                 ClassDiagramView diagram = (ClassDiagramView) diagramScroll.getContent();
+                assertEquals(6, diagramContent.lookupAll(".uml-relation-legend-item").size());
                 assertEquals(3, diagram.lookupAll(".uml-class-card").size());
                 assertEquals(1, diagram.lookupAll(".uml-manager-card").size());
                 assertTrue(diagram.lookupAll(".uml-package-name").isEmpty());

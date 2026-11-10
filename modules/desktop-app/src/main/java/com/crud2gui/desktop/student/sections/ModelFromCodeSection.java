@@ -6,6 +6,6 @@ import com.crud2gui.desktop.student.StudentWorkflowContext;
 public final class ModelFromCodeSection extends com.crud2gui.desktop.teacher.sections.ModelFromCodeSection {
 
     public ModelFromCodeSection(StudentWorkflowContext workflow) {
-        super("Código >> Modelo", workflow);
+        super("Modelo desde Código", workflow);
     }
 }

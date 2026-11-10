@@ -58,10 +58,12 @@ class StatementAnalyzerTest {
     @Test
     void promptExampleIncludesTheExpectedManagerAndPreservesItInTheResult() throws Exception {
         String prompt;
-        try (var resource = getClass().getResourceAsStream("/prompts/prompt-v5.txt")) {
+        try (var resource = getClass().getResourceAsStream("/prompts/prompt-v6.txt")) {
             assertTrue(resource != null, "Debe existir el prompt de referencia.");
             prompt = new String(resource.readAllBytes(), StandardCharsets.UTF_8);
         }
+        assertTrue(prompt.contains("clasifica cada relación enumerada como COMPOSITION y no añadas AMBIGUO para ella"));
+        assertTrue(prompt.contains("Si el tipo destino es un enumerado, usa siempre ASSOCIATION y no AMBIGUO"));
         String example = prompt.substring(prompt.indexOf("{\"schemaVersion\"")).strip();
         AnalysisResult result = new StatementAnalyzer(new FakeClient(example))
                 .analyze("m", prompt, "Clase es la gestora del sistema.", GenerationOptions.defaults());

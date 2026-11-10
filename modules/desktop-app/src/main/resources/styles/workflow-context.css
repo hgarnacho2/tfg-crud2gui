@@ -1,0 +1,143 @@
+.workflow-context-diagram {
+    -fx-spacing: 18px;
+}
+
+.workflow-context-branches {
+    -fx-hgap: 20px;
+    -fx-alignment: top-left;
+}
+
+.workflow-context-lane {
+    -fx-spacing: 22px;
+}
+
+.workflow-context-lane-title {
+    -fx-text-fill: -fx-brand-accent;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.workflow-context-lane-title.student-context-code-lane-title {
+    -fx-text-fill: -fx-brand-accent;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.workflow-context-lane-title.student-context-reference-lane-title {
+    -fx-font-size: 20px;
+}
+
+.workflow-context-lane-description,
+.workflow-context-stage-path,
+.workflow-context-stage-details {
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-size: 12px;
+    -fx-wrap-text: true;
+}
+
+.workflow-context-lane-description {
+    -fx-font-size: 15px;
+}
+
+.workflow-context-stage-path {
+    -fx-font-size: 13px;
+}
+
+.workflow-context-lane-description.student-context-lane-description {
+    -fx-font-size: 15px;
+}
+
+.workflow-context-stage-path {
+    -fx-font-size: 14px;
+}
+
+.workflow-context-stage {
+    -fx-spacing: 8px;
+    -fx-padding: 14px 16px;
+    -fx-background-color: white;
+    -fx-background-radius: 6px;
+    -fx-border-color: #d7e5df;
+    -fx-border-radius: 6px;
+}
+
+.workflow-context-stage-pending {
+    -fx-background-color: #f7faf8;
+    -fx-border-style: segments(4, 4);
+}
+
+.workflow-context-stage-type {
+    -fx-padding: 5px 8px;
+    -fx-background-color: #e1f1ea;
+    -fx-background-radius: 4px;
+    -fx-text-fill: -fx-brand-accent;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.workflow-context-stage-title {
+    -fx-text-fill: -fx-brand-accent;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.workflow-context-stage-file {
+    -fx-text-fill: #173e33;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-wrap-text: true;
+}
+
+.workflow-context-stage-empty {
+    -fx-text-fill: #75837d;
+    -fx-font-size: 13px;
+    -fx-wrap-text: true;
+}
+
+.workflow-context-connector {
+    -fx-fill: transparent;
+    -fx-stroke: -fx-brand-accent;
+    -fx-stroke-width: 2.5px;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+
+.workflow-context-merge-connector {
+    -fx-stroke-width: 3px;
+}
+
+.workflow-context-validation-inputs {
+    -fx-spacing: 6px;
+}
+
+.workflow-context-input-badge {
+    -fx-padding: 3px 6px;
+    -fx-background-radius: 3px;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.workflow-context-input-code {
+    -fx-background-color: #e8f0f3;
+    -fx-text-fill: #426270;
+}
+
+.workflow-context-input-statement {
+    -fx-background-color: #f5f0e2;
+    -fx-text-fill: #76652f;
+}
+
+.workflow-context-input-file {
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-size: 13px;
+    -fx-wrap-text: true;
+}
+
+.student-context-code-lane-title {
+    -fx-text-fill: -fx-brand-accent;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.student-context-lane-description {
+    -fx-font-size: 14px;
+}
