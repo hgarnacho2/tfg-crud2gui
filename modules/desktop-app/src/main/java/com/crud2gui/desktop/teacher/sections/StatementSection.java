@@ -363,6 +363,9 @@ public final class StatementSection extends Section {
         String name = selectedPdf.getFileName().toString();
         int dot = name.lastIndexOf('.');
         String base = dot > 0 ? name.substring(0, dot) : name;
+        if (!base.startsWith("texto-")) {
+            base = "texto-" + base;
+        }
         return outputFolder.resolve(base + (filtered ? "-filtrado.txt" : ".txt"));
     }
 

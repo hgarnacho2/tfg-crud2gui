@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class EntraIdAuthenticatorTest {
 
@@ -25,6 +26,18 @@ class EntraIdAuthenticatorTest {
         assertEquals("/tenant.example/oauth2/v2.0/logout", logout.getPath());
         assertEquals("post_logout_redirect_uri=" + config.redirectUri(),
                 URLDecoder.decode(logout.getRawQuery(), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void buildsTenantLogoutWithoutReturnForExternalBrowser() throws Exception {
+        var config = new AuthenticatorConfig("client-id", "tenant.example",
+                URI.create("http://localhost"), Set.of("openid"));
+        var authenticator = new EntraIdAuthenticator(config, url -> {});
+
+        URI logout = authenticator.logoutUri(false);
+
+        assertEquals("/tenant.example/oauth2/v2.0/logout", logout.getPath());
+        assertNull(logout.getRawQuery());
     }
 
     // Limpiar una caché vacía debe terminar sin lanzar una excepción.

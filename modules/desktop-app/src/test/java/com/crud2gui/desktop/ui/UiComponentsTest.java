@@ -105,6 +105,8 @@ class UiComponentsTest {
                     assertEquals(88, step.getPrefHeight());
                     assertEquals(88, step.getMaxHeight());
                     assertEquals(88, step.getHeight());
+                    Label title = (Label) step.lookup(".statement-step-title");
+                    assertEquals(disabled ? Color.web("#75837d") : Color.web("#173e33"), title.getTextFill());
                 }
             }
         });

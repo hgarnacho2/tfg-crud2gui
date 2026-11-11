@@ -1,6 +1,6 @@
 # CRUD2GUI Desktop App
 
-Aplicacion JavaFX de escritorio que presenta el estado de autenticacion de CRUD2GUI. La autenticacion la delega al modulo `authenticator` y siempre se completa en un WebView integrado en la misma ventana mediante MSAL4J, PKCE y callback loopback.
+Aplicacion JavaFX de escritorio que presenta el estado de autenticacion de CRUD2GUI. La autenticacion la delega al modulo `authenticator` y permite presentar el flujo de MSAL4J con PKCE y callback loopback en un WebView integrado o en el navegador predeterminado del sistema.
 
 Desde la raiz del repositorio, ejecuta:
 
@@ -37,17 +37,16 @@ desactivar el perfil con `-P!windows-renderer`; en VS Code se modifica `vmArgs`.
 
 La ventana muestra si el inicio de sesion se completo y el perfil `Alumno` o `Docente`. Si la cuenta se autentica pero no tiene ninguno de esos roles, la ventana indica que no tiene acceso asignado. No se muestran ni almacenan contrasenas o tokens.
 
-La configuracion de Entra se lee desde las variables `AZURE_*` de `.env.public` o desde variables de entorno/propiedades Java con mayor precedencia. El WebView puede no ofrecer todos los métodos de autenticación, SSO o requisitos MFA/Conditional Access disponibles en un navegador del sistema; valida el flujo con las políticas del tenant.
+La configuracion de Entra se lee desde las variables `AZURE_*` de `.env.public` o desde variables de entorno/propiedades Java con mayor precedencia. `AZURE_AUTH_BROWSER` admite `webview` o `system` y usa `webview` por defecto. El navegador del sistema suele integrarse mejor con SSO, MFA y Conditional Access. Al completar el acceso, la página del callback indica que se vuelva a CRUD2GUI y se cierre la pestaña en modo `system`; en modo `webview`, indica que la aplicación continuará automáticamente.
 
 ## Organización de la interfaz
 
-Los paneles de alumno y docente incluyen "Cerrar sesion". Se retira el panel, se vacia la cache
-MSAL en memoria y se abre el endpoint de cierre de Microsoft en el WebView integrado. El cierre
-remoto solo se considera confirmado cuando Microsoft redirige a `AZURE_REDIRECT_URI`, que debe
-estar registrado como URI de redireccion en Entra ID. Tras el retorno se crea un acceso nuevo.
-La vista de cierre no incluye un boton para volver al acceso: espera el retorno de Microsoft.
-Si falla la red o pasan 120 segundos sin retorno, se vuelve al acceso con un aviso
-de que el cierre de Microsoft no pudo confirmarse. No se cierran sesiones de otros navegadores.
+Los paneles de alumno y docente incluyen "Cerrar sesion". Se retira el panel y se vacia la cache
+MSAL en memoria. En modo `webview`, el cierre remoto solo se considera confirmado cuando Microsoft
+redirige a `AZURE_REDIRECT_URI`, que debe estar registrada; si falla la red o pasan 120 segundos,
+se vuelve al acceso con un aviso. En modo `system`, se abre el cierre de Microsoft en el navegador
+predeterminado y se vuelve al acceso inmediatamente con un aviso, porque la aplicación no puede
+observar cuándo termina ese navegador externo. No se cierran sesiones de otros navegadores.
 Cada inicio de sesion solicita `prompt=login`; Microsoft decide el metodo de autenticacion
 (contrasena, passkey, MFA o politicas del tenant).
 
@@ -120,8 +119,8 @@ a servicios externos. El estado se conserva al navegar por el
 dashboard. El modulo extractor hereda Java 21 del proyecto padre.
 
 La carpeta de salida predeterminada es la del PDF y se puede cambiar antes de cada
-operacion. Para `enunciado.pdf`, el paso 2 guarda `enunciado.txt` y el paso 3 guarda
-`enunciado-filtrado.txt`, ambos en UTF-8. El destino se muestra durante el proceso y
+operacion. Para `enunciado.pdf`, el paso 2 guarda `texto-enunciado.txt` y el paso 3 guarda
+`texto-enunciado-filtrado.txt`, ambos en UTF-8. El destino se muestra durante el proceso y
 la ruta generada aparece solo en el mensaje final inferior, tras guardar
 correctamente. Los archivos existentes requieren confirmacion antes de sobrescribir;
 cancelar conserva los resultados. Cambiar la carpeta no mueve archivos anteriores;
@@ -151,11 +150,17 @@ disponible y la etiqueta inferior confirma que se puede continuar con el paso 3:
 Seleccionar LLM. Cancelar o un error de lectura conserva el prompt anterior, si lo habia.
 Si el LLM devuelve una respuesta con JSON incorrecto o incompatible con el modelo,
 el visor muestra el texto original sin modificarlo. La etiqueta inferior conserva
-el error y los pasos de afinado y diagrama permanecen bloqueados; esa respuesta no se guarda
+el error y los pasos de revisión y diagrama permanecen bloqueados; esa respuesta no se guarda
 como un modelo valido. Se puede volver a pulsar «Obtener modelo» para reintentar.
-Con un JSON valido se habilita el paso 5 «Afinar modelo», que abre el JSON generado en el
+El JSON inferido se guarda con el patrón `modelo-<nombre-texto-filtrado-sin-prefijo>-<id-modelo>.json`, por ejemplo
+`modelo-enunciado_practica_23-filtrado-gemini-3.5-flash-lite.json`. Se conserva la subcarpeta
+actual por proveedor y modelo; si ya existe un fichero con ese nombre, se añade un sufijo
+numérico para no sobrescribirlo. Los caracteres del ID no válidos en nombres de fichero
+se sustituyen por `_`. Tras generarlo, la tarjeta de destino muestra el nombre del archivo y
+su carpeta real, sin repetir la ruta completa en otra etiqueta.
+Con un JSON valido se habilita el paso 5 «Revisar modelo», que abre el JSON generado en el
 editor `JsonEditorViewer` (paquete `com.crud2gui.desktop.ui`). «Confirmar modelo» valida el JSON editado,
-lo guarda como copia `<nombre>-validated.json` junto al original y habilita el paso 6
+lo guarda como copia `<nombre>-revisado.json` junto al original y habilita el paso 6
 «Diagrama de clases» con el modelo confirmado.
 
 ### Seleccion de codigo del docente

@@ -105,7 +105,7 @@ class StatementSectionTest {
                 return null;
             });
             runOperation(controls, controls.filter());
-            Path output = directory.resolve("custom-rules-filtrado.txt");
+            Path output = directory.resolve("texto-custom-rules-filtrado.txt");
             assertEquals("Inicio\nContenido\n", Files.readString(output));
             onFx(() -> {
                 assertTrue(controls.step(3).getPseudoClassStates()
@@ -241,8 +241,8 @@ class StatementSectionTest {
                 Label badge = (Label) name.getGraphic();
                 Label path = (Label) card.lookup(".statement-output-folder");
                 assertEquals("TXT", badge.getText());
-                assertTrue(name.getText().equals("destination-card.txt")
-                        || name.getText().equals("destination-card-filtrado.txt"));
+                assertTrue(name.getText().equals("texto-destination-card.txt")
+                    || name.getText().equals("texto-destination-card-filtrado.txt"));
                 assertEquals(directory.resolve(name.getText()).toString(), path.getText());
                 assertTrue(card.getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
                 assertEquals(javafx.scene.paint.Color.web("#e4f3ec"),
@@ -292,7 +292,7 @@ class StatementSectionTest {
             Label extractionStatus = (Label) controls.section().lookup("#statement-extraction-status");
             assertTrue(extractionStatus.getText().contains("Archivo generado:"));
             assertTrue(extractionStatus.getText().contains("Puedes continuar con el paso 3: Filtrar texto."));
-            assertTrue(extractionStatus.getText().contains("panel-status.txt"));
+            assertTrue(extractionStatus.getText().contains("texto-panel-status.txt"));
             controls.step(1).fire();
             assertTrue(controls.status().getText().startsWith("PDF seleccionado"));
             controls.step(2).fire();
@@ -303,7 +303,7 @@ class StatementSectionTest {
         });
         runOperation(controls, controls.filter());
         onFx(() -> {
-            assertTrue(controls.status().getText().contains("panel-status-filtrado.txt"));
+            assertTrue(controls.status().getText().contains("texto-panel-status-filtrado.txt"));
             controls.step(2).fire();
             assertTrue(controls.status().getText().startsWith("Texto extraído"));
             return null;
@@ -415,8 +415,8 @@ class StatementSectionTest {
             return null;
         });
         assertEquals("Enunciado de prueba: crear una clase Persona.",
-                Files.readString(directory.resolve("first.txt")).strip());
-        assertEquals("Segundo enunciado.", Files.readString(directory.resolve("second.txt")).strip());
+            Files.readString(directory.resolve("texto-first.txt")).strip());
+        assertEquals("Segundo enunciado.", Files.readString(directory.resolve("texto-second.txt")).strip());
     }
 
     @Test
@@ -499,11 +499,11 @@ class StatementSectionTest {
             return null;
         });
         runOperation(controls, controls.filter());
-        assertTrue(Files.readString(directory.resolve("flow.txt")).contains("Contenido omitido."));
-        assertFalse(Files.readString(directory.resolve("flow-filtrado.txt")).contains("Contenido omitido."));
+        assertTrue(Files.readString(directory.resolve("texto-flow.txt")).contains("Contenido omitido."));
+        assertFalse(Files.readString(directory.resolve("texto-flow-filtrado.txt")).contains("Contenido omitido."));
         onFx(() -> {
             String filtered = controls.filtered().getText();
-            assertEquals(filtered, Files.readString(directory.resolve("flow-filtrado.txt")));
+            assertEquals(filtered, Files.readString(directory.resolve("texto-flow-filtrado.txt")));
             assertTrue(filtered.contains("Crear una clase Persona."));
             assertTrue(filtered.contains("Atributos del modelo."));
             assertFalse(filtered.contains("Portada"));
@@ -603,7 +603,7 @@ class StatementSectionTest {
             assertTrue(((Label) section.lookup(".statement-output-folder")).getText().contains(destination.toString()));
             return null;
         });
-        Path output = destination.resolve("output.txt");
+        Path output = destination.resolve("texto-output.txt");
         Files.writeString(output, "No reemplazar");
         onFx(() -> {
             controls.step(2).fire();
@@ -620,7 +620,7 @@ class StatementSectionTest {
             controls.step(3).fire();
             return null;
         });
-        Path filteredOutput = destination.resolve("output-filtrado.txt");
+        Path filteredOutput = destination.resolve("texto-output-filtrado.txt");
         Files.writeString(filteredOutput, "Filtro previo");
         overwrite.set(false);
         onFx(() -> {

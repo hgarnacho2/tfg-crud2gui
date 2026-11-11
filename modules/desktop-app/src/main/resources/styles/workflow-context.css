@@ -78,7 +78,7 @@
     -fx-padding: 14px 16px;
     -fx-background-color: white;
     -fx-background-radius: 6px;
-    -fx-border-color: #d7e5df;
+    -fx-border-color: #b3c9bd;
     -fx-border-radius: 6px;
 }
 
@@ -100,6 +100,20 @@
     -fx-text-fill: -fx-brand-accent;
     -fx-font-size: 18px;
     -fx-font-weight: bold;
+}
+
+.workflow-context-stage-pending .workflow-context-stage-title {
+    -fx-text-fill: #75837d;
+}
+
+.workflow-context-stage-pending .workflow-context-stage-type {
+    -fx-background-color: #e8eeeb;
+    -fx-text-fill: #75837d;
+}
+
+.workflow-context-stage-pending .workflow-context-input-badge {
+    -fx-background-color: #e8eeeb;
+    -fx-text-fill: #75837d;
 }
 
 .workflow-context-stage-file {
@@ -131,6 +145,12 @@
     -fx-spacing: 6px;
 }
 
+.workflow-context-validation-inputs-title {
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
 .workflow-context-input-badge {
     -fx-padding: 3px 6px;
     -fx-background-radius: 3px;
@@ -146,6 +166,11 @@
 .workflow-context-input-statement {
     -fx-background-color: #f5f0e2;
     -fx-text-fill: #76652f;
+}
+
+.workflow-context-input-prompt {
+    -fx-background-color: #e8f0f3;
+    -fx-text-fill: #426270;
 }
 
 .workflow-context-input-file {

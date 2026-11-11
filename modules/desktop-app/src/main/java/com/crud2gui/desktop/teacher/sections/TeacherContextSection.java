@@ -71,10 +71,12 @@ public final class TeacherContextSection extends Section {
             "Todavía no se ha extraído el texto.");
         addStage(statement, "statement-filtered", "Texto filtrado", "TXT", workflow.getFilteredText(),
             "Todavía no se ha generado el texto filtrado.");
-        addStage(statement, "statement-model", "Modelo inferido del enunciado", "JSON",
-            workflow.getGeneratedStatementModel(), "Todavía no se ha generado el modelo.");
-        addStage(statement, "statement-refined-model", "Modelo afinado del enunciado", "JSON",
-            workflow.getSuggestedInferredModel(), "Todavía no se ha confirmado el modelo afinado.");
+        VBox inferredModel = stage("statement-model", "Modelo inferido del enunciado", "JSON",
+            workflow.getGeneratedStatementModel(), "Todavía no se ha generado el modelo.", null);
+        inferredModel.getChildren().add(promptInput(workflow.getSelectedPromptFile()));
+        statement.getChildren().add(inferredModel);
+        addStage(statement, "statement-refined-model", "Modelo revisado del enunciado", "JSON",
+            workflow.getSuggestedInferredModel(), "Todavía no se ha confirmado el modelo revisado.");
 
         VBox code = lane("CÓDIGO FUENTE", "Fuentes Java y modelo generado");
         addStage(code, "code-folder", "Clases de código Java", "CARPETA", workflow.getSelectedCodeFolder(),
@@ -133,10 +135,27 @@ public final class TeacherContextSection extends Section {
 
     private VBox validationInputs() {
         VBox inputs = new VBox(6,
+            new Label("Entradas para validar"),
             validationInput("CODIGO", "code", workflow.getSelectedJavaModel()),
             validationInput("ENUNCIADO", "statement", workflow.getSelectedInferredModel()));
         inputs.getStyleClass().add("workflow-context-validation-inputs");
+        inputs.getChildren().get(0).getStyleClass().add("workflow-context-validation-inputs-title");
         return inputs;
+    }
+
+    private HBox promptInput(Path prompt) {
+        Label badge = new Label("PROMPT");
+        badge.setId("teacher-context-model-prompt-badge");
+        badge.getStyleClass().addAll("workflow-context-input-badge", "workflow-context-input-prompt");
+        Label fileName = new Label(prompt == null ? "Sin prompt seleccionado" : filename(prompt));
+        fileName.setId("teacher-context-model-prompt-file");
+        fileName.getStyleClass().add("workflow-context-input-file");
+        fileName.setWrapText(true);
+        fileName.setMinWidth(0);
+        HBox row = new HBox(8, badge, fileName, UiComponents.revealFileButton(
+            "teacher-context-model-prompt-reveal", prompt));
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
     }
 
     private HBox validationInput(String text, String id, Path model) {

@@ -13,6 +13,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -427,6 +428,7 @@ class TeacherModelSectionsTest {
         Path pdf = Files.writeString(directory.resolve("enunciado.pdf"), "pdf");
         Path extracted = Files.writeString(directory.resolve("enunciado.txt"), "texto");
         Path filtered = Files.writeString(directory.resolve("enunciado-filtrado.txt"), "filtrado");
+        Path prompt = Files.writeString(directory.resolve("prompt-v6.txt"), "instrucciones");
         Path inferred = Files.writeString(directory.resolve("modelo-enunciado.json"), "{}");
         Path refined = Files.writeString(directory.resolve("modelo-enunciado-validated.json"), "{}");
         Path codeFolder = Files.createDirectory(directory.resolve("src"));
@@ -436,6 +438,7 @@ class TeacherModelSectionsTest {
         workflow.selectStatementPdf(pdf);
         workflow.recordExtractedText(extracted);
         workflow.recordFilteredText(filtered);
+        workflow.selectPromptFile(prompt);
         workflow.recordGeneratedStatementModel(inferred);
         workflow.recordConfirmedStatementModel(refined);
         workflow.selectCodeFolder(codeFolder);
@@ -459,6 +462,14 @@ class TeacherModelSectionsTest {
                 ((Label) section.lookup("#teacher-context-stage-statement-model-file")).getText());
             assertEquals("modelo-enunciado-validated.json",
                 ((Label) section.lookup("#teacher-context-stage-statement-refined-model-file")).getText());
+            VBox refinedModelStage = (VBox) section.lookup("#teacher-context-stage-statement-refined-model");
+            assertEquals("Modelo revisado del enunciado",
+                    ((Label) refinedModelStage.lookup(".workflow-context-stage-title")).getText());
+                VBox inferredModelStage = (VBox) section.lookup("#teacher-context-stage-statement-model");
+                assertEquals("PROMPT",
+                    ((Label) inferredModelStage.lookup("#teacher-context-model-prompt-badge")).getText());
+                assertEquals("prompt-v6.txt",
+                    ((Label) inferredModelStage.lookup("#teacher-context-model-prompt-file")).getText());
             assertEquals("src",
                 ((Label) section.lookup("#teacher-context-stage-code-folder-file")).getText());
             assertEquals(((VBox) section.lookup("#teacher-context-stage-statement-pdf")).getWidth(),
@@ -467,6 +478,8 @@ class TeacherModelSectionsTest {
                 ((Label) section.lookup("#teacher-context-stage-code-model-file")).getText());
             assertEquals("validacion.json",
                 ((Label) section.lookup("#teacher-context-stage-validation-report-file")).getText());
+                assertEquals("Entradas para validar",
+                    ((Label) section.lookup(".workflow-context-validation-inputs-title")).getText());
             for (String stage : java.util.List.of("statement-pdf", "statement-extracted", "statement-filtered",
                     "statement-model", "statement-refined-model", "code-folder", "code-model",
                     "validation-report")) {
@@ -499,6 +512,43 @@ class TeacherModelSectionsTest {
             return null;
         });
         }
+
+    @Test
+    void showsPromptBadgeAndEmptyStateWhenNoPromptIsSelected() throws Exception {
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("empty-workflow.json"));
+        TeacherContextSection section = onFx(() -> {
+            TeacherContextSection created = new TeacherContextSection(workflow);
+            StackPane root = new StackPane(created);
+            Scene scene = new Scene(root, 1200, 900);
+            scene.getStylesheets().add(TeacherModelSectionsTest.class.getResource("/styles/app.css").toExternalForm());
+            root.applyCss();
+            root.layout();
+            return created;
+        });
+
+        onFx(() -> {
+            VBox inferredModelStage = (VBox) section.lookup("#teacher-context-stage-statement-model");
+            Label stageTitle = (Label) inferredModelStage.lookup(".workflow-context-stage-title");
+            assertEquals(Color.web("#75837d"), stageTitle.getTextFill());
+            Label stageType = (Label) inferredModelStage.lookup(".workflow-context-stage-type");
+            assertEquals(Color.web("#75837d"), stageType.getTextFill());
+            assertEquals(Color.web("#e8eeeb"), stageType.getBackground().getFills().get(0).getFill());
+                Label promptBadge = (Label) inferredModelStage.lookup("#teacher-context-model-prompt-badge");
+                assertEquals("PROMPT", promptBadge.getText());
+                assertEquals(Color.web("#75837d"), promptBadge.getTextFill());
+            assertEquals("Sin prompt seleccionado",
+                    ((Label) inferredModelStage.lookup("#teacher-context-model-prompt-file")).getText());
+            Button revealPrompt = (Button) inferredModelStage.lookup("#teacher-context-model-prompt-reveal");
+            assertFalse(revealPrompt.isVisible());
+            assertFalse(revealPrompt.isManaged());
+                VBox validationStage = (VBox) section.lookup("#teacher-context-stage-validation-report");
+                assertEquals(Color.web("#75837d"), ((Label) validationStage.lookup(
+                    "#teacher-context-validation-input-code-badge")).getTextFill());
+                assertEquals(Color.web("#75837d"), ((Label) validationStage.lookup(
+                    "#teacher-context-validation-input-statement-badge")).getTextFill());
+            return null;
+        });
+    }
 
     @Test
     void validationRestoresLatestModelsFromWorkflowContext() throws Exception {

@@ -1,6 +1,6 @@
 # CRUD2GUI Authenticator
 
-Biblioteca Maven que autentica clientes públicos de escritorio contra Microsoft Entra ID mediante MSAL4J. La interfaz anfitriona proporciona la acción que presenta la autorización; actualmente `desktop-app` la carga en un `WebView` JavaFX. El flujo interactivo usa authorization code con PKCE y un callback loopback.
+Biblioteca Maven que autentica clientes públicos de escritorio contra Microsoft Entra ID mediante MSAL4J. La interfaz anfitriona proporciona la acción que presenta la autorización; `desktop-app` permite cargarla en un `WebView` JavaFX o abrirla en el navegador del sistema. El flujo interactivo usa authorization code con PKCE y un callback loopback.
 
 Este módulo no es una aplicación ejecutable y no depende directamente de JavaFX. No incluye credenciales de usuario ni `client secret`.
 
@@ -71,11 +71,11 @@ authenticator.authenticate().thenAccept(user -> {
 });
 ```
 
-`OpenBrowserAction` permite que la interfaz anfitriona decida cómo presentar la URL de autorización. `authenticate()` es asíncrono y devuelve `CompletableFuture<AuthenticatedUser>`; no bloquees el hilo de interfaz. `AuthenticatedUser` contiene claims de identidad y roles, no el token. MSAL gestiona la caché de tokens en memoria.
+`OpenBrowserAction` permite que la interfaz anfitriona decida cómo presentar la URL de autorización. `authenticate()` es asíncrono y devuelve `CompletableFuture<AuthenticatedUser>`; no bloquees el hilo de interfaz. `AuthenticatedUser` contiene claims de identidad y roles, no el token. MSAL gestiona la caché de tokens en memoria. Además del constructor de dos argumentos, `EntraIdAuthenticator` admite un mensaje de éxito para la página del callback; `desktop-app` lo elige según `AZURE_AUTH_BROWSER`, variable propia de la aplicación de escritorio (`webview` por defecto, o `system`).
 
 `clearAccounts()` elimina las cuentas de la caché MSAL en memoria. `logoutUri()` construye el endpoint de cierre de sesión de Entra, pero no abre el navegador ni cierra por sí solo la sesión web; la aplicación anfitriona debe completar el retorno al callback.
 
-Las páginas locales que MSAL muestra al completar o fallar el callback están en `src/main/resources/templates/auth_success_page.html` y `src/main/resources/templates/auth_error_page.html`. Son páginas de resultado; la página de inicio de sesión sigue alojada por Microsoft.
+Las páginas locales que MSAL muestra al completar o fallar el callback están en `src/main/resources/templates/auth_success_page.html` y `src/main/resources/templates/auth_error_page.html`. La plantilla de éxito contiene el marcador `{{SUCCESS_MESSAGE}}`, que el autenticador sustituye por el mensaje seleccionado por la interfaz, escapando caracteres HTML. En modo `system` indica volver a CRUD2GUI y cerrar la pestaña; en modo `webview`, que la aplicación continuará. Son páginas de resultado; la página de inicio de sesión sigue alojada por Microsoft.
 
 ## Pruebas
 

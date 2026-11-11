@@ -23,12 +23,13 @@ import java.util.concurrent.CompletableFuture;
 public final class EntraIdAuthenticator {
 
     private static final int CALLBACK_TIMEOUT_SECONDS = 180;
-    private static final String SUCCESS_PAGE = loadTemplate("/templates/auth_success_page.html");
+    private static final String SUCCESS_PAGE_TEMPLATE = loadTemplate("/templates/auth_success_page.html");
     private static final String ERROR_PAGE = loadTemplate("/templates/auth_error_page.html");
 
     private final AuthenticatorConfig config;
     private final PublicClientApplication application;
     private final OpenBrowserAction browserAction;
+    private final String successPage;
 
     /**
     * Crea un cliente público que delega la presentación del login en la vista JavaFX.
@@ -40,8 +41,23 @@ public final class EntraIdAuthenticator {
      */
     public EntraIdAuthenticator(AuthenticatorConfig config, OpenBrowserAction browserAction)
             throws MalformedURLException {
+        this(config, browserAction, "Ya puedes volver a CRUD2GUI.");
+    }
+
+    /**
+     * Crea el cliente público con un mensaje de éxito adecuado al navegador seleccionado por la interfaz.
+     *
+     * @param config configuración pública de Entra ID
+     * @param browserAction acción que presenta la URL de autorización
+     * @param successMessage texto mostrado al completar el callback
+     * @throws NullPointerException si algún parámetro es {@code null}
+     * @throws MalformedURLException si la autoridad configurada no es válida
+     */
+    public EntraIdAuthenticator(AuthenticatorConfig config, OpenBrowserAction browserAction, String successMessage)
+            throws MalformedURLException {
         this.config = Objects.requireNonNull(config, "config");
         this.browserAction = Objects.requireNonNull(browserAction, "browserAction");
+        this.successPage = renderSuccessPage(successMessage);
         this.application = PublicClientApplication.builder(config.clientId())
                 .authority(config.authority())
                 .build();
@@ -57,7 +73,7 @@ public final class EntraIdAuthenticator {
      */
     public CompletableFuture<AuthenticatedUser> authenticate() {
         SystemBrowserOptions.SystemBrowserOptionsBuilder browserOptions = SystemBrowserOptions.builder()
-            .htmlMessageSuccess(SUCCESS_PAGE)
+            .htmlMessageSuccess(successPage)
             .htmlMessageError(ERROR_PAGE);
         browserOptions.openBrowserAction(browserAction);
         InteractiveRequestParameters request = InteractiveRequestParameters.builder(config.redirectUri())
@@ -86,7 +102,22 @@ public final class EntraIdAuthenticator {
      * @return endpoint de cierre de sesion del tenant
      */
     public URI logoutUri() {
-        return URI.create(config.authority() + "/oauth2/v2.0/logout?post_logout_redirect_uri="
+        return logoutUri(true);
+    }
+
+    /**
+     * Obtiene la URL de cierre de Microsoft, opcionalmente con retorno a la URI registrada.
+     * El navegador del sistema no permite a la aplicación observar ese retorno.
+     *
+     * @param includePostLogoutRedirect si se debe incluir el retorno al callback
+     * @return endpoint de cierre de sesión del tenant
+     */
+    public URI logoutUri(boolean includePostLogoutRedirect) {
+        String endpoint = config.authority() + "/oauth2/v2.0/logout";
+        if (!includePostLogoutRedirect) {
+            return URI.create(endpoint);
+        }
+        return URI.create(endpoint + "?post_logout_redirect_uri="
                 + URLEncoder.encode(config.redirectUri().toString(), StandardCharsets.UTF_8));
     }
 
@@ -106,5 +137,15 @@ public final class EntraIdAuthenticator {
         } catch (IOException e) {
             throw new IllegalStateException("No se pudo leer la plantilla HTML: " + resourcePath, e);
         }
+    }
+
+    static String renderSuccessPage(String message) {
+        String escapedMessage = Objects.requireNonNull(message, "message")
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+        return SUCCESS_PAGE_TEMPLATE.replace("{{SUCCESS_MESSAGE}}", escapedMessage);
     }
 }

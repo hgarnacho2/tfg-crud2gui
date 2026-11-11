@@ -35,9 +35,11 @@ Para anadir otro proveedor basta con implementar `ModelClient` y registrarlo en 
 | `GEMINI_API_KEY` | Clave de Gemini (tambien se lee de un fichero `.env` del directorio actual) | obligatoria |
 | `OLLAMA_BASE_URL` | URL base de Ollama, sin `/api/...` | `http://localhost:11434` |
 | `OLLAMA_NUM_CTX` | Ventana de contexto en tokens | `32768` |
-| `STATEMENT_ANALYZER_GEMINI_MODEL` | Modelo predeterminado para Gemini en el script, configurado en el `.env.public` raíz | `gemini-3.5-flash-lite` |
-| `STATEMENT_ANALYZER_OLLAMA_MODEL` | Modelo predeterminado para Ollama en el script, configurado en el `.env.public` raíz | `qwen3:8b` |
-| `STATEMENT_ANALYZER_GROQ_MODEL` | Modelo predeterminado para Groq en el script, configurado en el `.env.public` raíz | sin valor predeterminado |
+| `STATEMENT_ANALYZER_GEMINI_MODEL` | ID predeterminado para Gemini, configurado en el `.env.public` raíz | `gemini-3.5-flash-lite` |
+| `STATEMENT_ANALYZER_OLLAMA_MODEL` | ID predeterminado para Ollama, configurado en el `.env.public` raíz | `qwen3:8b` |
+| `STATEMENT_ANALYZER_GROQ_MODEL` | ID predeterminado para Groq, configurado en el `.env.public` raíz | sin valor predeterminado |
+
+La interfaz de escritorio también usa estos valores para preseleccionar el modelo después de consultar los disponibles, cuando no puede restaurar un modelo guardado en el workflow y el ID configurado está presente en la respuesta del proveedor. El selector muestra el nombre descriptivo del modelo, pero la comparación y las peticiones usan su ID.
 
 Los valores no secretos del analizador se centralizan en el `.env.public` de la raíz del repositorio. Las claves API permanecen en `.env.private` o en variables exportadas del sistema.
 

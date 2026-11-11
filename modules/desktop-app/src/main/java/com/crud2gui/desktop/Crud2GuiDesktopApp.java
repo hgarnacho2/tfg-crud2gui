@@ -33,6 +33,10 @@ import org.slf4j.LoggerFactory;
 public final class Crud2GuiDesktopApp extends Application {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Crud2GuiDesktopApp.class);
+        private static final String SYSTEM_BROWSER_SUCCESS_MESSAGE =
+            "Ya puedes volver a CRUD2GUI y cerrar esta pestaña.";
+        private static final String WEBVIEW_SUCCESS_MESSAGE = "La aplicación continuará automáticamente.";
+    private AuthenticationBrowserMode authenticationBrowserMode = AuthenticationBrowserMode.WEBVIEW;
 
     /**
      * Construye y muestra la ventana principal con el formulario de acceso.
@@ -82,7 +86,15 @@ public final class Crud2GuiDesktopApp extends Application {
     private void configureLogin(Stage stage, Scene scene, LoginView loginView) {
         try {
             AuthenticatorConfig config = AuthenticatorConfig.fromEnvironment();
-            EntraIdAuthenticator authenticator = new EntraIdAuthenticator(config, loginView::showEmbeddedBrowser);
+            authenticationBrowserMode = AuthenticationBrowserMode.fromEnvironment();
+            EntraIdAuthenticator authenticator = new EntraIdAuthenticator(config, authorizationUrl -> {
+                if (authenticationBrowserMode == AuthenticationBrowserMode.SYSTEM) {
+                    Platform.runLater(() -> getHostServices().showDocument(authorizationUrl.toExternalForm()));
+                } else {
+                    loginView.showEmbeddedBrowser(authorizationUrl);
+                }
+            }, authenticationBrowserMode == AuthenticationBrowserMode.SYSTEM
+                    ? SYSTEM_BROWSER_SUCCESS_MESSAGE : WEBVIEW_SUCCESS_MESSAGE);
             new LoginController(loginView, authenticator,
                     user -> showAuthenticatedArea(stage, scene, authenticator, config, user));
         } catch (RuntimeException | java.net.MalformedURLException exception) {
@@ -168,6 +180,16 @@ public final class Crud2GuiDesktopApp extends Application {
                 returnToLogin(stage, scene, cacheFailure);
                 return;
             }
+            if (authenticationBrowserMode == AuthenticationBrowserMode.SYSTEM) {
+                try {
+                    getHostServices().showDocument(authenticator.logoutUri(false).toString());
+                    returnToLogin(stage, scene, new IllegalStateException(
+                            "El navegador externo no permite confirmar el cierre remoto de Microsoft."));
+                } catch (RuntimeException exception) {
+                    returnToLogin(stage, scene, exception);
+                }
+                return;
+            }
             CompletableFuture<Void> logout = new CompletableFuture<>();
             logout.whenComplete((result, failure) ->
                     Platform.runLater(() -> returnToLogin(stage, scene, failure)));
@@ -189,7 +211,7 @@ public final class Crud2GuiDesktopApp extends Application {
         stage.setTitle("CRUD2GUI | Acceso");
         configureLogin(stage, scene, login);
         if (logoutFailure != null) {
-            LOGGER.error("LOGOUT_ERROR | No se pudo confirmar el cierre de sesion de Microsoft.", logoutFailure);
+            LOGGER.warn("LOGOUT_UNCONFIRMED | No se pudo confirmar el cierre de sesion de Microsoft.", logoutFailure);
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.initOwner(stage);
             alert.setHeaderText("Se ha cerrado CRUD2GUI, pero no se pudo confirmar el cierre de Microsoft.");

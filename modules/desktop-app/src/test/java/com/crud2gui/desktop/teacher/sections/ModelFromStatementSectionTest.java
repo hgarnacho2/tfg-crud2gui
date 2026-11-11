@@ -76,10 +76,21 @@ class ModelFromStatementSectionTest {
         private final AtomicReference<String> prompt = new AtomicReference<>();
         private final AtomicReference<String> statement = new AtomicReference<>();
         private final AtomicReference<String> answer = new AtomicReference<>(MODEL_JSON);
+        private final String providerId;
+        private final List<ModelInfo> models;
+
+        private FakeProvider() {
+            this("fake", List.of(new ModelInfo("fake-model", "Modelo simulado")));
+        }
+
+        private FakeProvider(String providerId, List<ModelInfo> models) {
+            this.providerId = providerId;
+            this.models = models;
+        }
 
         @Override
         public String id() {
-            return "fake";
+            return providerId;
         }
 
         @Override
@@ -92,12 +103,12 @@ class ModelFromStatementSectionTest {
             return new ModelClient() {
                 @Override
                 public String provider() {
-                    return "fake";
+                    return providerId;
                 }
 
                 @Override
                 public List<ModelInfo> listModels() {
-                    return List.of(new ModelInfo("fake-model", "Modelo simulado"));
+                    return models;
                 }
 
                 @Override
@@ -328,6 +339,49 @@ class ModelFromStatementSectionTest {
     }
 
     @Test
+    void selectsConfiguredProviderDefaultWhenAvailable() throws Exception {
+        String property = "STATEMENT_ANALYZER_GEMINI_MODEL";
+        String previousValue = System.getProperty(property);
+        System.setProperty(property, "gemini-default-test");
+        try {
+            FakeProvider provider = new FakeProvider("gemini",
+                    List.of(new ModelInfo("gemini-default-test", "Gemini predeterminado")));
+            ModelFromStatementSection section = onFx(() -> {
+                ModelFromStatementSection created = new ModelFromStatementSection(owner -> null, owner -> null,
+                        List.of(provider), directory.resolve("output"));
+                StackPane root = new StackPane(created);
+                new Scene(root, 1200, 900);
+                root.applyCss();
+                root.layout();
+                return created;
+            });
+            onFx(() -> {
+                @SuppressWarnings("unchecked")
+                ComboBox<ModelClientProvider> providers = (ComboBox<ModelClientProvider>)
+                        section.lookup("#model-statement-provider");
+                providers.setValue(provider);
+                providers.getOnAction().handle(new ActionEvent());
+                return null;
+            });
+
+            Label status = onFx(() -> (Label) section.lookup("#model-statement-llm-status"));
+            awaitStatus(status, "Modelo de lenguaje seleccionado.");
+            onFx(() -> {
+                @SuppressWarnings("unchecked")
+                ComboBox<ModelInfo> models = (ComboBox<ModelInfo>) section.lookup("#model-statement-model");
+                assertEquals("gemini-default-test", models.getValue().id());
+                return null;
+            });
+        } finally {
+            if (previousValue == null) {
+                System.clearProperty(property);
+            } else {
+                System.setProperty(property, previousValue);
+            }
+        }
+    }
+
+    @Test
     void keepsStatementViewerHiddenWhenSelectionIsCancelledOrReadingFails() throws Exception {
         AtomicReference<File> selected = new AtomicReference<>();
         onFx(() -> {
@@ -386,13 +440,14 @@ class ModelFromStatementSectionTest {
 
     @Test
     void generatesAndPersistsJsonBeforeEnablingDiagramStep() throws Exception {
-        Path textFile = directory.resolve("enunciado-filtrado.txt");
+        Path textFile = directory.resolve("texto-enunciado_practica_23-filtrado.txt");
         Path promptFile = directory.resolve("prompt-modelo.txt");
         Path initialOutputDirectory = directory.resolve("output-inicial");
         Path selectedOutputDirectory = directory.resolve("output-seleccionado");
         Files.writeString(textFile, "Texto del enunciado para el modelo.");
         Files.writeString(promptFile, "Instrucciones para inferir clases.");
-        FakeProvider provider = new FakeProvider();
+        FakeProvider provider = new FakeProvider("fake",
+            List.of(new ModelInfo("gemini-3.5-flash-lite", "Gemini 3.5 Flash Lite")));
 
         ModelFromStatementSection section = onFx(() -> new ModelFromStatementSection(
             owner -> textFile.toFile(), owner -> promptFile.toFile(),
@@ -415,7 +470,7 @@ class ModelFromStatementSectionTest {
             ((Button) section.lookup("#statement-step-4")).fire();
             assertEquals("Cliente simulado",
                     ((Label) section.lookup("#model-statement-request-provider")).getText());
-            assertEquals("Modelo simulado",
+                assertEquals("Gemini 3.5 Flash Lite",
                     ((Label) section.lookup("#model-statement-request-model")).getText());
                 ((Button) section.lookup("#model-statement-change-output-folder")).fire();
                 assertEquals(selectedOutputDirectory.toAbsolutePath().normalize().toString(),
@@ -428,13 +483,19 @@ class ModelFromStatementSectionTest {
         awaitStatus(generationStatus, "Análisis completado");
         onFx(() -> {
             TextArea result = (TextArea) section.lookup("#model-statement-generated-json");
-            Label output = (Label) section.lookup(".model-generation-output-path");
+            Label outputName = (Label) section.lookup("#model-statement-output-filename");
+            Label outputDirectory = (Label) section.lookup("#model-statement-output-folder");
             assertTrue(result.getText().contains("\"name\" : \"Usuario\""));
-            assertTrue(generationStatus.getText().contains("Puedes continuar con el paso 5: Afinar modelo."));
+            assertTrue(generationStatus.getText().contains("Puedes continuar con el paso 5: Revisar modelo."));
             assertEquals("", ((Label) section.lookup("#model-statement-diagram-status")).getText());
-            Path outputPath = Path.of(output.getText().substring("Resultado: ".length()));
+            assertEquals("modelo-enunciado_practica_23-filtrado-gemini-3.5-flash-lite.json", outputName.getText());
+            Path outputPath = Path.of(outputDirectory.getText()).resolve(outputName.getText());
             assertTrue(outputPath.startsWith(selectedOutputDirectory.toAbsolutePath().normalize()));
+            assertEquals(outputPath.getFileName().toString(), outputName.getText());
             assertTrue(Files.isRegularFile(outputPath));
+            Label fullPath = (Label) section.lookup("#model-statement-generation-output-path");
+            assertFalse(fullPath.isVisible());
+            assertFalse(fullPath.isManaged());
             assertFalse(((Button) section.lookup("#statement-step-5")).isDisabled());
             assertTrue(((Button) section.lookup("#statement-step-6")).isDisabled());
             assertEquals("Instrucciones para inferir clases.", provider.prompt.get());
@@ -444,7 +505,7 @@ class ModelFromStatementSectionTest {
                         .getChildren().size());
                 ((Button) section.lookup("#model-statement-confirm-model")).fire();
                 Path validated = outputPath.resolveSibling(outputPath.getFileName().toString()
-                        .replace(".json", "-validated.json"));
+                    .replace(".json", "-revisado.json"));
                 assertTrue(Files.isRegularFile(validated));
                 assertTrue(Files.readString(validated).contains("\"expectedManagerId\" : \"PlataformaCompraVenta\""));
                 assertTrue(((Label) section.lookup("#model-statement-refine-status")).getText()

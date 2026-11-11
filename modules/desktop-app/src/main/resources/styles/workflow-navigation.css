@@ -84,6 +84,10 @@
     -fx-wrap-text: true;
 }
 
+.statement-step:disabled .statement-step-title {
+    -fx-text-fill: #75837d;
+}
+
 .statement-step-description {
     -fx-text-fill: -fx-text-muted;
     -fx-font-size: 13px;

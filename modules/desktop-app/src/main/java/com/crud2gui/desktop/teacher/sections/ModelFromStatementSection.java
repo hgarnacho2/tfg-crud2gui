@@ -1,5 +1,6 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.common.env.DotEnv;
 import com.crud2gui.desktop.ui.JsonEditorViewer;
 import com.crud2gui.desktop.ui.ClassDiagramView;
 import com.crud2gui.desktop.ui.UiComponents;
@@ -39,7 +40,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -85,7 +85,7 @@ public final class ModelFromStatementSection extends Section {
         private final BiFunction<Window, Path, File> chooseOutputFolder;
         private final Function<Window, File> chooseLocalModelFile;
         private Path outputFolder;
-        private final Label outputFilename = UiComponents.labelWithGraphic("Resultado JSON con fecha y hora",
+        private final Label outputFilename = UiComponents.labelWithGraphic("Modelo inferido del enunciado",
             List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
         private final Label outputFolderLabel = UiComponents.label("", List.of("statement-file-path", "statement-output-folder"));
         private final Button changeOutputFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
@@ -240,7 +240,9 @@ public final class ModelFromStatementSection extends Section {
         useLocalModelButton.setId("model-statement-use-local-model");
         changeOutputFolderButton.setId("model-statement-change-output-folder");
         openOutputFolderButton.setId("model-statement-open-output-folder");
+        outputFilename.setId("model-statement-output-filename");
         outputFolderLabel.setId("model-statement-output-folder");
+        generationOutputPath.setId("model-statement-generation-output-path");
         updateOutputFolderLabel();
         generatedModel.setId("model-statement-generated-json");
         generatedModel.setVisible(false);
@@ -297,7 +299,7 @@ public final class ModelFromStatementSection extends Section {
             editorHost.setMinHeight(480);
             confirmModelButton.setId("model-statement-confirm-model");
             VBox refineContent = new VBox(14,
-                UiComponents.panelHeading("Afinar modelo",
+                UiComponents.panelHeading("Revisar modelo",
                     "Revisa y edita el modelo obtenido. Al confirmarlo se guardará una copia validada."),
                 editorHost, confirmModelButton, refineStatus);
             VBox.setVgrow(editorHost, Priority.ALWAYS);
@@ -333,7 +335,7 @@ public final class ModelFromStatementSection extends Section {
                 UiComponents.stepButton(1, "SELECCIONAR PROMPT", "Prompt de análisis", this::showStep),
                 UiComponents.stepButton(2, "SELECCIONAR LLM", "Modelo de lenguaje", this::showStep),
                 UiComponents.stepButton(3, "OBTENER MODELO", "Generación del modelo", this::showStep),
-                UiComponents.stepButton(4, "AFINAR MODELO", "Edición del modelo", this::showStep),
+                UiComponents.stepButton(4, "REVISAR MODELO", "Edición del modelo", this::showStep),
                 UiComponents.stepButton(5, "DIAGRAMA DE CLASES", "Representación visual", this::showStep));
         HBox flow = new HBox(8,
                 steps.get(0), UiComponents.arrowConnector(UiComponents.Direction.RIGHT),
@@ -612,10 +614,25 @@ public final class ModelFromStatementSection extends Section {
                 ModelInfo restoredModel = savedModelId == null ? null : available.models().stream()
                         .filter(model -> model.id().equals(savedModelId))
                         .findFirst().orElse(null);
+                String defaultModelId = configuredDefaultModelId(provider.id());
+                ModelInfo defaultModel = defaultModelId.isBlank() ? null : available.models().stream()
+                        .filter(model -> model.id().equals(defaultModelId))
+                        .findFirst().orElse(null);
                 if (restoredModel != null) {
                     modelSelector.setValue(restoredModel);
+                } else if (defaultModel != null) {
+                    modelSelector.setValue(defaultModel);
+                    if (savedModelId != null) {
+                        showStatus(modelStatus, "El modelo guardado ya no está disponible; se ha seleccionado el predeterminado.", false);
+                    }
+                } else if (savedModelId != null && !defaultModelId.isBlank()) {
+                    showStatus(modelStatus, "El modelo guardado y el predeterminado ('" + defaultModelId
+                            + "') no están disponibles. Selecciona otro.", false);
                 } else if (savedModelId != null) {
                     showStatus(modelStatus, "El modelo guardado ya no está disponible. Selecciona otro.", false);
+                } else if (!defaultModelId.isBlank()) {
+                    showStatus(modelStatus, "El modelo predeterminado ('" + defaultModelId
+                            + "') no está disponible. Selecciona otro.", false);
                 } else {
                     showStatus(modelStatus, "Se encontraron " + available.models().size()
                             + " modelos. Selecciona uno.", false);
@@ -629,6 +646,16 @@ public final class ModelFromStatementSection extends Section {
             providerSelector.setDisable(false);
             refreshModelsButton.setDisable(providerSelector.getValue() == null);
         });
+    }
+
+    private static String configuredDefaultModelId(String providerId) {
+        String setting = switch (providerId) {
+            case "gemini" -> "STATEMENT_ANALYZER_GEMINI_MODEL";
+            case "ollama" -> "STATEMENT_ANALYZER_OLLAMA_MODEL";
+            case "groq" -> "STATEMENT_ANALYZER_GROQ_MODEL";
+            default -> null;
+        };
+        return setting == null ? "" : DotEnv.getStringVar(setting, "");
     }
 
     private void updateModelSelection() {
@@ -682,6 +709,8 @@ public final class ModelFromStatementSection extends Section {
         generatedModel.setManaged(false);
         classDiagram.setModel(null);
         showStatus(diagramStatus, "", false);
+        outputFilename.setText("Modelo inferido del enunciado");
+        updateOutputFolderLabel();
         generationOutputPath.setText("");
         showStatus(generationStatus, "", false);
     }
@@ -706,7 +735,7 @@ public final class ModelFromStatementSection extends Section {
         showStatus(generationStatus, "Analizando enunciado con " + provider.id()
                 + " (" + model.id() + ")...", false);
         ModelClient client = selectedClient;
-        Path resultPath = outputPath(outputFolder, client.provider(), model.id(), LocalDateTime.now());
+        Path resultPath = outputPath(outputFolder, client.provider(), model.id());
         runTask(() -> {
             AnalysisResult result = new StatementAnalyzer(client)
                     .analyze(model.id(), prompt, statement, GenerationOptions.defaults());
@@ -725,7 +754,8 @@ public final class ModelFromStatementSection extends Section {
             generatedModel.positionCaret(0);
             generatedModel.setVisible(true);
             generatedModel.setManaged(true);
-            generationOutputPath.setText("Resultado: " + result.outputPath());
+            outputFilename.setText(result.outputPath().getFileName().toString());
+            outputFolderLabel.setText(result.outputPath().getParent().toString());
             showStatus(generationStatus, successSummary(result.analysis().response()), false);
             steps.get(3).pseudoClassStateChanged(COMPLETED, true);
             if (workflow != null) {
@@ -788,7 +818,7 @@ public final class ModelFromStatementSection extends Section {
             workflow.recordGeneratedStatementModel(candidate);
         }
         showStatus(generationStatus,
-                "Modelo local cargado correctamente. Puedes continuar con el paso 5: Afinar modelo.", false);
+                "Modelo local cargado correctamente. Puedes continuar con el paso 5: Revisar modelo.", false);
     }
 
     private void updateGenerationControls() {
@@ -806,7 +836,7 @@ public final class ModelFromStatementSection extends Section {
 
     private String successSummary(com.crud2gui.statementanalyzer.model.ModelResponse response) {
         double seconds = response.elapsed().toMillis() / 1000.0;
-        return "Análisis completado. Puedes continuar con el paso 5: Afinar modelo.\nModelo: "
+        return "Análisis completado. Puedes continuar con el paso 5: Revisar modelo.\nModelo: "
                 + response.provider() + "/" + response.model()
                 + " | " + String.format(Locale.getDefault(), "%.1f", seconds) + " s"
                 + " | tokens entrada/salida: " + tokenCount(response.inputTokens())
@@ -863,8 +893,8 @@ public final class ModelFromStatementSection extends Section {
         String name = modelPath.getFileName().toString();
         int extension = name.lastIndexOf('.');
         String validated = extension > 0
-                ? name.substring(0, extension) + "-validated" + name.substring(extension)
-                : name + "-validated.json";
+            ? name.substring(0, extension) + "-revisado" + name.substring(extension)
+            : name + "-revisado.json";
         return modelPath.resolveSibling(validated);
     }
 
@@ -872,8 +902,15 @@ public final class ModelFromStatementSection extends Section {
         return count == null ? "N/D" : count.toString();
     }
 
-    private Path outputPath(Path folder, String provider, String model, LocalDateTime timestamp) {
-        String filename = AnalysisResult.timestampedFileNameFor(provider, model, timestamp);
+    private Path outputPath(Path folder, String provider, String model) {
+        String sourceName = selectedStatementPath.getFileName().toString();
+        int sourceExtension = sourceName.lastIndexOf('.');
+        String sourceBase = sourceExtension > 0 ? sourceName.substring(0, sourceExtension) : sourceName;
+        if (sourceBase.startsWith("texto-")) {
+            sourceBase = sourceBase.substring("texto-".length());
+        }
+        String safeModel = model.replaceAll("[^A-Za-z0-9._-]", "_");
+        String filename = "modelo-" + sourceBase + "-" + safeModel + ".json";
         String modelDirectory = AnalysisResult.fileNameFor(provider, model);
         modelDirectory = modelDirectory.substring(0, modelDirectory.lastIndexOf('.'));
         Path output = folder.resolve(modelDirectory).resolve(filename);
