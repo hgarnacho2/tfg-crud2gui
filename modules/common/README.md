@@ -4,7 +4,7 @@ Librería Maven con utilidades compartidas por los módulos de CRUD2GUI. Actualm
 
 ## DotEnv
 
-`com.crud2gui.common.utils.DotEnv` lee ficheros UTF-8 con entradas `CLAVE=valor`. Admite líneas vacías, comentarios que empiezan por `#`, el prefijo `export` y comillas simples o dobles alrededor del valor. No interpreta sustituciones de variables ni comentarios al final de una línea.
+`com.crud2gui.common.env.DotEnv` lee ficheros UTF-8 con entradas `CLAVE=valor`. Admite líneas vacías, comentarios que empiezan por `#`, el prefijo `export` y comillas simples o dobles alrededor del valor. No interpreta sustituciones de variables ni comentarios al final de una línea.
 
 Para resolver una variable, `getStringVar` y `getBooleanVar` aplican esta precedencia:
 
@@ -17,7 +17,7 @@ Para resolver una variable, `getStringVar` y `getBooleanVar` aplican esta preced
 Al cargar varios ficheros con `load`, se procesan en el orden indicado y las claves posteriores sobrescriben las anteriores. Los ficheros inexistentes se ignoran. `loadDefaultsIn` carga `.env.public` y `.env.private` desde un directorio; `loadProjectDefaults` busca la configuración en los recursos del classpath o en el proyecto Maven a partir de `user.dir`.
 
 ```java
-import com.crud2gui.common.utils.DotEnv;
+import com.crud2gui.common.env.DotEnv;
 
 import java.util.Map;
 
@@ -30,10 +30,10 @@ La depuración se activa con `DOTENV_DEBUG=true` y se evalúa una vez por proces
 
 ## PDF
 
-`com.crud2gui.common.utils.PdfTextExtractor` extrae el texto digital de un PDF ordenándolo por posición. No realiza OCR, por lo que un PDF compuesto solo por imágenes no produce texto mediante este extractor.
+`com.crud2gui.common.pdf.PdfTextExtractor` extrae el texto digital de un PDF ordenándolo por posición. No realiza OCR, por lo que un PDF compuesto solo por imágenes no produce texto mediante este extractor.
 
 ```java
-import com.crud2gui.common.utils.PdfTextExtractor;
+import com.crud2gui.common.pdf.PdfTextExtractor;
 
 import java.nio.file.Path;
 
@@ -56,13 +56,17 @@ common/
 │   └── verify.sh
 └── src/
     ├── main/
-    │   └── java/com/crud2gui/common/utils/
-    │       ├── DotEnv.java
-    │       └── PdfTextExtractor.java
+    │   └── java/com/crud2gui/common/
+    │       ├── env/
+    │       │   └── DotEnv.java
+    │       └── pdf/
+    │           └── PdfTextExtractor.java
     └── test/
-        └── java/com/crud2gui/common/utils/
-            ├── DotEnvTest.java
-            └── PdfTextExtractorTest.java
+        └── java/com/crud2gui/common/
+            ├── env/
+            │   └── DotEnvTest.java
+            └── pdf/
+                └── PdfTextExtractorTest.java
 ```
 
 Desde la raíz del repositorio:

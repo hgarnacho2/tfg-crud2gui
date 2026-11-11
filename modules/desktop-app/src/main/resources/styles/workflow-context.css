@@ -2,6 +2,28 @@
     -fx-spacing: 18px;
 }
 
+.workflow-context-reveal-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-padding: 5px;
+    -fx-cursor: hand;
+}
+
+.workflow-context-reveal-button:hover,
+.workflow-context-reveal-button:focused {
+    -fx-background-color: #edf2ef;
+    -fx-border-color: #b6c8bf;
+    -fx-border-radius: 4px;
+}
+
+.workflow-context-folder-icon {
+    -fx-fill: transparent;
+    -fx-stroke: #75837d;
+    -fx-stroke-width: 1.4px;
+    -fx-stroke-line-join: round;
+}
+
 .workflow-context-branches {
     -fx-hgap: 20px;
     -fx-alignment: top-left;

@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -72,6 +73,17 @@ class StudentContextSectionTest {
             assertEquals("modelo-codigo.json", label(section, "student-context-stage-code-model-file").getText());
             assertEquals("validacion.json", label(section, "student-context-stage-validation-report-file").getText());
             assertEquals("modelo-valido.json", label(section, "student-context-stage-valid-model-file").getText());
+            Button revealModel = (Button) section.lookup("#student-context-stage-code-model-reveal");
+            assertNotNull(revealModel);
+            assertTrue(revealModel.isVisible());
+            assertFalse(revealModel.isDisabled());
+            assertEquals("Mostrar en la carpeta contenedora", revealModel.getTooltip().getText());
+            assertEquals(28, revealModel.getWidth(), 0.01);
+            assertFalse(((Button) section.lookup("#student-context-stage-code-folder-reveal")).isDisabled());
+            assertFalse(((Button) section.lookup("#student-context-validation-input-code-reveal")).isDisabled());
+            Button pending = (Button) section.lookup("#student-context-stage-crud-reveal");
+            assertFalse(pending.isVisible());
+            assertFalse(pending.isManaged());
             assertEquals("CODIGO", label(section, "student-context-validation-input-code-badge").getText());
                 assertEquals(11, label(section, "student-context-validation-input-code-badge").getFont().getSize(), 0.01);
             assertEquals("modelo-codigo.json", label(section, "student-context-validation-input-code-file").getText());

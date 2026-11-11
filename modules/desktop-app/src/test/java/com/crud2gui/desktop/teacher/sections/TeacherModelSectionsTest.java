@@ -467,6 +467,17 @@ class TeacherModelSectionsTest {
                 ((Label) section.lookup("#teacher-context-stage-code-model-file")).getText());
             assertEquals("validacion.json",
                 ((Label) section.lookup("#teacher-context-stage-validation-report-file")).getText());
+            for (String stage : java.util.List.of("statement-pdf", "statement-extracted", "statement-filtered",
+                    "statement-model", "statement-refined-model", "code-folder", "code-model",
+                    "validation-report")) {
+                Button reveal = (Button) section.lookup("#teacher-context-stage-" + stage + "-reveal");
+                assertNotNull(reveal);
+                assertTrue(reveal.isVisible());
+                assertFalse(reveal.isDisabled());
+            }
+            assertFalse(((Button) section.lookup("#teacher-context-stage-crud-reveal")).isManaged());
+            assertFalse(((Button) section.lookup("#teacher-context-validation-input-code-reveal")).isDisabled());
+            assertFalse(((Button) section.lookup("#teacher-context-validation-input-statement-reveal")).isDisabled());
             Label codeBadge = (Label) section.lookup("#teacher-context-validation-input-code-badge");
             Label statementBadge = (Label) section.lookup("#teacher-context-validation-input-statement-badge");
             assertEquals("CODIGO", codeBadge.getText());

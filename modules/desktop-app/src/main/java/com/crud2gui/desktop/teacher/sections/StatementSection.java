@@ -5,7 +5,7 @@ import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.PdfViewer;
 import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
-import com.crud2gui.common.utils.DotEnv;
+import com.crud2gui.common.env.DotEnv;
 import com.crud2gui.statement.extractor.StatementExtractor;
 import com.crud2gui.statement.filter.StatementFilter;
 import com.crud2gui.statement.filter.StatementFilterConfigJson;

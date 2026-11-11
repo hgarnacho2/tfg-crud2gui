@@ -8,9 +8,16 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+/**
+ * Verifica la construcción y las validaciones principales de la configuración de autenticación
+ * de Entra ID para un cliente público de escritorio.
+ */
 class AuthenticatorConfigTest {
 
-    // Comprueba la autoridad construida para el tenant y que los scopes no se puedan alterar.
+    /**
+     * Comprueba que la autoridad incluya el tenant configurado y que los scopes expuestos
+     * no puedan modificarse después de crear la configuración.
+     */
     @Test
     void buildsTenantAuthorityAndKeepsScopesImmutable() {
         AuthenticatorConfig config = new AuthenticatorConfig("client-id", "tenant.example",
@@ -20,7 +27,10 @@ class AuthenticatorConfigTest {
         assertThrows(UnsupportedOperationException.class, () -> config.scopes().add("User.Read"));
     }
 
-    // Un cliente público de escritorio solo debe aceptar redirects de callback loopback.
+    /**
+     * Comprueba que se rechace una URI de retorno HTTPS alojada en un servidor remoto,
+     * ya que este cliente de escritorio requiere un callback HTTP de loopback.
+     */
     @Test
     void onlyAcceptsLoopbackHttpRedirectsForDesktopClients() {
         assertThrows(IllegalArgumentException.class, () -> new AuthenticatorConfig("client-id", "tenant",

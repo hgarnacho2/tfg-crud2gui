@@ -2,6 +2,7 @@ package com.crud2gui.desktop.student.sections;
 
 import com.crud2gui.desktop.student.StudentWorkflowContext;
 import com.crud2gui.desktop.ui.Section;
+import com.crud2gui.desktop.ui.UiComponents;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -156,7 +157,9 @@ public final class StudentContextSection extends Section {
         fileName.setId("student-context-validation-input-" + id + "-file");
         fileName.getStyleClass().add("workflow-context-input-file");
         fileName.setWrapText(true);
-        javafx.scene.layout.HBox row = new javafx.scene.layout.HBox(8, badge, fileName);
+        fileName.setMinWidth(0);
+        javafx.scene.layout.HBox row = new javafx.scene.layout.HBox(8, badge, fileName,
+            UiComponents.revealFileButton("student-context-validation-input-" + id + "-reveal", model));
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
@@ -181,7 +184,13 @@ public final class StudentContextSection extends Section {
         location.setVisible(file != null);
         location.setManaged(file != null);
 
-        VBox block = new VBox(8, header, artifact, location);
+        artifact.setMinWidth(0);
+        artifact.setMaxWidth(Double.MAX_VALUE);
+        javafx.scene.layout.HBox.setHgrow(artifact, Priority.ALWAYS);
+        javafx.scene.layout.HBox artifactRow = new javafx.scene.layout.HBox(8, artifact,
+            UiComponents.revealFileButton("student-context-stage-" + id + "-reveal", file));
+        artifactRow.setAlignment(Pos.CENTER_LEFT);
+        VBox block = new VBox(8, header, artifactRow, location);
         block.setId("student-context-stage-" + id);
         block.getStyleClass().add("workflow-context-stage");
         if (file == null) {

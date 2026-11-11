@@ -1,4 +1,4 @@
-package com.crud2gui.common.utils;
+package com.crud2gui.common.env;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

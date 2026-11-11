@@ -1,4 +1,4 @@
-package com.crud2gui.common.utils;
+package com.crud2gui.common.pdf;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;

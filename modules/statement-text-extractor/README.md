@@ -20,7 +20,7 @@ Dependencias del módulo (se descargan solas la primera vez, hace falta internet
 * [Apache PDFBox](https://pdfbox.apache.org/) 3.0.3: extracción de texto.
 * Jackson Databind 2.18.2: lectura y escritura de la configuración JSON del filtro.
 * JUnit Jupiter 5.10.2: tests.
-* `common`: librería transversal (configuración con `DotEnv` y extracción genérica de texto con `PdfTextExtractor`, en el paquete `com.crud2gui.common.utils`). `StatementExtractor` delega en `PdfTextExtractor`.
+* `common`: librería transversal (configuración con `DotEnv`, en `com.crud2gui.common.env`, y extracción genérica de texto con `PdfTextExtractor`, en `com.crud2gui.common.pdf`). `StatementExtractor` delega en `PdfTextExtractor`.
 
 ---
 

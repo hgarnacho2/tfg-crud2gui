@@ -1,6 +1,6 @@
 package com.crud2gui.statement.extractor;
 
-import com.crud2gui.common.utils.PdfTextExtractor;
+import com.crud2gui.common.pdf.PdfTextExtractor;
 
 import java.io.IOException;
 import java.nio.file.InvalidPathException;

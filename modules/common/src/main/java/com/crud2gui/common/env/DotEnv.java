@@ -1,4 +1,4 @@
-package com.crud2gui.common.utils;
+package com.crud2gui.common.env;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

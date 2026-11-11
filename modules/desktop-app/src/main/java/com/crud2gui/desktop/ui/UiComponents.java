@@ -18,10 +18,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.ProgressIndicator;
 import javafx.stage.Window;
 
 import java.util.List;
+import java.awt.Desktop;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -67,6 +70,60 @@ public final class UiComponents {
 
     /** Impide instanciar esta clase de utilidades con metodos estaticos. */
     private UiComponents() {
+    }
+
+    public static Button revealFileButton(String id, Path file) {
+        SVGPath icon = new SVGPath();
+        icon.setContent("M1 4 L6 4 L8 6 L17 6 L17 16 L1 16 Z");
+        icon.getStyleClass().add("workflow-context-folder-icon");
+        icon.setMouseTransparent(true);
+        Button button = new Button();
+        button.setId(id);
+        button.setGraphic(icon);
+        button.getStyleClass().add("workflow-context-reveal-button");
+        button.setAccessibleText("Mostrar en la carpeta contenedora");
+        button.setTooltip(new Tooltip("Mostrar en la carpeta contenedora"));
+        button.setMinSize(28, 28);
+        button.setPrefSize(28, 28);
+        button.setMaxSize(28, 28);
+        button.setVisible(file != null);
+        button.setManaged(file != null);
+        button.setDisable(file == null || !Files.exists(file));
+        button.setOnAction(event -> {
+            try {
+                Path target = file.toAbsolutePath().normalize();
+                if (!Files.exists(target)) {
+                    throw new IOException("El archivo o la carpeta ya no existe: " + target);
+                }
+                if (System.getProperty("os.name", "").startsWith("Windows")) {
+                    new ProcessBuilder("explorer.exe", "/select,", target.toString()).start();
+                    return;
+                }
+                if (!Desktop.isDesktopSupported()) {
+                    throw new IOException("El sistema no permite abrir el explorador de archivos.");
+                }
+                Desktop desktop = Desktop.getDesktop();
+                if (desktop.isSupported(Desktop.Action.BROWSE_FILE_DIR)) {
+                    desktop.browseFileDirectory(target.toFile());
+                } else if (desktop.isSupported(Desktop.Action.OPEN)) {
+                    Path folder = target.getParent();
+                    desktop.open((folder == null ? target : folder).toFile());
+                } else {
+                    throw new IOException("El sistema no permite abrir el explorador de archivos.");
+                }
+            } catch (IOException | UnsupportedOperationException | IllegalArgumentException | SecurityException exception) {
+                LOGGER.warn("FILE_REVEAL_ERROR | No se pudo mostrar la ruta {}.", file, exception);
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                if (button.getScene() != null && button.getScene().getWindow() != null) {
+                    alert.initOwner(button.getScene().getWindow());
+                }
+                alert.setTitle("Explorador de archivos");
+                alert.setHeaderText("No se pudo mostrar el archivo o la carpeta");
+                alert.setContentText(exception.getMessage());
+                alert.show();
+            }
+        });
+        return button;
     }
 
     /**

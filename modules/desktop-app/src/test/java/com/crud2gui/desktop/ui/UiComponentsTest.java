@@ -42,6 +42,35 @@ import static org.junit.jupiter.api.Assertions.*;
 class UiComponentsTest {
 
     @Test
+    void revealButtonsReflectAvailableFilesAndFolders(@TempDir Path directory) throws Exception {
+        Path file = Files.writeString(directory.resolve("modelo con espacios.json"), "{}");
+        onJavaFxThread(() -> {
+            Button available = UiComponents.revealFileButton("available", file);
+            Button folder = UiComponents.revealFileButton("folder", directory);
+            Button missing = UiComponents.revealFileButton("missing", directory.resolve("missing.json"));
+            Button pending = UiComponents.revealFileButton("pending", null);
+            assertTrue(available.isVisible());
+            assertTrue(available.isManaged());
+            assertFalse(available.isDisabled());
+            assertFalse(folder.isDisabled());
+            assertTrue(missing.isDisabled());
+            assertFalse(pending.isVisible());
+            assertFalse(pending.isManaged());
+            assertTrue(pending.isDisabled());
+            assertEquals("", available.getText());
+            assertNotNull(available.getGraphic());
+            assertNotNull(available.getOnAction());
+            assertEquals("Mostrar en la carpeta contenedora", available.getAccessibleText());
+            VBox root = new VBox(available);
+            styledScene(root);
+            root.applyCss();
+            root.layout();
+            assertEquals(Color.TRANSPARENT, available.getBackground().getFills().get(0).getFill());
+            assertEquals(28, available.getWidth(), 0.01);
+        });
+    }
+
+    @Test
     void resolvesSharedBrandColorFromThemeStylesheet() throws Exception {
         onJavaFxThread(() -> {
             Button button = UiComponents.actionButton("Acción", List.of(), () -> { });
