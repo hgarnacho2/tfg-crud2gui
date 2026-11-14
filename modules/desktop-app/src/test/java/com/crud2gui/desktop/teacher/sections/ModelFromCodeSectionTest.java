@@ -1,7 +1,9 @@
 package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.desktop.ui.ClassDiagramView;
+import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import com.crud2gui.desktop.workflow.WorkflowContext;
+import com.crud2gui.javamodelextractor.ProjectParser;
 import com.crud2gui.model.ModelIO;
 import com.crud2gui.model.ManagerCandidate;
 import com.crud2gui.model.Confidence;
@@ -124,6 +126,7 @@ class ModelFromCodeSectionTest {
             assertEquals(0, panel.getLayoutY(), 1);
             assertTrue(panel.getHeight() < host.getHeight());
             assertFalse(section.lookup("#model-code-generated-json").isManaged());
+            assertEquals("Modelo JSON", ((Label) section.lookup("#model-code-output-filename")).getText());
             ((Button) section.lookup("#model-code-change-output-folder")).fire();
             assertEquals(output.toAbsolutePath().toString(),
                     ((Label) section.lookup("#model-code-output-folder")).getText());
@@ -136,16 +139,20 @@ class ModelFromCodeSectionTest {
         try (var files = Files.list(output)) {
             List<Path> results = files.toList();
             assertEquals(1, results.size());
-            assertTrue(results.get(0).getFileName().toString().matches("modelo-codigo_\\d{8}_\\d{6}_\\d{3}\\.json"));
+            assertEquals("modelo-" + directory.getFileName() + ".json",
+                    results.get(0).getFileName().toString());
             assertEquals(3, ModelIO.fromJson(Files.readString(results.get(0))).types().size());
         }
         onFx(() -> {
             StackPane panelHost = (StackPane) section.getChildren().get(2);
             Button diagramStep = (Button) section.lookup("#statement-step-3");
             assertFalse(diagramStep.isDisabled());
-            assertTrue(diagramStep.getPseudoClassStates().stream()
+                assertFalse(diagramStep.getPseudoClassStates().stream()
                     .anyMatch(state -> state.getPseudoClassName().equals("selected")));
-            assertTrue(panelHost.getChildren().get(2).isVisible());
+                assertTrue(section.lookup("#statement-step-2").getPseudoClassStates().stream()
+                    .anyMatch(state -> state.getPseudoClassName().equals("selected")));
+                assertTrue(panelHost.getChildren().get(1).isVisible());
+                assertFalse(panelHost.getChildren().get(2).isVisible());
             ((Button) section.lookup("#statement-step-2")).fire();
             root.layout();
             Label folderName = (Label) section.lookup(".statement-file-name");
@@ -236,6 +243,19 @@ class ModelFromCodeSectionTest {
             ((Button) section.lookup("#statement-step-2")).fire();
             root.layout();
             assertEquals(pageScroll.getViewportBounds().getHeight(), section.getHeight(), 1);
+            return null;
+        });
+        onFx(() -> {
+            ((Button) section.lookup("#model-code-extract-model")).fire();
+            return null;
+        });
+        awaitStatus(section, "Modelo obtenido correctamente.");
+        onFx(() -> {
+            String expectedName = "modelo-" + directory.getFileName() + "_1.json";
+            assertEquals(expectedName, ((Label) section.lookup("#model-code-output-filename")).getText());
+            assertEquals(output.toAbsolutePath().normalize().toString(),
+                    ((Label) section.lookup("#model-code-output-folder")).getText());
+            assertTrue(Files.isRegularFile(output.resolve(expectedName)));
             return null;
         });
     }
@@ -397,6 +417,45 @@ class ModelFromCodeSectionTest {
             return null;
         });
     }
+
+        @Test
+        void restoresGeneratedModelAndDiagramWhenReturningToSection() throws Exception {
+            Path sourceFolder = Files.createDirectory(directory.resolve("src"));
+            Path sourceFile = Files.writeString(sourceFolder.resolve("RestoredModel.java"), "class RestoredModel {}");
+        Path modelFile = directory.resolve("modelo-codigo-reanudado.json");
+            ProjectModel extracted = new ProjectParser().parse(sourceFolder);
+        Files.writeString(modelFile, ModelIO.toJson(extracted));
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("code-workflow.json"));
+            workflow.selectCodeFolder(sourceFolder);
+        workflow.recordCodeModel(modelFile);
+
+        ModelFromCodeSection section = onFx(() -> {
+            ModelFromCodeSection created = new ModelFromCodeSection("MODELO DESDE CÓDIGO", workflow);
+            StackPane root = new StackPane(created);
+            new Scene(root, 1200, 900);
+            root.applyCss();
+            root.layout();
+            return created;
+        });
+
+        awaitFolderTree(section);
+        onFx(() -> {
+                assertTrue(((TreeView<?>) section.lookup("#model-code-folder-tree")).getRoot()
+                    .getChildren().get(0).getValue().toString().contains(sourceFile.getFileName().toString()));
+            assertEquals(modelFile.getFileName().toString(),
+                        ((Label) section.lookup("#model-code-output-filename")).getText());
+            assertTrue(((StackPane) section.lookup("#model-code-generated-json")).isManaged());
+            assertTrue(section.lookup("#statement-step-2").getPseudoClassStates()
+                .contains(javafx.css.PseudoClass.getPseudoClass("completed")));
+            assertFalse(section.lookup("#statement-step-3").isDisabled());
+            assertTrue(section.lookup("#statement-step-3").getPseudoClassStates()
+                .contains(javafx.css.PseudoClass.getPseudoClass("completed")));
+            assertTrue(section.lookup("#model-code-class-diagram-view") != null);
+            assertEquals("Diagrama de clases generado correctamente. Flujo completado.",
+                ((Label) section.lookup("#model-code-diagram-status")).getText());
+            return null;
+        });
+        }
 
     @Test
     void showsScrollableReadOnlyFolderTreeThatFillsAvailableHeight() throws Exception {

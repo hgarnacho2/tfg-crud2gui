@@ -31,11 +31,8 @@ import javafx.util.StringConverter;
 
 import java.io.File;
 import java.io.IOException;
-import java.awt.Desktop;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -53,7 +50,7 @@ public class ModelFromCodeSection extends Section {
     private final BiFunction<Window, Path, File> chooseOutputFolder;
     private final WorkflowContext workflow;
     private Path outputFolder;
-    private final Label outputFilename = UiComponents.labelWithGraphic("Resultado JSON con fecha y hora",
+    private final Label outputFilename = UiComponents.labelWithGraphic("Modelo JSON",
             List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
     private final Label outputFolderLabel =
             UiComponents.label("", List.of("statement-file-path", "statement-output-folder"));
@@ -100,11 +97,17 @@ public class ModelFromCodeSection extends Section {
 
     /** Crea la sección con un selector de carpetas del sistema. */
     public ModelFromCodeSection() {
-        this(owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"), null);
+        this("MODELO DESDE CÓDIGO",
+            owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"),
+            (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Seleccionar carpeta de salida"),
+            defaultOutputDirectory(), null);
     }
 
     public ModelFromCodeSection(WorkflowContext workflow) {
-        this(owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"), workflow);
+        this("MODELO DESDE CÓDIGO",
+            owner -> FileDialogs.chooseDirectory(owner, null, "Seleccionar carpeta con código Java"),
+            (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Seleccionar carpeta de salida"),
+            defaultOutputDirectory(), workflow);
     }
 
     public ModelFromCodeSection(String breadcrumb, WorkflowContext workflow) {
@@ -114,24 +117,14 @@ public class ModelFromCodeSection extends Section {
     }
 
     ModelFromCodeSection(Function<Window, File> chooseCodeFolder) {
-        this(chooseCodeFolder, null);
-    }
-
-    private ModelFromCodeSection(Function<Window, File> chooseCodeFolder, WorkflowContext workflow) {
         this("MODELO DESDE CÓDIGO", chooseCodeFolder,
                 (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Seleccionar carpeta de salida"),
-                defaultOutputDirectory(), workflow);
+                defaultOutputDirectory(), null);
     }
 
     ModelFromCodeSection(Function<Window, File> chooseCodeFolder,
                         BiFunction<Window, Path, File> chooseOutputFolder, Path outputDirectory) {
-        this(chooseCodeFolder, chooseOutputFolder, outputDirectory, null);
-    }
-
-    private ModelFromCodeSection(Function<Window, File> chooseCodeFolder,
-                        BiFunction<Window, Path, File> chooseOutputFolder, Path outputDirectory,
-                        WorkflowContext workflow) {
-        this("MODELO DESDE CÓDIGO", chooseCodeFolder, chooseOutputFolder, outputDirectory, workflow);
+        this("MODELO DESDE CÓDIGO", chooseCodeFolder, chooseOutputFolder, outputDirectory, null);
     }
 
     private ModelFromCodeSection(String breadcrumb, Function<Window, File> chooseCodeFolder,
@@ -143,6 +136,7 @@ public class ModelFromCodeSection extends Section {
         this.chooseOutputFolder = Objects.requireNonNull(chooseOutputFolder, "chooseOutputFolder");
         this.workflow = workflow;
         outputFolder = Objects.requireNonNull(outputDirectory, "outputDirectory").toAbsolutePath().normalize();
+        outputFilename.setId("model-code-output-filename");
         outputFolderLabel.setId("model-code-output-folder");
         outputFolderLabel.setText(outputFolder.toString());
         changeOutputFolderButton.setId("model-code-change-output-folder");
@@ -296,11 +290,7 @@ public class ModelFromCodeSection extends Section {
         if (steps.get(index).isDisabled()) {
             return;
         }
-        for (int i = 0; i < panels.size(); i++) {
-            panels.get(i).setVisible(i == index);
-            panels.get(i).setManaged(i == index);
-            steps.get(i).pseudoClassStateChanged(SELECTED, i == index);
-        }
+        showStepPanels(panels, steps, index);
         if (index == 2) {
             Platform.runLater(() -> {
                 diagramScroll.applyCss();
@@ -378,7 +368,35 @@ public class ModelFromCodeSection extends Section {
         }, () -> {
             loadingFolderContents = false;
             updateControls();
+            if (folderTree.getRoot() != null && !persistSelection) {
+                restoreGeneratedModel();
+            }
         });
+    }
+
+    private void restoreGeneratedModel() {
+        Path modelPath = workflow == null ? null : workflow.getGeneratedCodeModel();
+        if (modelPath == null) {
+            return;
+        }
+        try {
+            String json = Files.readString(modelPath, StandardCharsets.UTF_8);
+            ProjectModel model = ModelIO.fromJson(json);
+            showGeneratedModel(modelPath);
+            if (generatedModelViewer == null) {
+                return;
+            }
+            outputFilename.setText(modelPath.getFileName().toString());
+            outputFolderLabel.setText(modelPath.getParent().toString());
+            configureManagerSelection(model);
+            steps.get(1).pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("completed"), true);
+            steps.get(2).setDisable(false);
+            steps.get(2).pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("completed"), true);
+            showStatus(extractionStatus, "Modelo generado restaurado desde: " + modelPath, false);
+        } catch (IOException | RuntimeException exception) {
+            showStatus(extractionStatus,
+                    "No se pudo restaurar el modelo guardado. Vuelve a obtener el modelo.", true);
+        }
     }
 
     private void extractModel() {
@@ -402,13 +420,9 @@ public class ModelFromCodeSection extends Section {
             }
             String json = ModelIO.toJson(model);
             Files.createDirectories(destination);
-            String name = "modelo-codigo_" + LocalDateTime.now()
-                    .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS"));
-            Path resultPath = destination.resolve(name + ".json");
-            int collision = 1;
-            while (Files.exists(resultPath)) {
-                resultPath = destination.resolve(name + "_" + collision++ + ".json");
-            }
+            Path folderName = folder.getFileName();
+            String name = "modelo-" + (folderName == null ? "codigo" : folderName);
+            Path resultPath = uniqueOutputPath(destination.resolve(name + ".json"));
             Files.writeString(resultPath, json, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
             return new ExtractedModel(model, json, resultPath);
         }, result -> {
@@ -426,7 +440,6 @@ public class ModelFromCodeSection extends Section {
                     + "\nResultado: " + result.outputPath(), false);
             steps.get(1).pseudoClassStateChanged(COMPLETED, true);
             steps.get(2).setDisable(false);
-            showStep(2);
         }, failure -> {
             logger.error("MODEL_CODE_EXTRACTION_ERROR | No se pudo obtener o guardar el modelo.", failure);
             String detail = failure.getMessage() == null
@@ -445,6 +458,8 @@ public class ModelFromCodeSection extends Section {
             logger.error("MODEL_CODE_VIEWER_ERROR | No se pudo mostrar el modelo generado.", exception);
             return;
         }
+        outputFilename.setText(modelPath.getFileName().toString());
+        outputFolderLabel.setText(modelPath.toAbsolutePath().normalize().getParent().toString());
         generatedModel.getChildren().setAll(generatedModelViewer.getView());
         generatedModel.setVisible(true);
         generatedModel.setManaged(true);
@@ -614,17 +629,7 @@ public class ModelFromCodeSection extends Section {
 
     private void openOutputFolder() {
         Path folder = outputFolder;
-        runTask(() -> {
-            if (!Files.isDirectory(folder)) {
-                throw new IOException("La carpeta de salida no existe: " + folder);
-            }
-            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                throw new IOException("El sistema no permite abrir carpetas desde la aplicación.");
-            }
-            Desktop.getDesktop().open(folder.toFile());
-            return folder;
-        }, opened -> { },
-                failure -> {
+        openOutputFolder(folder, () -> { }, failure -> {
                     logger.error("MODEL_CODE_OPEN_OUTPUT_ERROR | No se pudo abrir la carpeta de salida.", failure);
                     showStatus(extractionStatus, "No se pudo abrir la carpeta de salida: " + folder, true);
                 }, () -> { });

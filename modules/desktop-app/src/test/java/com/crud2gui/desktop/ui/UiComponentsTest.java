@@ -4,6 +4,7 @@ import com.crud2gui.desktop.login.LoginView;
 import com.crud2gui.desktop.login.LogoutView;
 import com.crud2gui.desktop.student.StudentDashboardView;
 import com.crud2gui.desktop.teacher.TeacherDashboardView;
+import com.crud2gui.desktop.workflow.ValidationStatus;
 import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -42,6 +43,37 @@ import static org.junit.jupiter.api.Assertions.*;
 class UiComponentsTest {
 
     @Test
+    void validationStatusesHaveNoContainer() throws Exception {
+        onJavaFxThread(() -> {
+            VBox root = new VBox();
+            for (ValidationStatus status : ValidationStatus.values()) {
+                root.getChildren().add(UiComponents.validationStatusBadge(status, "validation-status-" + status.name()));
+            }
+            styledScene(root);
+            root.applyCss();
+            root.layout();
+
+            for (ValidationStatus status : ValidationStatus.values()) {
+                String id = "validation-status-" + status.name();
+                var badge = (javafx.scene.layout.HBox) root.lookup("#" + id + "-badge");
+                var icon = (Label) badge.lookup("#" + id + "-icon");
+                assertEquals(status.displayName(), ((Label) badge.lookup("#" + id)).getText());
+                assertEquals(status.symbol(), icon.getText());
+                assertEquals(Color.TRANSPARENT, badge.getBackground().getFills().get(0).getFill());
+                assertEquals(Insets.EMPTY, badge.getPadding());
+                assertEquals(0, badge.getBorder().getStrokes().get(0).getWidths().getTop());
+                String iconColor = switch (status) {
+                    case READY_FOR_CRUD -> "#087e65";
+                    case PENDING_REVIEW -> "#a87516";
+                    case INVALID -> "#b42318";
+                    default -> "#75837d";
+                };
+                assertEquals(Color.web(iconColor), icon.getBackground().getFills().get(0).getFill());
+            }
+        });
+    }
+
+    @Test
     void revealButtonsReflectAvailableFilesAndFolders(@TempDir Path directory) throws Exception {
         Path file = Files.writeString(directory.resolve("modelo con espacios.json"), "{}");
         onJavaFxThread(() -> {
@@ -61,6 +93,7 @@ class UiComponentsTest {
             assertNotNull(available.getGraphic());
             assertNotNull(available.getOnAction());
             assertEquals("Mostrar en la carpeta contenedora", available.getAccessibleText());
+            assertEquals("-fx-font-size: 12px;", available.getTooltip().getStyle());
             VBox root = new VBox(available);
             styledScene(root);
             root.applyCss();
@@ -263,6 +296,8 @@ class UiComponentsTest {
                 assertTrue(sidebar.getStyle().isEmpty());
                 var buttons = sidebar.getChildren().stream().filter(Button.class::isInstance)
                         .map(Button.class::cast).toList();
+                assertEquals(new Insets(8, 0, 0, 0), VBox.getMargin(buttons.get(0)));
+                assertNull(VBox.getMargin(buttons.get(1)));
                 for (Button button : buttons) {
                     assertEquals(15, button.getFont().getSize(), 0.01);
                     assertTrue(button.getFont().getStyle().contains("Bold"));

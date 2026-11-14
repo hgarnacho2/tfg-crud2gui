@@ -4,6 +4,43 @@ Biblioteca Maven que autentica clientes públicos de escritorio contra Microsoft
 
 Este módulo no es una aplicación ejecutable y no depende directamente de JavaFX. No incluye credenciales de usuario ni `client secret`.
 
+## Cómo funciona
+
+Microsoft Entra ID autentica al usuario; este módulo coordina el proceso mediante MSAL4J y devuelve a la aplicación la identidad y los roles obtenidos. La aplicación anfitriona decide cómo mostrar el navegador y qué hacer con el usuario autenticado.
+
+```mermaid
+sequenceDiagram
+    actor Usuario
+    participant App as Aplicación JavaFX
+    participant Auth as authenticator
+    participant MSAL as MSAL4J
+    participant Entra as Microsoft Entra ID
+
+    Usuario->>App: Pulsa Iniciar sesión
+    App->>Auth: authenticate()
+    Auth->>MSAL: Inicia el flujo interactivo
+    MSAL->>App: Solicita abrir la URL de autorización
+    App->>Entra: Abre WebView o navegador del sistema
+    Usuario->>Entra: Se autentica
+    Entra->>MSAL: Redirige a localhost con el código
+    MSAL->>Entra: Intercambia el código por tokens
+    MSAL->>Auth: Devuelve el resultado con el ID token
+    Auth->>Auth: Extrae identidad y roles
+    Auth->>App: CompletableFuture de AuthenticatedUser
+    App->>Usuario: Muestra el panel correspondiente
+```
+
+El flujo utiliza OAuth 2.0 Authorization Code con PKCE y OpenID Connect para obtener información de identidad. PKCE protege el intercambio del código de autorización y es apropiado para clientes públicos de escritorio, que no pueden guardar un secreto de cliente de forma segura. El callback loopback es una dirección de la propia máquina a la que Microsoft redirige el navegador para que MSAL reciba el resultado.
+
+### Responsabilidades
+
+| Clase | Responsabilidad |
+|---|---|
+| `AuthenticatorConfig` | Carga y valida el identificador de aplicación, el tenant, el callback y los scopes. |
+| `EntraIdAuthenticator` | Configura MSAL, inicia el acceso interactivo y proporciona operaciones para el cierre de sesión. |
+| `IdTokenClaims` | Decodifica los claims del ID token recibido y los convierte en el modelo de usuario. |
+| `AuthenticatedUser` | Representa la identidad y los roles de aplicación sin exponer tokens ni credenciales. |
+
 ## 📂 Estructura del módulo
 
 ```text
@@ -50,6 +87,8 @@ El registro debe ser un cliente público; no necesita `client secret`. El WebVie
 
 El client ID y el tenant ID identifican la aplicación y el tenant; no son secretos. No configures contraseñas de usuario ni un client secret.
 
+La configuración exige client ID, tenant y al menos un scope. El redirect debe usar HTTP y apuntar a loopback (`localhost`, `127.0.0.1` o `::1`), sin credenciales ni fragmento. La autoridad utilizada es `https://login.microsoftonline.com/<tenant>`.
+
 ## API
 
 Los tipos de Entra están en `com.crud2gui.authenticator.entraid` y la identidad devuelta es `AuthenticatedUser`.
@@ -73,7 +112,34 @@ authenticator.authenticate().thenAccept(user -> {
 
 `OpenBrowserAction` permite que la interfaz anfitriona decida cómo presentar la URL de autorización. `authenticate()` es asíncrono y devuelve `CompletableFuture<AuthenticatedUser>`; no bloquees el hilo de interfaz. `AuthenticatedUser` contiene claims de identidad y roles, no el token. MSAL gestiona la caché de tokens en memoria. Además del constructor de dos argumentos, `EntraIdAuthenticator` admite un mensaje de éxito para la página del callback; `desktop-app` lo elige según `AZURE_AUTH_BROWSER`, variable propia de la aplicación de escritorio (`webview` por defecto, o `system`).
 
-`clearAccounts()` elimina las cuentas de la caché MSAL en memoria. `logoutUri()` construye el endpoint de cierre de sesión de Entra, pero no abre el navegador ni cierra por sí solo la sesión web; la aplicación anfitriona debe completar el retorno al callback.
+La petición interactiva usa `Prompt.LOGIN` y espera el callback hasta 180 segundos. En `desktop-app`, `LoginController` recibe el resultado asíncrono y traslada las actualizaciones de interfaz al hilo de JavaFX mediante `Platform.runLater`.
+
+### Identidad y roles
+
+`IdTokenClaims` interpreta el payload JSON del ID token y construye `AuthenticatedUser`:
+
+| Campo | Claim de origen |
+|---|---|
+| `objectId` | `oid`; si falta, `sub` |
+| `username` | `preferred_username`, `upn` o `email`, en ese orden |
+| `displayName` | `name`; si falta, `username` |
+| `tenantId` | `tid` |
+| `roles` | `roles` |
+| `expiresAt` | `exp` |
+
+El identificador es obligatorio; los demás datos pueden faltar. Los roles se consultan con `hasRole()`, `isAlumno()` o `isDocente()`, sin distinguir mayúsculas y minúsculas.
+
+**Límite de confianza:** `IdTokenClaims` decodifica el payload, pero no verifica la firma del JWT. Debe recibir únicamente el ID token obtenido mediante el flujo de MSAL y no utilizarse para validar tokens arbitrarios. `expiresAt` expone la expiración del token de identidad; el módulo no impone por sí mismo la expiración de la sesión de la aplicación.
+
+Autenticar a un usuario no garantiza que tenga un rol admitido. En `desktop-app`, el rol `docente` abre el panel docente y `alumno` abre el panel de alumno; si tiene ambos, se prioriza `docente`. Si no tiene ninguno, se muestra un aviso y no se abre ninguno de esos paneles.
+
+### Cierre de sesión
+
+`clearAccounts()` elimina las cuentas y tokens de la caché MSAL en memoria. Esto no cierra por sí solo la sesión web de Microsoft. `logoutUri()` construye la URL de cierre de Entra con un retorno a la URI registrada; la aplicación anfitriona debe abrirla. `logoutUri(false)` omite ese retorno.
+
+En `desktop-app`, el navegador integrado espera la redirección de cierre y advierte si falla o se agota el tiempo de espera. Con el navegador del sistema, la aplicación solicita el cierre sin retorno, pero no puede confirmarlo y muestra una advertencia. Si falla la limpieza local, vuelve al acceso sin solicitar el cierre remoto.
+
+### Páginas de resultado
 
 Las páginas locales que MSAL muestra al completar o fallar el callback están en `src/main/resources/templates/auth_success_page.html` y `src/main/resources/templates/auth_error_page.html`. La plantilla de éxito contiene el marcador `{{SUCCESS_MESSAGE}}`, que el autenticador sustituye por el mensaje seleccionado por la interfaz, escapando caracteres HTML. En modo `system` indica volver a CRUD2GUI y cerrar la pestaña; en modo `webview`, que la aplicación continuará. Son páginas de resultado; la página de inicio de sesión sigue alojada por Microsoft.
 

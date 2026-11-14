@@ -1,6 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.desktop.ui.UiComponents;
+import com.crud2gui.desktop.workflow.ValidationStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -23,7 +24,9 @@ final class ModelValidationResultView extends VBox {
 
         boolean valid = report.path("valid").asBoolean();
         boolean readyForCrud = report.path("readyForCrud").asBoolean();
-        getChildren().addAll(outcome(valid, readyForCrud), summary(report.path("summary")),
+        ValidationStatus status = report.has("valid")
+                ? ValidationStatus.fromReport(valid, readyForCrud) : ValidationStatus.UNKNOWN;
+        getChildren().addAll(outcome(valid, status), summary(report.path("summary")),
                 manager(report.path("managerSelection")), relationships(report.path("relationshipDecisions")),
                 confirmations(report.path("crudConfirmations")), findings(report.path("findings")));
 
@@ -33,7 +36,7 @@ final class ModelValidationResultView extends VBox {
         getChildren().add(reportLocation);
     }
 
-    private static HBox outcome(boolean valid, boolean readyForCrud) {
+        private static HBox outcome(boolean valid, ValidationStatus status) {
         Label icon = UiComponents.label(valid ? "✓" : "!", List.of("model-validation-outcome-icon"));
         Label title = UiComponents.label(valid ? "Estructura válida" : "Hay errores estructurales",
                 List.of("model-validation-outcome-title"));
@@ -46,10 +49,7 @@ final class ModelValidationResultView extends VBox {
         subtitle.setMaxWidth(Double.MAX_VALUE);
         VBox details = new VBox(4, title, subtitle);
         HBox.setHgrow(details, Priority.ALWAYS);
-        Label readiness = UiComponents.label(readyForCrud ? "Listo para CRUD" : "Pendiente de confirmación",
-                List.of("model-validation-readiness", readyForCrud
-                        ? "model-validation-readiness-ready" : "model-validation-readiness-pending"));
-        readiness.setId("model-validation-readiness");
+        HBox readiness = UiComponents.validationStatusBadge(status, "model-validation-readiness");
         HBox banner = UiComponents.hBox(List.of("model-validation-outcome",
                 valid ? "model-validation-outcome-valid" : "model-validation-outcome-invalid"),
                 icon, details, readiness);

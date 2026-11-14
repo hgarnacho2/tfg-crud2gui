@@ -7,8 +7,13 @@ import java.util.Set;
 
 /**
  * Identidad y permisos de aplicación del usuario que ha completado el inicio de sesión en Entra ID.
- * Representa el estado de sesión de la aplicación; no contiene ni almacena tokens o credenciales.
- * No recibe el token de identidad directamente sino datos contenidos en él.
+ * Tras la autenticación, MSAL devuelve un ID token y {@link IdTokenClaims} extrae sus claims
+ * para construir esta identidad. El objeto recibe únicamente esos datos, no el token en sí,
+ * y no almacena tokens ni credenciales.
+ *
+ * <p>La extracción de claims no verifica la firma del token; debe utilizarse únicamente el ID token
+ * obtenido mediante el flujo de MSAL. La expiración se expone como dato, pero este objeto no
+ * controla por sí mismo la duración de la sesión de la aplicación.</p>
  *
  * @param objectId identificador estable del usuario dentro del tenant, obtenido de {@code oid} o {@code sub}
  * @param username nombre de inicio de sesión o correo electrónico, si está presente en el token

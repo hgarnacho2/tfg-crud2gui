@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.crud2gui.desktop.workflow.WorkflowContext;
+import com.crud2gui.desktop.workflow.ValidationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,8 @@ public final class TeacherWorkflowContext implements WorkflowContext {
     private Path codeModel;
     /** Último informe JSON de comparación de modelos. */
     private Path validationReport;
+    /** Estado del último informe de validación disponible. */
+    private ValidationStatus validationStatus = ValidationStatus.NOT_VALIDATED;
     /** Texto actualmente seleccionado como entrada para la inferencia. */
     private Path selectedStatementText;
     /** Modelo Java seleccionado actualmente para la comparación. */
@@ -130,7 +133,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         generatedStatementModel = null;
         confirmedStatementModel = null;
         codeModel = null;
-        validationReport = null;
+        clearValidationReport();
         selectedStatementText = null;
         selectedJavaModel = null;
         selectedInferredModel = null;
@@ -223,6 +226,11 @@ public final class TeacherWorkflowContext implements WorkflowContext {
      */
     public Path getSuggestedJavaModel() {
         return usable(codeModel);
+    }
+
+    @Override
+    public Path getGeneratedCodeModel() {
+        return getSuggestedJavaModel();
     }
 
     /**
@@ -356,7 +364,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
             codeModel = null;
             selectedJavaModel = null;
             javaModelManual = false;
-            validationReport = null;
+            clearValidationReport();
             persist();
         }
     }
@@ -450,7 +458,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
      */
     public void recordGeneratedStatementModel(Path path) {
         generatedStatementModel = normalize(path);
-        validationReport = null;
+        clearValidationReport();
         confirmedStatementModel = null;
         if (!inferredModelManual) {
             selectedInferredModel = null;
@@ -475,7 +483,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
      */
     public void recordConfirmedStatementModel(Path path) {
         confirmedStatementModel = normalize(path);
-        validationReport = null;
+        clearValidationReport();
         if (!inferredModelManual) {
             selectedInferredModel = confirmedStatementModel;
         }
@@ -490,7 +498,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
      */
     public void recordCodeModel(Path path) {
         codeModel = normalize(path);
-        validationReport = null;
+        clearValidationReport();
         if (!javaModelManual) {
             selectedJavaModel = codeModel;
         }
@@ -505,7 +513,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
     public void selectJavaModel(Path path) {
         selectedJavaModel = normalize(path);
         javaModelManual = true;
-        validationReport = null;
+        clearValidationReport();
         persist();
     }
 
@@ -517,19 +525,37 @@ public final class TeacherWorkflowContext implements WorkflowContext {
     public void selectInferredModel(Path path) {
         selectedInferredModel = normalize(path);
         inferredModelManual = true;
-        validationReport = null;
+        clearValidationReport();
         persist();
     }
 
     @Override
     public void recordValidationReport(Path path) {
+        Path normalized = normalize(path);
+        recordValidationReport(normalized, readReportStatus(normalized));
+    }
+
+    @Override
+    public void recordValidationReport(Path path, ValidationStatus status) {
         validationReport = normalize(path);
+        validationStatus = validationReport == null ? ValidationStatus.NOT_VALIDATED
+                : Objects.requireNonNull(status, "status");
         persist();
     }
 
     @Override
     public Path getValidationReport() {
         return usable(validationReport);
+    }
+
+    @Override
+    public ValidationStatus getValidationStatus() {
+        return getValidationReport() == null ? ValidationStatus.NOT_VALIDATED : validationStatus;
+    }
+
+    private void clearValidationReport() {
+        validationReport = null;
+        validationStatus = ValidationStatus.NOT_VALIDATED;
     }
 
     /** Limpia las rutas de modelos inferidos y conserva una selección manual vigente. */
@@ -546,7 +572,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         inferredModelManual = false;
         selectedInferredModel = null;
         clearStatementModels();
-        validationReport = null;
+        clearValidationReport();
     }
 
     /**
@@ -631,6 +657,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
             confirmedStatementModel = readPath(root, "confirmedStatementModel");
             codeModel = readPath(root, "codeModel");
             validationReport = readPath(root, "validationReport");
+            validationStatus = readValidationStatus(root);
             selectedStatementText = readPath(root, "selectedStatementText");
             selectedJavaModel = readPath(root, "selectedJavaModel");
             selectedInferredModel = readPath(root, "selectedInferredModel");
@@ -657,6 +684,34 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         return value == null || value.isBlank() ? null : Path.of(value).toAbsolutePath().normalize();
     }
 
+    private ValidationStatus readValidationStatus(JsonNode root) {
+        String stored = root.path("validationStatus").asText(null);
+        if (stored != null) {
+            try {
+                return ValidationStatus.valueOf(stored);
+            } catch (IllegalArgumentException ignored) {
+                return ValidationStatus.UNKNOWN;
+            }
+        }
+        return readReportStatus(validationReport);
+    }
+
+    private ValidationStatus readReportStatus(Path reportFile) {
+        if (reportFile == null) {
+            return ValidationStatus.NOT_VALIDATED;
+        }
+        try {
+            JsonNode report = MAPPER.readTree(reportFile.toFile());
+            if (report == null || !report.isObject() || !report.has("valid")) {
+                return ValidationStatus.UNKNOWN;
+            }
+            return ValidationStatus.fromReport(report.path("valid").asBoolean(),
+                    report.path("readyForCrud").asBoolean());
+        } catch (IOException | RuntimeException exception) {
+            return ValidationStatus.UNKNOWN;
+        }
+    }
+
     /** Persiste todas las rutas y opciones mediante reemplazo atómico cuando está disponible. */
     private void persist() {
         ObjectNode root = MAPPER.createObjectNode();
@@ -670,6 +725,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         writePath(root, "confirmedStatementModel", confirmedStatementModel);
         writePath(root, "codeModel", codeModel);
         writePath(root, "validationReport", validationReport);
+        root.put("validationStatus", validationStatus.name());
         writePath(root, "selectedStatementText", selectedStatementText);
         writePath(root, "selectedJavaModel", selectedJavaModel);
         writePath(root, "selectedInferredModel", selectedInferredModel);

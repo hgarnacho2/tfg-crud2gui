@@ -219,7 +219,7 @@ class ModelFromStatementSectionTest {
             assertEquals(panelHost.getHeight(), statementPanel.getHeight(), 1);
                 assertEquals(textFile.getFileName().toString(), selectedTextName.getText());
                 assertEquals("TXT", selectedTextBadge.getText());
-            assertEquals(textFile.toAbsolutePath().toString(), source.getText());
+            assertEquals(textFile.toAbsolutePath().normalize().getParent().toString(), source.getText());
                 assertTrue(section.lookup("#model-statement-text-card").getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("selected")));
             assertTrue(status.getText().contains("cargado correctamente"));
@@ -263,7 +263,7 @@ class ModelFromStatementSectionTest {
             assertTrue(promptStatus.isManaged());
                 assertEquals(promptFile.getFileName().toString(), promptName.getText());
                 assertEquals("TXT", promptBadge.getText());
-            assertEquals(promptFile.toAbsolutePath().toString(), promptSource.getText());
+            assertEquals(promptFile.toAbsolutePath().normalize().getParent().toString(), promptSource.getText());
                 assertTrue(section.lookup("#model-statement-prompt-card").getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("selected")));
             assertTrue(promptStatus.getText().contains("cargado correctamente"));
@@ -298,7 +298,7 @@ class ModelFromStatementSectionTest {
             Label promptName = (Label) section.lookup("#model-statement-prompt-card .statement-file-name");
             assertEquals(prompt, promptText.getText());
             assertTrue(promptText.isVisible());
-            assertEquals(promptFile.toAbsolutePath().normalize().toString(), promptPath.getText());
+            assertEquals(promptFile.toAbsolutePath().normalize().getParent().toString(), promptPath.getText());
             assertEquals(promptFile.getFileName().toString(), promptName.getText());
             return null;
         });
@@ -337,6 +337,52 @@ class ModelFromStatementSectionTest {
             return null;
         });
     }
+
+        @Test
+        void restoresConfirmedModelAndReviewStepsWhenReturningToSection() throws Exception {
+        Path statement = Files.writeString(directory.resolve("texto-enunciado-filtrado.txt"), "Enunciado.");
+        Path prompt = Files.writeString(directory.resolve("prompt.txt"), "Instrucciones.");
+        Path generated = Files.writeString(directory.resolve("modelo-generado.json"), MODEL_JSON);
+        Path reviewed = Files.writeString(directory.resolve("modelo-generado-revisado.json"), MODEL_JSON);
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("confirmed-workflow.json"));
+        workflow.selectStatementText(statement);
+        workflow.selectPromptFile(prompt);
+        workflow.selectModelProvider("fake");
+        workflow.selectModel("fake-model");
+        workflow.recordGeneratedStatementModel(generated);
+        workflow.recordConfirmedStatementModel(reviewed);
+        FakeProvider provider = new FakeProvider();
+
+        ModelFromStatementSection section = onFx(() -> {
+            ModelFromStatementSection created = new ModelFromStatementSection(owner -> null, owner -> null,
+                (owner, current) -> null, List.of(provider), directory.resolve("output"), workflow);
+            StackPane root = new StackPane(created);
+            new Scene(root, 1200, 900);
+            root.applyCss();
+            root.layout();
+            return created;
+        });
+
+        Label reviewStatus = onFx(() -> (Label) section.lookup("#model-statement-refine-status"));
+        awaitStatus(reviewStatus, "Modelo revisado restaurado");
+        onFx(() -> {
+            assertEquals(reviewed.getFileName().toString(),
+                ((Label) section.lookup("#model-statement-output-filename")).getText());
+            assertTrue(((TextArea) section.lookup("#model-statement-generated-json")).isVisible());
+            assertTrue(section.lookup("#statement-step-4").getPseudoClassStates()
+                .contains(PseudoClass.getPseudoClass("completed")));
+            assertTrue(section.lookup("#statement-step-5").getPseudoClassStates()
+                .contains(PseudoClass.getPseudoClass("completed")));
+            assertFalse(section.lookup("#statement-step-6").isDisabled());
+            assertTrue(section.lookup("#statement-step-6").getPseudoClassStates()
+                .contains(PseudoClass.getPseudoClass("completed")));
+            ((Button) section.lookup("#model-statement-confirm-model")).fire();
+            assertTrue(Files.isRegularFile(reviewed));
+            assertEquals(MODEL_JSON, Files.readString(reviewed));
+            assertTrue(Files.isRegularFile(directory.resolve("modelo-generado-revisado_1.json")));
+            return null;
+        });
+        }
 
     @Test
     void selectsConfiguredProviderDefaultWhenAvailable() throws Exception {
@@ -614,6 +660,8 @@ class ModelFromStatementSectionTest {
         });
         Label status = onFx(() -> (Label) section.lookup("#model-statement-generation-status"));
         awaitStatus(status, "Análisis completado");
+        String firstOutputName = onFx(() ->
+            ((Label) section.lookup("#model-statement-output-filename")).getText());
         for (String invalid : List.of("{\"types\":[{\"id\":\"A\"]}", "[1,2]", "{\"schemaVersion\":\"99.0\"}")) {
             provider.answer.set(invalid);
             onFx(() -> {
@@ -652,6 +700,10 @@ class ModelFromStatementSectionTest {
             assertFalse(status.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
             assertTrue(((TextArea) section.lookup("#model-statement-generated-json")).getText()
                     .contains("\"expectedManagerId\" : \"PlataformaCompraVenta\""));
+                String expectedName = firstOutputName.replaceFirst("\\.json$", "_1.json");
+                assertEquals(expectedName, ((Label) section.lookup("#model-statement-output-filename")).getText());
+                Path folder = Path.of(((Label) section.lookup("#model-statement-output-folder")).getText());
+                assertTrue(Files.isRegularFile(folder.resolve(expectedName)));
             return null;
         });
     }
@@ -694,13 +746,17 @@ class ModelFromStatementSectionTest {
         selectedLocalModel.set(localModel.toFile());
         localModelButton.fire();
         assertTrue(generationStatus.getText().contains("Modelo local cargado correctamente"));
+        assertEquals(localModel.getFileName().toString(),
+            ((Label) section.lookup("#model-statement-output-filename")).getText());
+        assertEquals(localModel.toAbsolutePath().normalize().getParent().toString(),
+            ((Label) section.lookup("#model-statement-output-folder")).getText());
         assertFalse(refineStep.isDisabled());
         assertTrue(((TextArea) section.lookup("#model-statement-generated-json")).getText()
             .contains("\"expectedManagerId\""));
 
         refineStep.fire();
         ((Button) section.lookup("#model-statement-confirm-model")).fire();
-        Path validatedModel = directory.resolve("modelo-local-validated.json");
+        Path validatedModel = directory.resolve("modelo-local-revisado.json");
         assertTrue(Files.isRegularFile(validatedModel));
         assertFalse(((Button) section.lookup("#statement-step-6")).isDisabled());
         return null;

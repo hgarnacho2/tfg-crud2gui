@@ -2,6 +2,7 @@ package com.crud2gui.desktop.teacher;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import com.crud2gui.desktop.workflow.ValidationStatus;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +26,8 @@ class TeacherWorkflowContextTest {
         Path generated = Files.writeString(directory.resolve("inferred-generated.json"), "{}");
         Path javaModel = Files.writeString(directory.resolve("java.json"), "{}");
         Path manualJavaModel = Files.writeString(directory.resolve("manual-java.json"), "{}");
-        Path validationReport = Files.writeString(directory.resolve("validation-report.json"), "{}");
+        Path validationReport = Files.writeString(directory.resolve("validation-report.json"),
+            "{\"valid\":true,\"readyForCrud\":true}");
         Path prompt = Files.writeString(directory.resolve("prompt.txt"), "instructions");
 
         TeacherWorkflowContext context = new TeacherWorkflowContext(stateFile);
@@ -49,6 +51,7 @@ class TeacherWorkflowContextTest {
         assertEquals(generated, restored.getGeneratedStatementModel());
         assertEquals(inferred, restored.getSelectedInferredModel());
         assertEquals(validationReport, restored.getValidationReport());
+        assertEquals(ValidationStatus.READY_FOR_CRUD, restored.getValidationStatus());
         assertEquals(prompt, restored.getSelectedPromptFile());
         assertEquals("fake-provider", restored.getSelectedModelProviderId());
         assertEquals("fake-model", restored.getSelectedModelId());
@@ -98,6 +101,21 @@ class TeacherWorkflowContextTest {
         assertNull(context.getSelectedInferredModel());
         assertNull(context.getSuggestedInferredModel());
         assertEquals(secondInput, context.getSelectedStatementText());
+    }
+
+    @Test
+    void changingValidatedModelsClearsValidationStatus() throws Exception {
+        Path stateFile = directory.resolve("workflow.json");
+        Path javaModel = Files.writeString(directory.resolve("java.json"), "{}");
+        Path report = Files.writeString(directory.resolve("report.json"),
+                "{\"valid\":true,\"readyForCrud\":true}");
+        TeacherWorkflowContext context = new TeacherWorkflowContext(stateFile);
+        context.recordValidationReport(report, ValidationStatus.READY_FOR_CRUD);
+
+        context.selectJavaModel(javaModel);
+
+        assertNull(context.getValidationReport());
+        assertEquals(ValidationStatus.NOT_VALIDATED, context.getValidationStatus());
     }
 
     @Test

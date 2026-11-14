@@ -9,7 +9,12 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.awt.Desktop;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.Callable;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -76,6 +81,48 @@ public abstract class Section extends VBox {
     protected final void showStatus(Label status, String message, boolean error) {
         status.setText(message);
         status.pseudoClassStateChanged(ERROR, error);
+    }
+
+    /** Muestra el panel elegido y actualiza el estado visual de los botones del flujo. */
+    protected final void showStepPanels(List<? extends Node> panels, List<Button> steps, int index) {
+        for (int panelIndex = 0; panelIndex < panels.size(); panelIndex++) {
+            boolean selected = panelIndex == index;
+            panels.get(panelIndex).setVisible(selected);
+            panels.get(panelIndex).setManaged(selected);
+        }
+        for (int stepIndex = 0; stepIndex < steps.size(); stepIndex++) {
+            steps.get(stepIndex).pseudoClassStateChanged(SELECTED, stepIndex == index);
+        }
+    }
+
+    /** Devuelve una ruta libre, añadiendo _1, _2, etc. antes de la extensión. */
+    protected final Path uniqueOutputPath(Path requestedPath) {
+        String fileName = requestedPath.getFileName().toString();
+        int extensionIndex = fileName.lastIndexOf('.');
+        String baseName = extensionIndex > 0 ? fileName.substring(0, extensionIndex) : fileName;
+        String extension = extensionIndex > 0 ? fileName.substring(extensionIndex) : "";
+        Path candidate = requestedPath;
+        int suffix = 1;
+        while (Files.exists(candidate)) {
+            candidate = requestedPath.resolveSibling(baseName + "_" + suffix++ + extension);
+        }
+        return candidate;
+    }
+
+    /** Abre una carpeta existente fuera de JavaFX y delega el estado visual en la sección. */
+    protected final void openOutputFolder(Path folder, Runnable onStarted,
+                                         Consumer<Throwable> onFailure, Runnable onFinished) {
+        onStarted.run();
+        runTask(() -> {
+            if (!Files.isDirectory(folder)) {
+                throw new IOException("La carpeta de salida no existe: " + folder);
+            }
+            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                throw new IOException("El sistema no permite abrir carpetas desde la aplicación.");
+            }
+            Desktop.getDesktop().open(folder.toFile());
+            return folder;
+        }, opened -> { }, onFailure, onFinished);
     }
 
     /**

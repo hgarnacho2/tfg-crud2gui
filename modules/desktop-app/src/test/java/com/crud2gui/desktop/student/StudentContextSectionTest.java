@@ -2,12 +2,16 @@ package com.crud2gui.desktop.student;
 
 import com.crud2gui.desktop.student.sections.StudentContextSection;
 import com.crud2gui.desktop.student.sections.ModelValidationSection;
+import com.crud2gui.desktop.workflow.ValidationStatus;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,12 +50,13 @@ class StudentContextSectionTest {
         Path codeFolder = Files.createDirectory(directory.resolve("src"));
         Path codeModel = Files.writeString(directory.resolve("modelo-codigo.json"), "{}");
         Path validModel = Files.writeString(directory.resolve("modelo-valido.json"), "{}");
-        Path validationReport = Files.writeString(directory.resolve("validacion.json"), "{}");
+        Path validationReport = Files.writeString(directory.resolve("validacion.json"),
+            "{\"valid\":true,\"readyForCrud\":true}");
         StudentWorkflowContext workflow = new StudentWorkflowContext(directory.resolve("workflow.json"));
         workflow.selectCodeFolder(codeFolder);
         workflow.recordCodeModel(codeModel);
         workflow.selectInferredModel(validModel);
-        workflow.recordValidationReport(validationReport);
+        workflow.recordValidationReport(validationReport, ValidationStatus.READY_FOR_CRUD);
 
         onFx(() -> {
             StudentContextSection section = new StudentContextSection(workflow);
@@ -70,8 +75,20 @@ class StudentContextSectionTest {
             assertEquals(15, label(section, "student-context-reference-lane-description").getFont().getSize(), 0.01);
             assertEquals("src", label(section, "student-context-stage-code-folder-file").getText());
             assertEquals(14, label(section, "student-context-stage-code-folder-path").getFont().getSize(), 0.01);
+                assertEquals(codeFolder.toAbsolutePath().normalize().toString(),
+                    label(section, "student-context-stage-code-folder-path").getText());
             assertEquals("modelo-codigo.json", label(section, "student-context-stage-code-model-file").getText());
+                assertEquals(codeModel.toAbsolutePath().normalize().getParent().toString(),
+                    label(section, "student-context-stage-code-model-path").getText());
             assertEquals("validacion.json", label(section, "student-context-stage-validation-report-file").getText());
+                assertEquals(validationReport.toAbsolutePath().normalize().getParent().toString(),
+                    label(section, "student-context-stage-validation-report-path").getText());
+            assertEquals("Listo para CRUD", label(section, "student-context-validation-status").getText());
+                assertEquals("✓", label(section, "student-context-validation-status-icon").getText());
+            HBox statusBadge = (HBox) section.lookup("#student-context-validation-status-badge");
+            assertTrue(statusBadge.getStyleClass().contains("workflow-validation-status-ready-for-crud"));
+            assertEquals(Color.TRANSPARENT, statusBadge.getBackground().getFills().get(0).getFill());
+            assertEquals(Insets.EMPTY, statusBadge.getPadding());
             assertEquals("modelo-valido.json", label(section, "student-context-stage-valid-model-file").getText());
             Button revealModel = (Button) section.lookup("#student-context-stage-code-model-reveal");
             assertNotNull(revealModel);

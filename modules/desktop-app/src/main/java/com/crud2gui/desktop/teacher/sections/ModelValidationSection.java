@@ -7,9 +7,10 @@ import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.ui.ValidationOptionsView;
+import com.crud2gui.desktop.workflow.ValidationStatus;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.awt.Desktop;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -41,7 +42,7 @@ public class ModelValidationSection extends Section {
         private Path outputFolder;
         private Path actualModelFile;
         private Path expectedModelFile;
-        private final Label outputName = UiComponents.labelWithGraphic("Informe JSON con fecha y hora",
+        private final Label outputName = UiComponents.labelWithGraphic("Informe JSON",
             List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
         private final Label outputPath = UiComponents.label("", List.of("statement-file-path"));
         private final Button changeFolder = UiComponents.actionButton("Cambiar carpeta de salida",
@@ -185,6 +186,32 @@ public class ModelValidationSection extends Section {
             inferredSelection.setRestoredFile(workflow.getSelectedInferredModel(),
                     workflow.isInferredModelManual());
             refreshModelSelections();
+            restoreValidationReport();
+        }
+    }
+
+    private void restoreValidationReport() {
+        Path reportFile = workflow.getValidationReport();
+        if (reportFile == null || actualModelFile == null || expectedModelFile == null) {
+            return;
+        }
+        try {
+            var report = new ObjectMapper().readTree(reportFile.toFile());
+            if (report == null || !report.isObject()) {
+                throw new IOException("El informe guardado no contiene un objeto JSON.");
+            }
+            outputName.setText(reportFile.getFileName().toString());
+            outputPath.setText(reportFile.toAbsolutePath().normalize().getParent().toString());
+            resultHost.getChildren().setAll(new ModelValidationResultView(report, reportFile));
+            workflow.recordValidationReport(reportFile, statusFromReport(report));
+            steps.get(2).setDisable(false);
+            steps.get(2).pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("completed"), true);
+            showStatus(validationStatus, "Informe de validación restaurado.", false);
+            showStep(2);
+        } catch (IOException | RuntimeException exception) {
+            workflow.recordValidationReport(reportFile, ValidationStatus.UNKNOWN);
+            showStatus(validationStatus, "No se pudo restaurar el informe guardado. "
+                    + "Puedes volver a ejecutar la validación.", true);
         }
     }
 
@@ -224,21 +251,20 @@ public class ModelValidationSection extends Section {
         steps.get(2).pseudoClassStateChanged(COMPLETED, false);
         resultHost.getChildren().clear();
         if (workflow != null) {
-            workflow.recordValidationReport(null);
+            workflow.recordValidationReport(null, ValidationStatus.NOT_VALIDATED);
         }
         showStatus(validationStatus, "Comparando los modelos y generando el informe...", false);
         runTask(() -> {
-            Path reportFile = ModelComparisonMain.defaultReportPath(expectedModel,
-                    destination);
+            Path reportFile = validationReportPath(actualModel, expectedModel, destination);
             ObjectNode report = ModelComparisonMain.compareFiles(expectedModel, actualModel,
                     options, reportFile);
             return new ValidationOutput(report, reportFile);
         }, output -> {
             outputName.setText(output.reportFile().getFileName().toString());
-            outputPath.setText(output.reportFile().toAbsolutePath().normalize().toString());
+            outputPath.setText(output.reportFile().toAbsolutePath().normalize().getParent().toString());
             resultHost.getChildren().setAll(new ModelValidationResultView(output.report(), output.reportFile()));
             if (workflow != null) {
-                workflow.recordValidationReport(output.reportFile());
+                workflow.recordValidationReport(output.reportFile(), statusFromReport(output.report()));
             }
             showStatus(validationStatus, "", false);
             steps.get(2).setDisable(false);
@@ -256,6 +282,24 @@ public class ModelValidationSection extends Section {
         }, () -> setBusy(false));
     }
 
+    private static ValidationStatus statusFromReport(JsonNode report) {
+        return report.has("valid")
+                ? ValidationStatus.fromReport(report.path("valid").asBoolean(),
+                        report.path("readyForCrud").asBoolean())
+                : ValidationStatus.UNKNOWN;
+    }
+
+    private Path validationReportPath(Path actualModel, Path expectedModel, Path destination) {
+        String fileName = modelBaseName(actualModel) + "__" + modelBaseName(expectedModel) + ".json";
+        return uniqueOutputPath(destination.resolve(fileName));
+    }
+
+    private static String modelBaseName(Path modelFile) {
+        String fileName = modelFile.getFileName().toString();
+        int extension = fileName.lastIndexOf('.');
+        return extension > 0 ? fileName.substring(0, extension) : fileName;
+    }
+
     private void setBusy(boolean busy) {
         optionsView.setDisable(busy);
         changeFolder.setDisable(busy);
@@ -269,7 +313,7 @@ public class ModelValidationSection extends Section {
         File folder = chooseOutputFolder.apply(getScene() == null ? null : getScene().getWindow(), outputFolder);
         if (folder != null) {
             outputFolder = folder.toPath().toAbsolutePath().normalize();
-            outputName.setText("Informe JSON con fecha y hora");
+            outputName.setText("Informe JSON");
             outputPath.setText(outputFolder.toString());
             showStatus(validationStatus, "Carpeta de salida actualizada. Los informes anteriores no se han movido.",
                     false);
@@ -278,17 +322,7 @@ public class ModelValidationSection extends Section {
 
     private void openOutputFolder() {
         Path folder = outputFolder;
-        setBusy(true);
-        runTask(() -> {
-            if (!Files.isDirectory(folder)) {
-                throw new IOException("La carpeta de salida no existe: " + folder);
-            }
-            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                throw new IOException("El sistema no permite abrir carpetas desde la aplicación.");
-            }
-            Desktop.getDesktop().open(folder.toFile());
-            return folder;
-        }, opened -> { },
+        openOutputFolder(folder, () -> setBusy(true),
                 failure -> showStatus(validationStatus,
                         "No se pudo abrir la carpeta de salida: " + folder, true),
                 () -> setBusy(false));
@@ -334,12 +368,6 @@ public class ModelValidationSection extends Section {
         if (steps.get(index).isDisabled()) {
             return;
         }
-        for (int panelIndex = 0; panelIndex < panels.size(); panelIndex++) {
-            panels.get(panelIndex).setVisible(panelIndex == index);
-            panels.get(panelIndex).setManaged(panelIndex == index);
-        }
-        for (int stepIndex = 0; stepIndex < steps.size(); stepIndex++) {
-            steps.get(stepIndex).pseudoClassStateChanged(SELECTED, stepIndex == index);
-        }
+        showStepPanels(panels, steps, index);
     }
 }

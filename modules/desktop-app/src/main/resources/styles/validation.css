@@ -80,22 +80,6 @@
     -fx-text-fill: -fx-text-muted;
 }
 
-.model-validation-readiness {
-    -fx-padding: 7px 10px;
-    -fx-background-radius: 4px;
-    -fx-font-weight: bold;
-}
-
-.model-validation-readiness-ready {
-    -fx-background-color: -fx-brand-accent;
-    -fx-text-fill: white;
-}
-
-.model-validation-readiness-pending {
-    -fx-background-color: #fff2d6;
-    -fx-text-fill: #76500a;
-}
-
 .model-validation-summary {
     -fx-spacing: 10px;
 }
@@ -124,7 +108,7 @@
 }
 
 .model-validation-metric-warnings .model-validation-metric-count {
-    -fx-text-fill: #875d08;
+    -fx-text-fill: #c25a00;
 }
 
 .model-validation-metric-info .model-validation-metric-count {

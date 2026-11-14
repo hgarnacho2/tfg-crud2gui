@@ -212,6 +212,10 @@ texto de enunciado invalida las salidas dependientes de esa entrada.
 También se recuerdan el proveedor LLM y el modelo seleccionados. Al retomar, se consulta de
 nuevo el catálogo del proveedor y solo se restaura el modelo si sigue disponible; si no,
 queda sin seleccionar para que se pueda elegir otro.
+Al volver a «Modelo desde Enunciado» se restauran el JSON revisado, si existe, o el último
+JSON generado, y se actualizan los pasos correspondientes. Cambiar el texto, el prompt, el
+proveedor o el modelo invalida esa salida en el contexto; los archivos físicos anteriores
+se conservan.
 
 Al entrar en el panel docente, si existe un contexto guardado, se puede continuar con él
 o elegir «Reiniciar contexto de trabajo». Cerrar el diálogo conserva el contexto anterior.

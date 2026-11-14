@@ -3,6 +3,7 @@ package com.crud2gui.desktop.teacher.sections;
 import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import com.crud2gui.desktop.teacher.TeacherDashboardView;
 import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
+import com.crud2gui.desktop.workflow.ValidationStatus;
 import com.crud2gui.desktop.teacher.sections.TeacherContextSection;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
@@ -147,6 +148,7 @@ class TeacherModelSectionsTest {
             assertNull(section.lookup("#model-validation-result-view"));
             result.fire();
             assertNotNull(section.lookup("#model-validation-options"));
+            assertEquals("Informe JSON", ((Label) section.lookup("#model-validation-output-name")).getText());
             assertFalse(section.lookup("#model-validation-result-title").getParent().isManaged());
             var methodsOption = (javafx.scene.control.CheckBox) section.lookup("#validation-option-methods");
             methodsOption.setSelected(true);
@@ -219,7 +221,14 @@ class TeacherModelSectionsTest {
             assertTrue(((Label) reportView.lookup("#model-validation-report-path")).getText()
                     .contains(reportDirectory.toString()));
                 assertFalse(button(section, "model-validation-run").isDisabled());
-                assertTrue(((Label) section.lookup("#model-validation-output-name")).getText().endsWith(".json"));
+                assertEquals("source__inferred.json",
+                    ((Label) section.lookup("#model-validation-output-name")).getText());
+                assertEquals(reportDirectory.toAbsolutePath().normalize().toString(),
+                    ((Label) section.lookup("#model-validation-output-path")).getText());
+                assertEquals(directory.toAbsolutePath().normalize().toString(),
+                    ((Label) section.lookup("#model-validation-java-path")).getText());
+                assertEquals(directory.toAbsolutePath().normalize().toString(),
+                    ((Label) section.lookup("#model-validation-statement-path")).getText());
                 assertFalse(Files.exists(initialDirectory));
             return null;
         });
@@ -252,10 +261,51 @@ class TeacherModelSectionsTest {
             var json = new com.fasterxml.jackson.databind.ObjectMapper().readTree(report.toFile());
             assertFalse(json.path("validationOptions").path("methods").asBoolean());
         }
+        CompletableFuture<Void> thirdValidation = new CompletableFuture<>();
+        onFx(() -> {
+            ModelValidationSection section = sectionReference.get();
+            button(section, "model-validation-step-result").disabledProperty()
+                    .addListener((observable, previous, disabled) -> {
+                        if (!disabled) thirdValidation.complete(null);
+                    });
+            button(section, "model-validation-run").fire();
+            return null;
+        });
+        thirdValidation.get(20, TimeUnit.SECONDS);
+        onFx(() -> {
+            String expectedName = "source__inferred_1.json";
+            assertEquals(expectedName, ((Label) sectionReference.get().lookup("#model-validation-output-name")).getText());
+            assertEquals(newDestination.toAbsolutePath().normalize().toString(),
+                    ((Label) sectionReference.get().lookup("#model-validation-output-path")).getText());
+            assertTrue(Files.isRegularFile(newDestination.resolve(expectedName)));
+            return null;
+        });
         try (var reports = Files.list(reportDirectory)) {
             assertEquals(1, reports.count());
         }
     }
+
+        @Test
+        void validationResultUsesTheSameStatusIndicatorAsContext() throws Exception {
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var reports = java.util.Map.of(
+                    ValidationStatus.READY_FOR_CRUD, "{\"valid\":true,\"readyForCrud\":true}",
+                    ValidationStatus.PENDING_REVIEW, "{\"valid\":true,\"readyForCrud\":false}",
+                    ValidationStatus.INVALID, "{\"valid\":false,\"readyForCrud\":false}",
+                    ValidationStatus.UNKNOWN, "{}");
+            onFx(() -> {
+                for (var entry : reports.entrySet()) {
+                    var view = new ModelValidationResultView(mapper.readTree(entry.getValue()), directory.resolve("report.json"));
+                    attach(view);
+                    ValidationStatus status = entry.getKey();
+                    var badge = view.lookup("#model-validation-readiness-badge");
+                    assertTrue(badge.getStyleClass().contains("workflow-validation-status"));
+                    assertEquals(status.displayName(), ((Label) view.lookup("#model-validation-readiness")).getText());
+                    assertEquals(status.symbol(), ((Label) view.lookup("#model-validation-readiness-icon")).getText());
+                }
+                return null;
+            });
+        }
 
         @Test
         void showsTheSourceOfEachRelationshipKind() throws Exception {
@@ -282,6 +332,9 @@ class TeacherModelSectionsTest {
                         ModelValidationResultView view = new ModelValidationResultView(report, directory.resolve("report.json"));
                         attach(view);
 
+                        Label warningCount = (Label) view.lookup(
+                            ".model-validation-metric-warnings .model-validation-metric-count");
+                        assertEquals(javafx.scene.paint.Color.web("#c25a00"), warningCount.getTextFill());
                         var relationships = (javafx.scene.control.TitledPane) view.lookup("#model-validation-relationships");
                         assertEquals("ATRIBUTO", ((Label) relationships.lookup(
                             ".model-validation-relation-attribute-badge")).getText());
@@ -361,9 +414,9 @@ class TeacherModelSectionsTest {
             attach(section);
             ModelJsonSelection selector = (ModelJsonSelection) section.lookup("#crud-model");
             Button select = button(section, "crud-model-select");
-                assertEquals("JSON validado extra\u00eddo de los fuentes Java.",
+                assertEquals("JSON validado extraído de los fuentes Java.",
                     ((Label) selector.lookup(".panel-subtitle")).getText());
-                assertEquals("Ning\u00fan archivo seleccionado.",
+                assertEquals("Ningún archivo seleccionado.",
                     ((Label) section.lookup("#crud-model-filename")).getText());
             select.fire();
             assertNull(selector.getSelectedFile());
@@ -433,7 +486,8 @@ class TeacherModelSectionsTest {
         Path refined = Files.writeString(directory.resolve("modelo-enunciado-validated.json"), "{}");
         Path codeFolder = Files.createDirectory(directory.resolve("src"));
         Path codeModel = Files.writeString(directory.resolve("modelo-codigo.json"), "{}");
-        Path report = Files.writeString(directory.resolve("validacion.json"), "{}");
+        Path report = Files.writeString(directory.resolve("validacion.json"),
+            "{\"valid\":true,\"readyForCrud\":true}");
         TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("workflow.json"));
         workflow.selectStatementPdf(pdf);
         workflow.recordExtractedText(extracted);
@@ -443,7 +497,7 @@ class TeacherModelSectionsTest {
         workflow.recordConfirmedStatementModel(refined);
         workflow.selectCodeFolder(codeFolder);
         workflow.recordCodeModel(codeModel);
-        workflow.recordValidationReport(report);
+        workflow.recordValidationReport(report, ValidationStatus.READY_FOR_CRUD);
 
         onFx(() -> {
             TeacherContextSection section = new TeacherContextSection(workflow);
@@ -454,6 +508,8 @@ class TeacherModelSectionsTest {
             root.layout();
             assertEquals("enunciado.pdf",
                 ((Label) section.lookup("#teacher-context-stage-statement-pdf-file")).getText());
+            assertEquals(pdf.toAbsolutePath().normalize().getParent().toString(),
+                ((Label) section.lookup("#teacher-context-stage-statement-pdf-path")).getText());
             assertEquals("enunciado.txt",
                 ((Label) section.lookup("#teacher-context-stage-statement-extracted-file")).getText());
             assertEquals("enunciado-filtrado.txt",
@@ -462,6 +518,12 @@ class TeacherModelSectionsTest {
                 ((Label) section.lookup("#teacher-context-stage-statement-model-file")).getText());
             assertEquals("modelo-enunciado-validated.json",
                 ((Label) section.lookup("#teacher-context-stage-statement-refined-model-file")).getText());
+            assertEquals("Listo para CRUD",
+                ((Label) section.lookup("#teacher-context-validation-status")).getText());
+                assertEquals("✓", ((Label) section.lookup("#teacher-context-validation-status-icon")).getText());
+                VBox validationStage = (VBox) section.lookup("#teacher-context-stage-validation-report");
+                assertSame(validationStage.getChildren().get(0),
+                    section.lookup("#teacher-context-validation-status-badge").getParent());
             VBox refinedModelStage = (VBox) section.lookup("#teacher-context-stage-statement-refined-model");
             assertEquals("Modelo revisado del enunciado",
                     ((Label) refinedModelStage.lookup(".workflow-context-stage-title")).getText());
@@ -472,10 +534,14 @@ class TeacherModelSectionsTest {
                     ((Label) inferredModelStage.lookup("#teacher-context-model-prompt-file")).getText());
             assertEquals("src",
                 ((Label) section.lookup("#teacher-context-stage-code-folder-file")).getText());
+            assertEquals(codeFolder.toAbsolutePath().normalize().toString(),
+                ((Label) section.lookup("#teacher-context-stage-code-folder-path")).getText());
             assertEquals(((VBox) section.lookup("#teacher-context-stage-statement-pdf")).getWidth(),
                     ((VBox) section.lookup("#teacher-context-stage-code-folder")).getWidth(), 1);
             assertEquals("modelo-codigo.json",
                 ((Label) section.lookup("#teacher-context-stage-code-model-file")).getText());
+            assertEquals(codeModel.toAbsolutePath().normalize().getParent().toString(),
+                ((Label) section.lookup("#teacher-context-stage-code-model-path")).getText());
             assertEquals("validacion.json",
                 ((Label) section.lookup("#teacher-context-stage-validation-report-file")).getText());
                 assertEquals("Entradas para validar",
@@ -555,17 +621,19 @@ class TeacherModelSectionsTest {
         Path statement = Files.writeString(directory.resolve("filtered.txt"), "statement");
         Path javaModel = Files.writeString(directory.resolve("java-model.json"), "{}");
         Path inferredModel = Files.writeString(directory.resolve("inferred-model-validated.json"), "{}");
-        Path validationReport = Files.writeString(directory.resolve("validation-report.json"), "{}");
+        Path validationReport = Files.writeString(directory.resolve("validation-report.json"),
+            "{\"valid\":true,\"readyForCrud\":true}");
         TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("workflow.json"));
         workflow.recordFilteredText(statement);
         workflow.recordCodeModel(javaModel);
         workflow.recordConfirmedStatementModel(inferredModel);
-        workflow.recordValidationReport(validationReport);
+        workflow.recordValidationReport(validationReport, ValidationStatus.READY_FOR_CRUD);
 
         onFx(() -> {
             ModelFromStatementSection inference = new ModelFromStatementSection(workflow);
             attach(inference);
-            assertEquals(statement.toString(), ((Label) inference.lookup("#model-statement-source")).getText());
+                assertEquals(statement.getParent().toString(),
+                    ((Label) inference.lookup("#model-statement-source")).getText());
             assertEquals(inferredModel, workflow.getSuggestedInferredModel());
 
             ModelValidationSection section = new ModelValidationSection(workflow);
@@ -576,7 +644,17 @@ class TeacherModelSectionsTest {
             assertEquals(javaModel, source.getSelectedFile());
             assertEquals(inferredModel, inferred.getSelectedFile());
             assertEquals(validationReport, workflow.getValidationReport());
+            assertEquals(ValidationStatus.READY_FOR_CRUD, workflow.getValidationStatus());
             assertFalse(button(section, "model-validation-run").isDisabled());
+                assertNotNull(section.lookup("#model-validation-result-view"));
+                assertEquals(validationReport.getFileName().toString(),
+                    ((Label) section.lookup("#model-validation-output-name")).getText());
+                assertEquals(validationReport.getParent().toString(),
+                    ((Label) section.lookup("#model-validation-output-path")).getText());
+                assertTrue(button(section, "model-validation-step-result").getPseudoClassStates()
+                    .contains(PseudoClass.getPseudoClass("completed")));
+                assertFalse(button(section, "model-validation-step-result").isDisabled());
+                    assertTrue(section.lookup("#model-validation-result-view").isVisible());
             return null;
         });
     }

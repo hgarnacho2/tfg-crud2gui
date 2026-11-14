@@ -38,6 +38,15 @@ public interface WorkflowContext {
     void recordCodeModel(Path path);
 
     /**
+     * Obtiene el último modelo JSON generado desde la carpeta de código.
+     *
+     * @return modelo generado disponible o, por defecto, el modelo Java seleccionado
+     */
+    default Path getGeneratedCodeModel() {
+        return getSelectedJavaModel();
+    }
+
+    /**
      * Obtiene el modelo Java seleccionado para la validación o su sugerencia disponible.
      *
      * @return ruta absoluta de un archivo regular y legible, o {@code null} si no hay uno
@@ -88,6 +97,16 @@ public interface WorkflowContext {
     /** Registra el JSON generado por la última validación, o {@code null} para invalidarlo. */
     void recordValidationReport(Path path);
 
+    /** Registra el JSON y el estado de validación que le corresponde. */
+    default void recordValidationReport(Path path, ValidationStatus status) {
+        recordValidationReport(path);
+    }
+
     /** @return informe de validación disponible o {@code null} si todavía no se ha generado */
     Path getValidationReport();
+
+    /** @return estado persistido del último informe disponible */
+    default ValidationStatus getValidationStatus() {
+        return getValidationReport() == null ? ValidationStatus.NOT_VALIDATED : ValidationStatus.UNKNOWN;
+    }
 }

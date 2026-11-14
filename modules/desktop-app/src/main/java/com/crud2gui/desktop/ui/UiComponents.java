@@ -1,9 +1,11 @@
 package com.crud2gui.desktop.ui;
 
 import com.crud2gui.authenticator.entraid.AuthenticatedUser;
+import com.crud2gui.desktop.workflow.ValidationStatus;
 
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.Node;
@@ -30,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -82,7 +85,9 @@ public final class UiComponents {
         button.setGraphic(icon);
         button.getStyleClass().add("workflow-context-reveal-button");
         button.setAccessibleText("Mostrar en la carpeta contenedora");
-        button.setTooltip(new Tooltip("Mostrar en la carpeta contenedora"));
+        Tooltip tooltip = new Tooltip("Mostrar en la carpeta contenedora");
+        tooltip.setStyle("-fx-font-size: 12px;");
+        button.setTooltip(tooltip);
         button.setMinSize(28, 28);
         button.setPrefSize(28, 28);
         button.setMaxSize(28, 28);
@@ -349,9 +354,14 @@ public final class UiComponents {
             List<S> sections, Function<S, String> sectionLabel, ObjectProperty<S> selectedSection) {
         VBox sidebar = vBox(List.of("sidebar-content"), header);
         PseudoClass selected = PseudoClass.getPseudoClass("selected");
+        boolean firstSection = true;
         for (S section : sections) {
             Button button = new Button(sectionLabel.apply(section));
             button.getStyleClass().add("sidebar-navigation-button");
+            if (firstSection) {
+                VBox.setMargin(button, new Insets(8, 0, 0, 0));
+                firstSection = false;
+            }
             Runnable updateSelection = () -> button.pseudoClassStateChanged(
                     selected, Objects.equals(section, selectedSection.get()));
             button.setOnAction(event -> selectedSection.set(section));
@@ -375,6 +385,24 @@ public final class UiComponents {
         box.getStyleClass().add("hbox");
         box.getStyleClass().addAll(styleClasses);
         return box;
+    }
+
+    /** Crea un estado de validación con símbolo e identificación accesible por test/UI. */
+    public static HBox validationStatusBadge(ValidationStatus status, String labelId) {
+        Objects.requireNonNull(status, "status");
+        Objects.requireNonNull(labelId, "labelId");
+        String statusStyle = status.name().toLowerCase(Locale.ROOT).replace('_', '-');
+        Label icon = label(status.symbol(), List.of("workflow-validation-status-icon"));
+        icon.setId(labelId + "-icon");
+        Label text = label(status.displayName(), List.of("workflow-validation-status-label"));
+        text.setId(labelId);
+        text.setWrapText(true);
+        HBox badge = hBox(List.of("workflow-validation-status", "workflow-validation-status-" + statusStyle),
+                icon, text);
+        badge.setId(labelId + "-badge");
+        badge.setAlignment(Pos.CENTER_LEFT);
+        badge.setMaxWidth(Region.USE_PREF_SIZE);
+        return badge;
     }
 
     /**

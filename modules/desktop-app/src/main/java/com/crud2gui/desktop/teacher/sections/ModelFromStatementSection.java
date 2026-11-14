@@ -34,10 +34,10 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
-import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -55,73 +55,72 @@ public final class ModelFromStatementSection extends Section {
     private Path selectedStatementPath;
     private boolean statementInputManual;
     private boolean loadingModels;
-        private final Label selectedTextName = UiComponents.labelWithGraphic(
+    private final Label selectedTextName = UiComponents.labelWithGraphic(
             "Ningún texto filtrado seleccionado.", List.of("statement-file-name"),
             UiComponents.label("TXT", List.of("statement-file-badge", "statement-neutral-badge")), 12);
-        private final Label selectedFile = UiComponents.label(
+    private final Label selectedFile = UiComponents.label(
             "Selecciona el fichero de texto filtrado para comenzar.", List.of("statement-file-path"));
-        private final VBox selectedTextCard =
-            UiComponents.vBox(List.of("statement-file-card"), selectedTextName, selectedFile);
-    private final TextArea statementText =
-            UiComponents.textArea(false, true, 16, List.of("statement-text"));
+    private final VBox selectedTextCard = UiComponents.vBox(List.of("statement-file-card"), selectedTextName,
+            selectedFile);
+    private final TextArea statementText = UiComponents.textArea(false, true, 16, List.of("statement-text"));
     private final Label status = UiComponents.statusLabel("model-statement-status");
-        private final Label selectedPromptName = UiComponents.labelWithGraphic(
+    private final Label selectedPromptName = UiComponents.labelWithGraphic(
             "Ningún prompt seleccionado.", List.of("statement-file-name"),
             UiComponents.label("TXT", List.of("statement-file-badge", "statement-neutral-badge")), 12);
-        private final Label selectedPromptFile = UiComponents.label(
+    private final Label selectedPromptFile = UiComponents.label(
             "Selecciona el fichero con las instrucciones para inferir el modelo.",
             List.of("statement-file-path"));
-        private final VBox selectedPromptCard =
-            UiComponents.vBox(List.of("statement-file-card"), selectedPromptName, selectedPromptFile);
-    private final TextArea promptText =
-            UiComponents.textArea(false, true, 16, List.of("statement-prompt-text"));
+    private final VBox selectedPromptCard = UiComponents.vBox(List.of("statement-file-card"), selectedPromptName,
+            selectedPromptFile);
+    private final TextArea promptText = UiComponents.textArea(false, true, 16, List.of("statement-prompt-text"));
     private final Label promptStatus = UiComponents.statusLabel("model-statement-prompt-status");
-        private final ComboBox<ModelClientProvider> providerSelector = new ComboBox<>();
-        private final ComboBox<ModelInfo> modelSelector = new ComboBox<>();
-        private final Button refreshModelsButton = UiComponents.actionButton(
+    private final ComboBox<ModelClientProvider> providerSelector = new ComboBox<>();
+    private final ComboBox<ModelInfo> modelSelector = new ComboBox<>();
+    private final Button refreshModelsButton = UiComponents.actionButton(
             "Actualizar modelos", List.of("statement-select"), this::refreshModels);
-        private final Label modelStatus = UiComponents.statusLabel("model-statement-llm-status");
-        private ModelClient selectedClient;
-        private final BiFunction<Window, Path, File> chooseOutputFolder;
-        private final Function<Window, File> chooseLocalModelFile;
-        private Path outputFolder;
-        private final Label outputFilename = UiComponents.labelWithGraphic("Modelo inferido del enunciado",
+    private final Label modelStatus = UiComponents.statusLabel("model-statement-llm-status");
+    private ModelClient selectedClient;
+    private final BiFunction<Window, Path, File> chooseOutputFolder;
+    private final Function<Window, File> chooseLocalModelFile;
+    private Path outputFolder;
+    private final Label outputFilename = UiComponents.labelWithGraphic("Modelo inferido del enunciado",
             List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
-        private final Label outputFolderLabel = UiComponents.label("", List.of("statement-file-path", "statement-output-folder"));
-        private final Button changeOutputFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
+    private final Label outputFolderLabel = UiComponents.label("",
+            List.of("statement-file-path", "statement-output-folder"));
+    private final Button changeOutputFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
             List.of("statement-change-folder", "secondary-button"), this::changeOutputFolder);
-        private final Button openOutputFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
+    private final Button openOutputFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
             List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
-        private final Label requestProvider = requestValue("model-statement-request-provider");
-        private final Label requestModel = requestValue("model-statement-request-model");
-        private final Label requestPrompt = requestValue("model-statement-request-prompt");
-        private final Label requestStatement = requestValue("model-statement-request-statement");
-        private final Button generateModelButton = UiComponents.actionButton(
+    private final Label requestProvider = requestValue("model-statement-request-provider");
+    private final Label requestModel = requestValue("model-statement-request-model");
+    private final Label requestPrompt = requestValue("model-statement-request-prompt");
+    private final Label requestStatement = requestValue("model-statement-request-statement");
+    private final Button generateModelButton = UiComponents.actionButton(
             "Obtener modelo mediante LLM", List.of("statement-select"), this::generateModel);
     private final Button useLocalModelButton = UiComponents.actionButton(
             "Trabajar con modelo local", List.of("statement-select", "secondary-button"), this::useLocalModel);
-        private final Label generationStatus = UiComponents.statusLabel("model-statement-generation-status");
-        private final Label diagramStatus = UiComponents.statusLabel("model-statement-diagram-status");
-        private final Label generationOutputPath = UiComponents.label(
+    private final Label generationStatus = UiComponents.statusLabel("model-statement-generation-status");
+    private final Label diagramStatus = UiComponents.statusLabel("model-statement-diagram-status");
+    private final Label generationOutputPath = UiComponents.label(
             "", List.of("statement-file-path", "model-generation-output-path"), true);
-        private final TextArea generatedModel = UiComponents.textArea(
+    private final TextArea generatedModel = UiComponents.textArea(
             false, false, 20, List.of("model-json-result"));
-        private final ClassDiagramView classDiagram = new ClassDiagramView();
-        private final ScrollPane diagramScroll = new ScrollPane(classDiagram);
-        private final StackPane editorHost = new StackPane();
-        private final Button confirmModelButton = UiComponents.actionButton(
+    private final ClassDiagramView classDiagram = new ClassDiagramView();
+    private final ScrollPane diagramScroll = new ScrollPane(classDiagram);
+    private final StackPane editorHost = new StackPane();
+    private final Button confirmModelButton = UiComponents.actionButton(
             "Confirmar modelo", List.of("statement-select"), this::confirmModel);
-        private final Label refineStatus = UiComponents.statusLabel("model-statement-refine-status");
-        private JsonEditorViewer modelEditor;
-        private Path generatedModelPath;
-        private boolean generationBusy;
+    private final Label refineStatus = UiComponents.statusLabel("model-statement-refine-status");
+    private JsonEditorViewer modelEditor;
+    private Path generatedModelPath;
+    private boolean generationBusy;
     private final List<Button> steps;
     private final List<VBox> panels;
 
     /** Crea la sección con un selector de archivos de texto. */
     public ModelFromStatementSection() {
         this(owner -> chooseTextFile(owner, "Seleccionar texto filtrado del enunciado"),
-            owner -> chooseTextFile(owner, "Seleccionar prompt de análisis"),
+                owner -> chooseTextFile(owner, "Seleccionar prompt de análisis"),
                 (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Carpeta de salida del modelo"),
                 ModelClients.providers(), defaultOutputDirectory());
     }
@@ -140,40 +139,40 @@ public final class ModelFromStatementSection extends Section {
     }
 
     ModelFromStatementSection(Function<Window, File> chooseTextFile,
-                              Function<Window, File> choosePromptFile) {
+            Function<Window, File> choosePromptFile) {
         this(chooseTextFile, choosePromptFile, ModelClients.providers(),
-            defaultOutputDirectory());
-        }
+                defaultOutputDirectory());
+    }
 
-        ModelFromStatementSection(Function<Window, File> chooseTextFile,
-                      Function<Window, File> choosePromptFile,
-                      List<ModelClientProvider> providers, Path outputDirectory) {
+    ModelFromStatementSection(Function<Window, File> chooseTextFile,
+            Function<Window, File> choosePromptFile,
+            List<ModelClientProvider> providers, Path outputDirectory) {
         this(chooseTextFile, choosePromptFile,
-            (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Carpeta de salida del modelo"),
-            providers, outputDirectory);
-        }
+                (owner, current) -> FileDialogs.chooseDirectory(owner, current, "Carpeta de salida del modelo"),
+                providers, outputDirectory);
+    }
 
-        ModelFromStatementSection(Function<Window, File> chooseTextFile,
-                      Function<Window, File> choosePromptFile,
-                      BiFunction<Window, Path, File> chooseOutputFolder,
-                      List<ModelClientProvider> providers, Path outputDirectory) {
+    ModelFromStatementSection(Function<Window, File> chooseTextFile,
+            Function<Window, File> choosePromptFile,
+            BiFunction<Window, Path, File> chooseOutputFolder,
+            List<ModelClientProvider> providers, Path outputDirectory) {
         this(chooseTextFile, choosePromptFile, chooseOutputFolder, providers, outputDirectory, null);
-        }
+    }
 
-        ModelFromStatementSection(Function<Window, File> chooseTextFile,
-                  Function<Window, File> choosePromptFile,
-                  BiFunction<Window, Path, File> chooseOutputFolder,
-                  List<ModelClientProvider> providers, Path outputDirectory,
-                  TeacherWorkflowContext workflow) {
+    ModelFromStatementSection(Function<Window, File> chooseTextFile,
+            Function<Window, File> choosePromptFile,
+            BiFunction<Window, Path, File> chooseOutputFolder,
+            List<ModelClientProvider> providers, Path outputDirectory,
+            TeacherWorkflowContext workflow) {
         this(chooseTextFile, choosePromptFile, chooseOutputFolder, providers,
-            outputDirectory, workflow, ModelJsonSelection::chooseJson);
-        }
+                outputDirectory, workflow, ModelJsonSelection::chooseJson);
+    }
 
-        ModelFromStatementSection(Function<Window, File> chooseTextFile,
-              Function<Window, File> choosePromptFile,
-              BiFunction<Window, Path, File> chooseOutputFolder,
-              List<ModelClientProvider> providers, Path outputDirectory,
-              TeacherWorkflowContext workflow, Function<Window, File> chooseLocalModelFile) {
+    ModelFromStatementSection(Function<Window, File> chooseTextFile,
+            Function<Window, File> choosePromptFile,
+            BiFunction<Window, Path, File> chooseOutputFolder,
+            List<ModelClientProvider> providers, Path outputDirectory,
+            TeacherWorkflowContext workflow, Function<Window, File> chooseLocalModelFile) {
         super("MODELO DESDE ENUNCIADO", "Modelo desde Enunciado",
                 "Generación de un modelo de clases a partir del texto filtrado de un enunciado.");
         setMinHeight(Region.USE_PREF_SIZE);
@@ -183,7 +182,7 @@ public final class ModelFromStatementSection extends Section {
         this.chooseLocalModelFile = Objects.requireNonNull(chooseLocalModelFile, "chooseLocalModelFile");
         this.workflow = workflow;
         this.outputFolder = Objects.requireNonNull(outputDirectory, "outputDirectory")
-            .toAbsolutePath().normalize();
+                .toAbsolutePath().normalize();
         Button selectTextButton = UiComponents.actionButton("Seleccionar texto filtrado",
                 List.of("statement-select"), this::selectTextFile);
         selectTextButton.setId("model-statement-select-text");
@@ -235,7 +234,8 @@ public final class ModelFromStatementSection extends Section {
         refreshModelsButton.setId("model-statement-refresh-models");
         refreshModelsButton.setDisable(true);
         modelStatus.setText(providerSelector.getItems().isEmpty()
-                ? "No hay clientes LLM registrados." : "Selecciona un cliente para consultar sus modelos.");
+                ? "No hay clientes LLM registrados."
+                : "Selecciona un cliente para consultar sus modelos.");
         generateModelButton.setId("model-statement-generate-model");
         useLocalModelButton.setId("model-statement-use-local-model");
         changeOutputFolderButton.setId("model-statement-change-output-folder");
@@ -260,9 +260,9 @@ public final class ModelFromStatementSection extends Section {
                 .then(Double.MAX_VALUE).otherwise(Region.USE_PREF_SIZE));
         StackPane.setAlignment(statementPanel, javafx.geometry.Pos.TOP_LEFT);
         VBox promptContent = new VBox(14,
-            UiComponents.panelHeading("Seleccionar prompt",
-                "Selecciona el fichero de texto con las instrucciones para inferir el modelo."),
-            selectPromptButton, selectedPromptCard, promptText, promptStatus);
+                UiComponents.panelHeading("Seleccionar prompt",
+                        "Selecciona el fichero de texto con las instrucciones para inferir el modelo."),
+                selectPromptButton, selectedPromptCard, promptText, promptStatus);
         VBox.setVgrow(promptText, Priority.ALWAYS);
         VBox.setVgrow(promptContent, Priority.ALWAYS);
         VBox promptPanel = UiComponents.surface(promptContent);
@@ -271,61 +271,61 @@ public final class ModelFromStatementSection extends Section {
                 .then(Double.MAX_VALUE).otherwise(Region.USE_PREF_SIZE));
         StackPane.setAlignment(promptPanel, javafx.geometry.Pos.TOP_LEFT);
         VBox llmPanel = UiComponents.surface(new VBox(14,
-            UiComponents.panelHeading("Seleccionar LLM",
-                "Selecciona un proveedor y consulta los modelos disponibles."),
-            fieldTitle("Cliente", "model-statement-provider-title"),
-            providerSelector, refreshModelsButton,
-            fieldTitle("Modelo", "model-statement-model-title"),
-            modelSelector, modelStatus));
-            VBox requestSummary = new VBox(8,
+                UiComponents.panelHeading("Seleccionar LLM",
+                        "Selecciona un proveedor y consulta los modelos disponibles."),
+                fieldTitle("Cliente", "model-statement-provider-title"),
+                providerSelector, refreshModelsButton,
+                fieldTitle("Modelo", "model-statement-model-title"),
+                modelSelector, modelStatus));
+        VBox requestSummary = new VBox(8,
                 UiComponents.panelHeading("Petición al LLM",
-                    "Se enviarán estas entradas para inferir el modelo de clases."),
+                        "Se enviarán estas entradas para inferir el modelo de clases."),
                 requestRow("Cliente", requestProvider),
                 requestRow("Modelo", requestModel),
                 requestRow("Prompt", requestPrompt),
                 requestRow("Enunciado", requestStatement));
-            requestSummary.getStyleClass().add("model-request-summary");
-            VBox generationContent = new VBox(14,
+        requestSummary.getStyleClass().add("model-request-summary");
+        VBox generationContent = new VBox(14,
                 UiComponents.panelHeading("Obtener modelo",
-                    "Envía el prompt y el enunciado al cliente seleccionado."),
+                        "Envía el prompt y el enunciado al cliente seleccionado."),
                 requestSummary, UiComponents.outputSettings(outputFilename, outputFolderLabel,
-                    changeOutputFolderButton),
+                        changeOutputFolderButton),
                 generateModelButton, useLocalModelButton, generationOutputPath,
                 openOutputFolderButton, generatedModel, generationStatus);
-            VBox.setVgrow(generatedModel, Priority.ALWAYS);
-            VBox.setVgrow(generationContent, Priority.ALWAYS);
-            VBox generationPanel = UiComponents.surface(generationContent);
-            editorHost.setId("model-statement-editor-host");
-            editorHost.setMinHeight(480);
-            confirmModelButton.setId("model-statement-confirm-model");
-            VBox refineContent = new VBox(14,
+        VBox.setVgrow(generatedModel, Priority.ALWAYS);
+        VBox.setVgrow(generationContent, Priority.ALWAYS);
+        VBox generationPanel = UiComponents.surface(generationContent);
+        editorHost.setId("model-statement-editor-host");
+        editorHost.setMinHeight(480);
+        confirmModelButton.setId("model-statement-confirm-model");
+        VBox refineContent = new VBox(14,
                 UiComponents.panelHeading("Revisar modelo",
-                    "Revisa y edita el modelo obtenido. Al confirmarlo se guardará una copia validada."),
+                        "Revisa y edita el modelo obtenido. Al confirmarlo se guardará una copia validada."),
                 editorHost, confirmModelButton, refineStatus);
-            VBox.setVgrow(editorHost, Priority.ALWAYS);
-            VBox.setVgrow(refineContent, Priority.ALWAYS);
-            VBox refinePanel = UiComponents.surface(refineContent);
-            classDiagram.setId("model-statement-class-diagram-view");
-            diagramScroll.setId("model-statement-class-diagram-scroll");
-            diagramScroll.setPannable(true);
-            diagramScroll.setFitToWidth(false);
-            diagramScroll.setFitToHeight(false);
-            diagramScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-            diagramScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-            diagramScroll.prefViewportHeightProperty().bind(classDiagram.prefHeightProperty());
-            diagramScroll.setMinHeight(Region.USE_PREF_SIZE);
-            diagramScroll.setMaxHeight(Region.USE_PREF_SIZE);
-            VBox diagramContent = new VBox(14,
+        VBox.setVgrow(editorHost, Priority.ALWAYS);
+        VBox.setVgrow(refineContent, Priority.ALWAYS);
+        VBox refinePanel = UiComponents.surface(refineContent);
+        classDiagram.setId("model-statement-class-diagram-view");
+        diagramScroll.setId("model-statement-class-diagram-scroll");
+        diagramScroll.setPannable(true);
+        diagramScroll.setFitToWidth(false);
+        diagramScroll.setFitToHeight(false);
+        diagramScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        diagramScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        diagramScroll.prefViewportHeightProperty().bind(classDiagram.prefHeightProperty());
+        diagramScroll.setMinHeight(Region.USE_PREF_SIZE);
+        diagramScroll.setMaxHeight(Region.USE_PREF_SIZE);
+        VBox diagramContent = new VBox(14,
                 UiComponents.panelHeading("Diagrama de clases UML",
-                    "La clase gestora se sitúa en el centro; las relaciones enlazan las clases del modelo."),
+                        "La clase gestora se sitúa en el centro; las relaciones enlazan las clases del modelo."),
                 diagramScroll, ClassDiagramView.relationshipLegend(), diagramStatus);
-            VBox.setVgrow(diagramScroll, Priority.ALWAYS);
-            VBox.setVgrow(diagramContent, Priority.ALWAYS);
-            VBox diagramPanel = UiComponents.surface(diagramContent);
+        VBox.setVgrow(diagramScroll, Priority.ALWAYS);
+        VBox.setVgrow(diagramContent, Priority.ALWAYS);
+        VBox diagramPanel = UiComponents.surface(diagramContent);
         panels = List.of(
                 statementPanel,
-            promptPanel,
-            llmPanel,
+                promptPanel,
+                llmPanel,
                 generationPanel,
                 refinePanel,
                 diagramPanel);
@@ -356,9 +356,10 @@ public final class ModelFromStatementSection extends Section {
             steps.get(i).setDisable(true);
         }
         String savedProviderId = workflow == null ? null : workflow.getSelectedModelProviderId();
-        ModelClientProvider restoredProvider = savedProviderId == null ? null : providerSelector.getItems().stream()
-            .filter(provider -> provider.id().equals(savedProviderId))
-            .findFirst().orElse(null);
+        ModelClientProvider restoredProvider = savedProviderId == null ? null
+                : providerSelector.getItems().stream()
+                        .filter(provider -> provider.id().equals(savedProviderId))
+                        .findFirst().orElse(null);
         if (restoredProvider != null) {
             providerSelector.setValue(restoredProvider);
         }
@@ -381,9 +382,6 @@ public final class ModelFromStatementSection extends Section {
             showStatus(modelStatus, "El proveedor guardado ya no está disponible. Selecciona otro.", false);
         }
         showStep(0);
-        if (restoredProvider != null) {
-            refreshModels();
-        }
         if (workflow != null) {
             statementInputManual = workflow.isStatementTextManual();
             Path restoredInput = workflow.getSelectedStatementText();
@@ -394,6 +392,11 @@ public final class ModelFromStatementSection extends Section {
             if (restoredPrompt != null) {
                 loadPromptFile(restoredPrompt, false);
             }
+        }
+        if (restoredProvider != null) {
+            refreshModels();
+        } else {
+            restoreSavedModelOutput();
         }
     }
 
@@ -459,11 +462,7 @@ public final class ModelFromStatementSection extends Section {
         if (steps.get(index).isDisabled()) {
             return;
         }
-        for (int i = 0; i < panels.size(); i++) {
-            panels.get(i).setVisible(i == index);
-            panels.get(i).setManaged(i == index);
-            steps.get(i).pseudoClassStateChanged(SELECTED, i == index);
-        }
+        showStepPanels(panels, steps, index);
         if (index == 5) {
             Platform.runLater(() -> {
                 diagramScroll.applyCss();
@@ -517,7 +516,7 @@ public final class ModelFromStatementSection extends Section {
             selectedStatementPath = normalizedPath;
             statementInputManual = manual;
             selectedTextName.setText(normalizedPath.getFileName().toString());
-            selectedFile.setText(normalizedPath.toString());
+            selectedFile.setText(normalizedPath.getParent().toString());
             selectedTextCard.pseudoClassStateChanged(SELECTED, true);
             if (manual && workflow != null) {
                 workflow.selectStatementText(normalizedPath);
@@ -528,7 +527,7 @@ public final class ModelFromStatementSection extends Section {
                     + "Puedes continuar con el paso 2: Seleccionar prompt.", false);
             steps.get(0).pseudoClassStateChanged(COMPLETED, true);
             steps.get(1).setDisable(false);
-                updateGenerationStepAvailability();
+            updateGenerationStepAvailability();
         } catch (IOException | SecurityException exception) {
             logger.error("MODEL_STATEMENT_TEXT_READ_ERROR | No se pudo leer el texto del enunciado.", exception);
             showStatus(status, "No se pudo leer el fichero seleccionado. Comprueba que sea un archivo de texto UTF-8.",
@@ -548,7 +547,7 @@ public final class ModelFromStatementSection extends Section {
      * Lee el prompt UTF-8 y actualiza su tarjeta y visor.
      * Restaurar una ruta guardada no invalida el modelo generado anteriormente.
      *
-     * @param path archivo de prompt que se leerá
+     * @param path   archivo de prompt que se leerá
      * @param manual {@code true} si el usuario acaba de elegir el archivo
      */
     private void loadPromptFile(Path path, boolean manual) {
@@ -560,7 +559,7 @@ public final class ModelFromStatementSection extends Section {
             promptText.setVisible(true);
             promptText.setManaged(true);
             selectedPromptName.setText(normalizedPath.getFileName().toString());
-            selectedPromptFile.setText(normalizedPath.toString());
+            selectedPromptFile.setText(normalizedPath.getParent().toString());
             selectedPromptCard.pseudoClassStateChanged(SELECTED, true);
             updateRequestSummary();
             if (manual && workflow != null) {
@@ -571,10 +570,11 @@ public final class ModelFromStatementSection extends Section {
                     + "Puedes continuar con el paso 3: Seleccionar LLM.", false);
             steps.get(1).pseudoClassStateChanged(COMPLETED, true);
             steps.get(2).setDisable(false);
-                updateGenerationStepAvailability();
+            updateGenerationStepAvailability();
         } catch (IOException | SecurityException exception) {
             logger.error("MODEL_STATEMENT_PROMPT_READ_ERROR | No se pudo leer el prompt seleccionado.", exception);
-            showStatus(promptStatus, "No se pudo leer el fichero seleccionado. Comprueba que sea un archivo de texto UTF-8.",
+            showStatus(promptStatus,
+                    "No se pudo leer el fichero seleccionado. Comprueba que sea un archivo de texto UTF-8.",
                     true);
         }
     }
@@ -611,19 +611,23 @@ public final class ModelFromStatementSection extends Section {
                 showStatus(modelStatus, "El cliente no tiene modelos disponibles.", false);
             } else {
                 String savedModelId = workflow == null ? null : workflow.getSelectedModelId();
-                ModelInfo restoredModel = savedModelId == null ? null : available.models().stream()
-                        .filter(model -> model.id().equals(savedModelId))
-                        .findFirst().orElse(null);
+                ModelInfo restoredModel = savedModelId == null ? null
+                        : available.models().stream()
+                                .filter(model -> model.id().equals(savedModelId))
+                                .findFirst().orElse(null);
                 String defaultModelId = configuredDefaultModelId(provider.id());
-                ModelInfo defaultModel = defaultModelId.isBlank() ? null : available.models().stream()
-                        .filter(model -> model.id().equals(defaultModelId))
-                        .findFirst().orElse(null);
+                ModelInfo defaultModel = defaultModelId.isBlank() ? null
+                        : available.models().stream()
+                                .filter(model -> model.id().equals(defaultModelId))
+                                .findFirst().orElse(null);
                 if (restoredModel != null) {
                     modelSelector.setValue(restoredModel);
                 } else if (defaultModel != null) {
                     modelSelector.setValue(defaultModel);
                     if (savedModelId != null) {
-                        showStatus(modelStatus, "El modelo guardado ya no está disponible; se ha seleccionado el predeterminado.", false);
+                        showStatus(modelStatus,
+                                "El modelo guardado ya no está disponible; se ha seleccionado el predeterminado.",
+                                false);
                     }
                 } else if (savedModelId != null && !defaultModelId.isBlank()) {
                     showStatus(modelStatus, "El modelo guardado y el predeterminado ('" + defaultModelId
@@ -638,10 +642,12 @@ public final class ModelFromStatementSection extends Section {
                             + " modelos. Selecciona uno.", false);
                 }
             }
+            restoreSavedModelOutput();
         }, failure -> {
             selectedClient = null;
             String detail = failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
             showStatus(modelStatus, "No se pudieron consultar los modelos: " + detail, true);
+            restoreSavedModelOutput();
         }, () -> {
             providerSelector.setDisable(false);
             refreshModelsButton.setDisable(providerSelector.getValue() == null);
@@ -658,12 +664,53 @@ public final class ModelFromStatementSection extends Section {
         return setting == null ? "" : DotEnv.getStringVar(setting, "");
     }
 
+    private void restoreSavedModelOutput() {
+        if (workflow == null) {
+            return;
+        }
+        Path reviewedPath = workflow.getSuggestedInferredModel();
+        boolean reviewed = reviewedPath != null;
+        Path modelPath = reviewed ? reviewedPath : workflow.getGeneratedStatementModel();
+        if (modelPath == null) {
+            return;
+        }
+        try {
+            String json = Files.readString(modelPath, StandardCharsets.UTF_8);
+            ProjectModel projectModel = ModelIO.fromJson(json);
+            invalidateGeneratedModel();
+            generatedModel.setText(json);
+            generatedModel.positionCaret(0);
+            generatedModel.setVisible(true);
+            generatedModel.setManaged(true);
+            outputFilename.setText(modelPath.getFileName().toString());
+            outputFolderLabel.setText(modelPath.getParent().toString());
+            steps.get(3).setDisable(false);
+            steps.get(3).pseudoClassStateChanged(COMPLETED, true);
+            showStatus(generationStatus, "Modelo inferido restaurado desde: " + modelPath, false);
+            openModelEditor(modelPath);
+            if (modelEditor == null) {
+                return;
+            }
+            if (reviewed) {
+                classDiagram.setModel(projectModel);
+                steps.get(4).pseudoClassStateChanged(COMPLETED, true);
+                steps.get(5).setDisable(false);
+                steps.get(5).pseudoClassStateChanged(COMPLETED, true);
+                showStatus(refineStatus, "Modelo revisado restaurado desde: " + modelPath, false);
+                showStatus(diagramStatus, "Diagrama disponible para el modelo revisado.", false);
+            }
+        } catch (IOException | RuntimeException exception) {
+            showStatus(generationStatus, "No se pudo restaurar el modelo guardado. "
+                    + "Vuelve a generarlo o selecciona un JSON local.", true);
+        }
+    }
+
     private void updateModelSelection() {
         ModelClientProvider provider = providerSelector.getValue();
         ModelInfo model = modelSelector.getValue();
         boolean selected = provider != null
-            && selectedClient != null
-            && model != null;
+                && selectedClient != null
+                && model != null;
         steps.get(2).pseudoClassStateChanged(COMPLETED, selected);
         updateGenerationStepAvailability();
         updateRequestSummary();
@@ -682,18 +729,20 @@ public final class ModelFromStatementSection extends Section {
         requestProvider.setText(provider == null ? "Sin seleccionar" : provider.displayName());
         requestModel.setText(model == null ? "Sin seleccionar" : model.displayName());
         requestPrompt.setText(selectedPromptCard.getPseudoClassStates().contains(SELECTED)
-                ? selectedPromptName.getText() + "\n" + selectedPromptFile.getText() : "Sin seleccionar");
+                ? selectedPromptName.getText() + "\n" + selectedPromptFile.getText()
+                : "Sin seleccionar");
         requestStatement.setText(selectedTextCard.getPseudoClassStates().contains(SELECTED)
-                ? selectedTextName.getText() + "\n" + selectedFile.getText() : "Sin seleccionar");
+                ? selectedTextName.getText() + "\n" + selectedFile.getText()
+                : "Sin seleccionar");
     }
 
-        private void updateGenerationStepAvailability() {
+    private void updateGenerationStepAvailability() {
         boolean hasLlmModel = providerSelector.getValue() != null
-            && selectedClient != null && modelSelector.getValue() != null;
+                && selectedClient != null && modelSelector.getValue() != null;
         boolean hasLocalModelInputs = selectedTextCard.getPseudoClassStates().contains(SELECTED)
-            && selectedPromptCard.getPseudoClassStates().contains(SELECTED);
+                && selectedPromptCard.getPseudoClassStates().contains(SELECTED);
         steps.get(3).setDisable(generationBusy || !(hasLlmModel || hasLocalModelInputs));
-        }
+    }
 
     private void invalidateGeneratedModel() {
         steps.get(4).setDisable(true);
@@ -746,8 +795,11 @@ public final class ModelFromStatementSection extends Section {
             } catch (IOException exception) {
                 throw new InvalidModelOutputException(exception.getMessage(), result.response(), exception);
             }
-            result.writeTo(resultPath);
-                return new GeneratedModel(result, projectModel, prettyJson,
+            Path resultDirectory = resultPath.toAbsolutePath().normalize().getParent();
+            Files.createDirectories(resultDirectory);
+            Files.writeString(resultPath, prettyJson + System.lineSeparator(), StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            return new GeneratedModel(result, projectModel, prettyJson,
                     resultPath.toAbsolutePath().normalize());
         }, result -> {
             generatedModel.setText(result.prettyJson());
@@ -771,7 +823,8 @@ public final class ModelFromStatementSection extends Section {
                 generatedModel.setManaged(true);
             }
             String detail = failure.getMessage() == null
-                    ? failure.getClass().getSimpleName() : failure.getMessage();
+                    ? failure.getClass().getSimpleName()
+                    : failure.getMessage();
             showStatus(generationStatus, "No se pudo obtener un JSON válido: " + detail, true);
         }, () -> {
             generationBusy = false;
@@ -798,7 +851,8 @@ public final class ModelFromStatementSection extends Section {
         } catch (IOException | RuntimeException exception) {
             logger.error("MODEL_STATEMENT_LOCAL_MODEL_ERROR | No se pudo cargar el modelo local.", exception);
             String detail = exception.getMessage() == null
-                    ? exception.getClass().getSimpleName() : exception.getMessage();
+                    ? exception.getClass().getSimpleName()
+                    : exception.getMessage();
             showStatus(generationStatus, "No se pudo cargar el modelo local. Comprueba que el JSON sea válido: "
                     + detail, true);
             return;
@@ -809,6 +863,8 @@ public final class ModelFromStatementSection extends Section {
         generatedModel.positionCaret(0);
         generatedModel.setVisible(true);
         generatedModel.setManaged(true);
+        outputFilename.setText(candidate.getFileName().toString());
+        outputFolderLabel.setText(candidate.getParent().toString());
         generationOutputPath.setText("Modelo local: " + candidate);
         openModelEditor(candidate);
         if (modelEditor == null) {
@@ -864,26 +920,32 @@ public final class ModelFromStatementSection extends Section {
         if (modelEditor == null || generatedModelPath == null) {
             return;
         }
-        Path validatedPath = validatedPath(generatedModelPath);
+        Path previouslyConfirmed = workflow == null ? null : workflow.getSuggestedInferredModel();
+        Path preferredPath = generatedModelPath.equals(previouslyConfirmed)
+                ? generatedModelPath
+                : validatedPath(generatedModelPath);
+        Path confirmedPath = uniqueOutputPath(preferredPath);
         try {
             String json = modelEditor.currentJson();
             ProjectModel projectModel = ModelIO.fromJson(json);
-            Files.writeString(validatedPath, json + System.lineSeparator(), StandardCharsets.UTF_8);
+            Files.writeString(confirmedPath, json + System.lineSeparator(), StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
             classDiagram.setModel(projectModel);
         } catch (IOException | RuntimeException exception) {
             logger.error("MODEL_STATEMENT_CONFIRM_ERROR | No se pudo confirmar el modelo.", exception);
             String detail = exception.getMessage() == null
-                    ? exception.getClass().getSimpleName() : exception.getMessage();
+                    ? exception.getClass().getSimpleName()
+                    : exception.getMessage();
             showStatus(refineStatus, "El modelo no es válido: " + detail, true);
             steps.get(4).pseudoClassStateChanged(COMPLETED, false);
             steps.get(5).setDisable(true);
             return;
         }
         showStatus(diagramStatus, "Diagrama de clases generado correctamente. Flujo completado.", false);
-        showStatus(refineStatus, "Modelo confirmado y guardado en: " + validatedPath
+        showStatus(refineStatus, "Modelo confirmado y guardado en: " + confirmedPath
                 + "\nPuedes continuar con el paso 6: Diagrama de clases.", false);
         if (workflow != null) {
-            workflow.recordConfirmedStatementModel(validatedPath);
+            workflow.recordConfirmedStatementModel(confirmedPath);
         }
         steps.get(4).pseudoClassStateChanged(COMPLETED, true);
         steps.get(5).setDisable(false);
@@ -893,8 +955,8 @@ public final class ModelFromStatementSection extends Section {
         String name = modelPath.getFileName().toString();
         int extension = name.lastIndexOf('.');
         String validated = extension > 0
-            ? name.substring(0, extension) + "-revisado" + name.substring(extension)
-            : name + "-revisado.json";
+                ? name.substring(0, extension) + "-revisado" + name.substring(extension)
+                : name + "-revisado.json";
         return modelPath.resolveSibling(validated);
     }
 
@@ -914,13 +976,7 @@ public final class ModelFromStatementSection extends Section {
         String modelDirectory = AnalysisResult.fileNameFor(provider, model);
         modelDirectory = modelDirectory.substring(0, modelDirectory.lastIndexOf('.'));
         Path output = folder.resolve(modelDirectory).resolve(filename);
-        int collision = 1;
-        while (Files.exists(output)) {
-            int extension = filename.lastIndexOf('.');
-            output = folder.resolve(modelDirectory).resolve(
-                    filename.substring(0, extension) + "_" + collision++ + filename.substring(extension));
-        }
-        return output;
+        return uniqueOutputPath(output);
     }
 
     private void changeOutputFolder() {
@@ -935,18 +991,11 @@ public final class ModelFromStatementSection extends Section {
 
     private void openOutputFolder() {
         Path folder = outputFolder;
-        runTask(() -> {
-            if (!Files.isDirectory(folder)) {
-                throw new IOException("La carpeta de salida no existe: " + folder);
-            }
-            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                throw new IOException("El sistema no permite abrir carpetas desde la aplicación.");
-            }
-            Desktop.getDesktop().open(folder.toFile());
-            return folder;
-        }, opened -> { },
+        openOutputFolder(folder, () -> {
+        },
                 failure -> showStatus(generationStatus, "No se pudo abrir la carpeta de salida: " + folder, true),
-                () -> { });
+                () -> {
+                });
     }
 
     private void updateOutputFolderLabel() {
@@ -954,7 +1003,9 @@ public final class ModelFromStatementSection extends Section {
     }
 
     private record GeneratedModel(AnalysisResult analysis, ProjectModel projectModel,
-                                  String prettyJson, Path outputPath) { }
+            String prettyJson, Path outputPath) {
+    }
 
-    private record AvailableModels(ModelClient client, List<ModelInfo> models) { }
+    private record AvailableModels(ModelClient client, List<ModelInfo> models) {
+    }
 }

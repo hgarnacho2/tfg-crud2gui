@@ -8,22 +8,10 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Diálogos de selección y confirmación de archivos; deben abrirse desde el hilo de JavaFX. */
+/** Diálogos de selección de archivos y carpetas; deben abrirse desde el hilo de JavaFX. */
 public final class FileDialogs {
 
     private FileDialogs() {
-    }
-
-    /**
-     * Solicita permiso para sobrescribir, sin dar por aceptado el cierre del diálogo.
-     *
-     * @param path archivo existente
-     * @return true solo si se confirma el reemplazo
-     */
-    public static boolean confirmOverwrite(Path path) {
-        return ConfirmationDialog.confirm(null, "Confirmar sobrescritura", "Reemplazar archivo de salida",
-            "El archivo ya existe:\n" + path + "\n\n¿Quieres reemplazarlo?",
-            "Reemplazar", "Cancelar");
     }
 
     /**

@@ -86,6 +86,12 @@ public final class TeacherContextSection extends Section {
 
         VBox validation = stage("validation-report", "Validación de modelos", "INFORME JSON",
             workflow.getValidationReport(), "Todavía no se ha generado el informe.", null);
+        HBox validationHeader = (HBox) validation.getChildren().get(0);
+        validationHeader.setMaxWidth(Double.MAX_VALUE);
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+        validationHeader.getChildren().addAll(headerSpacer, UiComponents.validationStatusBadge(
+            workflow.getValidationStatus(), "teacher-context-validation-status"));
         validation.getChildren().add(validationInputs());
         VBox crud = stage("crud", "CRUD", "JAVA", null,
                 "Los ficheros asociados se incorporarán más adelante.", null);
@@ -190,7 +196,11 @@ public final class TeacherContextSection extends Section {
         artifact.getStyleClass().add(file == null
             ? "workflow-context-stage-empty" : "workflow-context-stage-file");
         artifact.setWrapText(true);
-        Label location = new Label(file == null ? "" : file.toAbsolutePath().normalize().toString());
+        Path locationPath = file == null ? null : file.toAbsolutePath().normalize();
+        if (locationPath != null && !"CARPETA".equals(type) && locationPath.getParent() != null) {
+            locationPath = locationPath.getParent();
+        }
+        Label location = new Label(locationPath == null ? "" : locationPath.toString());
         location.setId("teacher-context-stage-" + id + "-path");
         location.getStyleClass().add("workflow-context-stage-path");
         location.setWrapText(true);

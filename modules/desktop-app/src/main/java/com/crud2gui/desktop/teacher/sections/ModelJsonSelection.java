@@ -128,7 +128,7 @@ final class ModelJsonSelection extends VBox {
         selectedFile = candidate;
         manuallySelected = manual;
         filename.setText(candidate.getFileName().toString());
-        path.setText(candidate.toString());
+        path.setText(candidate.getParent().toString());
         fileCard.pseudoClassStateChanged(PseudoClass.getPseudoClass("selected"), true);
         if (viewer == null) {
             preview.getChildren().clear();

@@ -123,6 +123,48 @@
     -fx-wrap-text: true;
 }
 
+.workflow-validation-status {
+    -fx-spacing: 9px;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.workflow-validation-status-icon {
+    -fx-min-width: 26px;
+    -fx-pref-width: 26px;
+    -fx-max-width: 26px;
+    -fx-min-height: 26px;
+    -fx-pref-height: 26px;
+    -fx-max-height: 26px;
+    -fx-alignment: center;
+    -fx-background-color: #75837d;
+    -fx-background-radius: 13px;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.workflow-validation-status-label {
+    -fx-text-fill: #40534b;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-wrap-text: true;
+}
+
+.workflow-validation-status-ready-for-crud .workflow-validation-status-icon {
+    -fx-background-color: #087e65;
+}
+
+.workflow-validation-status-pending-review .workflow-validation-status-icon {
+    -fx-background-color: #a87516;
+}
+
+.workflow-validation-status-invalid .workflow-validation-status-icon {
+    -fx-background-color: #b42318;
+}
+
 .workflow-context-stage-empty {
     -fx-text-fill: #75837d;
     -fx-font-size: 13px;

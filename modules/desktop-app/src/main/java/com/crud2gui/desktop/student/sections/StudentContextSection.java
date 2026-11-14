@@ -74,7 +74,14 @@ public final class StudentContextSection extends Section {
         addStage(codeLane, "code-model", "Modelo de datos obtenido del código", "JSON",
                 workflow.getGeneratedCodeModel(), "Todavía no se ha generado el modelo.");
         VBox validation = stage("validation-report", "Validación del modelo", "INFORME JSON",
-            workflow.getValidationReport(), "Todavía no se ha generado el informe.", validationInputs());
+            workflow.getValidationReport(), "Todavía no se ha generado el informe.", null);
+        javafx.scene.layout.HBox validationHeader = (javafx.scene.layout.HBox) validation.getChildren().get(0);
+        validationHeader.setMaxWidth(Double.MAX_VALUE);
+        Region headerSpacer = new Region();
+        javafx.scene.layout.HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+        validationHeader.getChildren().addAll(headerSpacer, UiComponents.validationStatusBadge(
+            workflow.getValidationStatus(), "student-context-validation-status"));
+        validation.getChildren().add(validationInputs());
         VBox crud = stage("crud", "CRUD", "JAVA", null,
             "Los ficheros asociados se incorporarán más adelante.", null);
 
@@ -177,7 +184,11 @@ public final class StudentContextSection extends Section {
         artifact.getStyleClass().add(file == null
                 ? "workflow-context-stage-empty" : "workflow-context-stage-file");
         artifact.setWrapText(true);
-        Label location = new Label(file == null ? "" : file.toAbsolutePath().normalize().toString());
+        Path locationPath = file == null ? null : file.toAbsolutePath().normalize();
+        if (locationPath != null && !"CARPETA".equals(type) && locationPath.getParent() != null) {
+            locationPath = locationPath.getParent();
+        }
+        Label location = new Label(locationPath == null ? "" : locationPath.toString());
         location.setId("student-context-stage-" + id + "-path");
         location.getStyleClass().add("workflow-context-stage-path");
         location.setWrapText(true);

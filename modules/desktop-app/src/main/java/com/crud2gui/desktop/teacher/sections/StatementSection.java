@@ -21,7 +21,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
 import java.io.File;
-import java.awt.Desktop;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,7 +31,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Consumer;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 import java.util.concurrent.Callable;
 
 /**
@@ -71,7 +69,6 @@ public final class StatementSection extends Section {
             List.of("statement-file-name"),
             UiComponents.label("TXT", List.of("statement-file-badge")), 12);
     private final BiFunction<Window, Path, File> chooseFolder;
-    private final Predicate<Path> confirmOverwrite;
     private final TeacherWorkflowContext workflow;
     private final Label filename = UiComponents.labelWithGraphic("Ningún PDF seleccionado.",
             List.of("statement-file-name"),
@@ -122,36 +119,28 @@ public final class StatementSection extends Section {
      */
     StatementSection(Function<Window, File> chooseFile) {
         this(chooseFile, (owner, current) -> FileDialogs.chooseDirectory(
-                owner, current, "Carpeta de salida de los enunciados"), FileDialogs::confirmOverwrite, null);
+                owner, current, "Carpeta de salida de los enunciados"), null);
     }
 
     private StatementSection(Function<Window, File> chooseFile, TeacherWorkflowContext workflow) {
         this(chooseFile, (owner, current) -> FileDialogs.chooseDirectory(
-                owner, current, "Carpeta de salida de los enunciados"), FileDialogs::confirmOverwrite, workflow);
+                owner, current, "Carpeta de salida de los enunciados"), workflow);
     }
 
     /**
-     * Construye la interfaz con selectores y confirmación sustituibles para poder
-     * probar el flujo sin abrir diálogos interactivos.
+     * Construye la interfaz con selectores sustituibles para probar el flujo sin
+     * abrir diálogos interactivos.
      *
      * @param chooseFile función que recibe la ventana propietaria, posiblemente
      *                   {@code null}, y devuelve un PDF o {@code null} al cancelar
      * @param chooseFolder función que recibe la ventana propietaria y la carpeta
      *                     actual, y devuelve el nuevo destino o {@code null} al cancelar
-     * @param confirmOverwrite predicado que recibe la ruta de un archivo existente
-     *                         y devuelve {@code true} únicamente si se autoriza reemplazarlo
      */
-    StatementSection(Function<Window, File> chooseFile, BiFunction<Window, Path, File> chooseFolder,
-                     Predicate<Path> confirmOverwrite) {
-        this(chooseFile, chooseFolder, confirmOverwrite, null);
-        }
-
         StatementSection(Function<Window, File> chooseFile, BiFunction<Window, Path, File> chooseFolder,
-                 Predicate<Path> confirmOverwrite, TeacherWorkflowContext workflow) {
+                 TeacherWorkflowContext workflow) {
         super("ENUNCIADO", "Enunciado",
                 "Extracción de información del enunciado paso a paso: selecciona el PDF, extrae el texto y aplica el filtro para optimizar el texto obtenido.");
         this.chooseFolder = chooseFolder;
-        this.confirmOverwrite = confirmOverwrite;
         this.workflow = workflow;
         selectPDFButton = UiComponents.actionButton("Seleccionar PDF", List.of("statement-select"), () -> {
             File file = chooseFile.apply(getScene() == null ? null : getScene().getWindow());
@@ -262,11 +251,7 @@ public final class StatementSection extends Section {
      */
     private void showStep(int index) {
         currentStep = index;
-        for (int i = 0; i < panels.size(); i++) {
-            panels.get(i).setVisible(i == index);
-            panels.get(i).setManaged(i == index);
-            steps.get(i).pseudoClassStateChanged(SELECTED, i == index);
-        }
+        showStepPanels(panels, steps, index);
     }
 
     /**
@@ -285,7 +270,7 @@ public final class StatementSection extends Section {
         outputFolder = selectedPdf.getParent();
         updateOutputFolderLabel();
         filename.setText(file.getName());
-        filePath.setText(file.getAbsolutePath());
+        filePath.setText(selectedPdf.getParent().toString());
         fileCard.pseudoClassStateChanged(SELECTED, true);
         resetExtract();
         resetFilter();
@@ -293,6 +278,48 @@ public final class StatementSection extends Section {
         showStep(0);
         pdfViewer.load(selectedPdf);
         showStatus(0, "PDF seleccionado. Puedes continuar con el paso 2: Extraer texto.", false);
+        restoreSavedTextOutputs();
+    }
+
+    private void restoreSavedTextOutputs() {
+        if (workflow == null) {
+            return;
+        }
+        Path extractedPath = workflow.getExtractedText();
+        if (extractedPath == null) {
+            return;
+        }
+        try {
+            String text = Files.readString(extractedPath, StandardCharsets.UTF_8);
+            if (text.isBlank()) {
+                showStatus(1, "El texto extraído guardado está vacío. Vuelve a extraer el contenido.", true);
+                return;
+            }
+            extractedText.setText(text);
+            extractedText.positionCaret(0);
+            outputFilename.setText(extractedPath.getFileName().toString());
+            outputFolderLabel.setText(extractedPath.toAbsolutePath().normalize().getParent().toString());
+            showStatus(1, "Texto extraído restaurado.\nArchivo generado: " + extractedPath, false);
+        } catch (IOException | SecurityException exception) {
+            showStatus(1, "No se pudo restaurar el texto extraído. Vuelve a ejecutar la extracción.", true);
+            updateState();
+            return;
+        }
+
+        Path filteredPath = workflow.getFilteredText();
+        if (filteredPath != null) {
+            try {
+                filteredText.setText(Files.readString(filteredPath, StandardCharsets.UTF_8));
+                filteredText.positionCaret(0);
+                filterOutputFilename.setText(filteredPath.getFileName().toString());
+                filterOutputFolderLabel.setText(filteredPath.toAbsolutePath().normalize().getParent().toString());
+                filterCompleted = true;
+                showStatus(2, "Texto filtrado restaurado.\nArchivo generado: " + filteredPath, false);
+            } catch (IOException | SecurityException exception) {
+                showStatus(2, "No se pudo restaurar el texto filtrado. Vuelve a ejecutar el filtrado.", true);
+            }
+        }
+        updateState();
     }
 
     /**
@@ -317,19 +344,10 @@ public final class StatementSection extends Section {
     private void openOutputFolder() {
         Path folder = outputFolder;
         int step = currentStep;
-        busy = true;
-        updateState();
-        runTask(() -> {
-            if (!Files.isDirectory(folder)) {
-                throw new IOException("La carpeta de salida no existe: " + folder);
-            }
-            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                throw new IOException("El sistema no permite abrir carpetas desde la aplicación.");
-            }
-            Desktop.getDesktop().open(folder.toFile());
-            return folder;
-        }, opened -> { },
-                failure -> showStatus(step, "No se pudo abrir la carpeta de salida: " + folder, true),
+        openOutputFolder(folder, () -> {
+                    busy = true;
+                    updateState();
+                }, failure -> showStatus(step, "No se pudo abrir la carpeta de salida: " + folder, true),
                 () -> {
                     busy = false;
                     updateState();
@@ -345,9 +363,9 @@ public final class StatementSection extends Section {
         Path extractedPath = outputPath(false);
         Path filteredPath = outputPath(true);
         outputFilename.setText(extractedPath.getFileName().toString());
-        outputFolderLabel.setText(extractedPath.toString());
+        outputFolderLabel.setText(extractedPath.getParent().toString());
         filterOutputFilename.setText(filteredPath.getFileName().toString());
-        filterOutputFolderLabel.setText(filteredPath.toString());
+        filterOutputFolderLabel.setText(filteredPath.getParent().toString());
     }
 
     /**
@@ -366,25 +384,7 @@ public final class StatementSection extends Section {
         if (!base.startsWith("texto-")) {
             base = "texto-" + base;
         }
-        return outputFolder.resolve(base + (filtered ? "-filtrado.txt" : ".txt"));
-    }
-
-    /**
-     * Comprueba si el destino existe y, en ese caso, solicita autorización para
-     * reemplazarlo. Si se rechaza, muestra la cancelación en el panel indicado.
-     * No crea ni escribe el archivo: captura el destino y el permiso para la tarea.
-     *
-     * @param path ruta del archivo que se pretende generar
-     * @param step índice del panel que recibe el mensaje de cancelación (0, 1 o 2)
-     * @return destino y permiso de sobrescritura, o {@code null} si se rechaza el reemplazo
-     */
-    private OutputFile prepareOutput(Path path, int step) {
-        boolean exists = Files.exists(path);
-        if (exists && !confirmOverwrite.test(path)) {
-            showStatus(step, "Operación cancelada. No se ha sobrescrito el archivo: " + path, false);
-            return null;
-        }
-        return new OutputFile(path, exists);
+        return uniqueOutputPath(outputFolder.resolve(base + (filtered ? "-filtrado.txt" : ".txt")));
     }
 
     /**
@@ -397,9 +397,9 @@ public final class StatementSection extends Section {
      * @throws IOException si no puede escribirse el destino, por ejemplo por permisos,
      *                     ausencia de su carpeta o conflicto con el modo de creación
      */
-    private static void writeOutput(OutputFile output, String content) throws IOException {
-        Files.writeString(output.path(), content, StandardCharsets.UTF_8, StandardOpenOption.WRITE,
-                output.overwrite() ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW);
+    private static void writeOutput(Path output, String content) throws IOException {
+        Files.writeString(output, content, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
     }
 
     /**
@@ -409,10 +409,7 @@ public final class StatementSection extends Section {
      * o informa de la ausencia de texto extraíble, de errores de lectura o de escritura.
      */
     private void extractText() {
-        OutputFile output = prepareOutput(outputPath(false), 1);
-        if (output == null) {
-            return;
-        }
+        Path output = outputPath(false);
         Path pdf = selectedPdf;
         resetExtract();
         resetFilter();
@@ -425,20 +422,22 @@ public final class StatementSection extends Section {
                 writeOutput(output, result);
             }
             return result;
-        }, "Extrayendo texto del PDF…\nArchivo de salida: " + output.path(), result -> {
+        }, "Extrayendo texto del PDF…\nArchivo de salida: " + output, result -> {
             if (result.isBlank()) {
                 showStatus(1, "El PDF no contiene texto extraíble. Si está escaneado, necesita OCR.", true);
                 return;
             }
             extractedText.setText(result);
             extractedText.positionCaret(0);
+            outputFilename.setText(output.getFileName().toString());
+            outputFolderLabel.setText(output.getParent().toString());
             if (workflow != null) {
-                workflow.recordExtractedText(output.path());
+                workflow.recordExtractedText(output);
             }
             showStatus(1, "Texto extraído correctamente. Puedes continuar con el paso 3: Filtrar texto."
-                    + "\nArchivo generado: " + output.path(), false);
+                    + "\nArchivo generado: " + output, false);
         }, "No se pudo extraer el texto. Comprueba que el PDF sea válido, legible "
-                + "y no esté protegido con contraseña, y que puedas escribir en el destino: " + output.path());
+                + "y no esté protegido con contraseña, y que puedas escribir en el destino: " + output);
     }
 
     /**
@@ -449,10 +448,7 @@ public final class StatementSection extends Section {
      * sin marcar el paso como completado.
      */
     private void filterText() {
-        OutputFile output = prepareOutput(outputPath(true), 2);
-        if (output == null) {
-            return;
-        }
+        Path output = outputPath(true);
         String original = extractedText.getText();
         resetFilter();
         if (workflow != null) {
@@ -463,19 +459,21 @@ public final class StatementSection extends Section {
             StatementFilter.Result result = StatementFilter.filter(original, config);
             writeOutput(output, result.text());
             return result;
-        }, "Filtrando texto…\nArchivo de salida: " + output.path(), result -> {
+        }, "Filtrando texto…\nArchivo de salida: " + output, result -> {
             filteredText.setText(result.text());
             filteredText.positionCaret(0);
+            filterOutputFilename.setText(output.getFileName().toString());
+            filterOutputFolderLabel.setText(output.getParent().toString());
             filterCompleted = result.structureRecognized();
             if (filterCompleted && workflow != null) {
-                workflow.recordFilteredText(output.path());
+                workflow.recordFilteredText(output);
             }
             showStatus(2, (filterCompleted ? "Texto filtrado correctamente. Flujo completado."
                     : "No se ha reconocido la estructura del enunciado. Se conserva el texto original sin filtrar.")
-                    + "\nArchivo generado: " + output.path(),
+                    + "\nArchivo generado: " + output,
                     !filterCompleted);
         }, "No se pudo filtrar o guardar el texto. Comprueba statement-filter-rules.json "
-                + "(ruta STATEMENT_FILTER_CONFIG_PATH, permisos y reglas válidas) y el destino: " + output.path());
+                + "(ruta STATEMENT_FILTER_CONFIG_PATH, permisos y reglas válidas) y el destino: " + output);
     }
 
     /**
@@ -567,5 +565,4 @@ public final class StatementSection extends Section {
      * @param overwrite {@code true} si el archivo existía y se autorizó reemplazarlo;
      *                  {@code false} si debe crearse sin sobrescribir
      */
-    private record OutputFile(Path path, boolean overwrite) { }
 }
