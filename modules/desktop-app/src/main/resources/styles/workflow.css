@@ -86,6 +86,7 @@
 
 .model-request-field-value {
     -fx-font-size: 14px;
+    -fx-font-weight: bold;
     -fx-text-fill: #263c35;
 }
 

@@ -141,11 +141,9 @@ public final class TeacherContextSection extends Section {
 
     private VBox validationInputs() {
         VBox inputs = new VBox(6,
-            new Label("Entradas para validar"),
-            validationInput("CODIGO", "code", workflow.getSelectedJavaModel()),
-            validationInput("ENUNCIADO", "statement", workflow.getSelectedInferredModel()));
+            validationInput("MODELO OBTENIDO DEL CODIGO", "code", workflow.getSelectedJavaModel()),
+            validationInput("MODELO INFERIDO DEL ENUNCIADO", "statement", workflow.getSelectedInferredModel()));
         inputs.getStyleClass().add("workflow-context-validation-inputs");
-        inputs.getChildren().get(0).getStyleClass().add("workflow-context-validation-inputs-title");
         return inputs;
     }
 

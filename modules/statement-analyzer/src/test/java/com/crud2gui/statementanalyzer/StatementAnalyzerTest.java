@@ -56,7 +56,7 @@ class StatementAnalyzerTest {
     }
 
     @Test
-    void promptExampleIncludesTheExpectedManagerAndPreservesItInTheResult() throws Exception {
+    void promptDefinesExpectedManagerAndAnalyzerPreservesItInTheResult() throws Exception {
         String prompt;
         try (var resource = getClass().getResourceAsStream("/prompts/prompt-v6.txt")) {
             assertTrue(resource != null, "Debe existir el prompt de referencia.");
@@ -64,7 +64,10 @@ class StatementAnalyzerTest {
         }
         assertTrue(prompt.contains("clasifica cada relación enumerada como COMPOSITION y no añadas AMBIGUO para ella"));
         assertTrue(prompt.contains("Si el tipo destino es un enumerado, usa siempre ASSOCIATION y no AMBIGUO"));
-        String example = prompt.substring(prompt.indexOf("{\"schemaVersion\"")).strip();
+        assertTrue(prompt.contains("{{PROJECT_MODEL_JSON_SCHEMA}}"));
+        String example = """
+            {"schemaVersion":"1.0","expectedManagerId":"Clase","types":[{"id":"Clase"}]}
+            """;
         AnalysisResult result = new StatementAnalyzer(new FakeClient(example))
                 .analyze("m", prompt, "Clase es la gestora del sistema.", GenerationOptions.defaults());
         var json = result.json();

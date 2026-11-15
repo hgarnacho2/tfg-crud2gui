@@ -86,4 +86,5 @@ class ModelIOTest {
         Files.writeString(tmp, "{\"schemaVersion\":\"2.0\"}");
         assertThrows(java.io.IOException.class, () -> ModelIO.read(tmp));
     }
+
 }

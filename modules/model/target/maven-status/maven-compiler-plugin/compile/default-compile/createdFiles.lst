@@ -2,6 +2,7 @@ com\crud2gui\model\Analysis.class
 com\crud2gui\model\AnnotationInfo.class
 com\crud2gui\model\TypeRef.class
 com\crud2gui\model\TypeInfo.class
+com\crud2gui\model\ProjectModelSchema.class
 com\crud2gui\model\JavadocInfo.class
 com\crud2gui\model\Confidence.class
 com\crud2gui\model\ManagerCandidate.class

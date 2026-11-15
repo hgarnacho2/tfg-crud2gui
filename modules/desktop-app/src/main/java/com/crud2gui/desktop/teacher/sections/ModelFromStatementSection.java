@@ -9,6 +9,7 @@ import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import com.crud2gui.model.ModelIO;
 import com.crud2gui.model.ProjectModel;
+import com.crud2gui.model.ProjectModelSchema;
 import com.crud2gui.statementanalyzer.client.ModelClient;
 import com.crud2gui.statementanalyzer.client.ModelClientProvider;
 import com.crud2gui.statementanalyzer.exception.InvalidModelOutputException;
@@ -48,6 +49,8 @@ import java.util.function.Function;
 
 /** Sección para generar un modelo de clases a partir de un enunciado. */
 public final class ModelFromStatementSection extends Section {
+
+    private static final String PROJECT_MODEL_SCHEMA_MARKER = "{{PROJECT_MODEL_JSON_SCHEMA}}";
 
     private final Function<Window, File> chooseTextFile;
     private final Function<Window, File> choosePromptFile;
@@ -777,6 +780,14 @@ public final class ModelFromStatementSection extends Section {
                     "El prompt y el enunciado deben contener texto antes de iniciar el análisis.", true);
             return;
         }
+        String requestPrompt;
+        try {
+            requestPrompt = includeProjectModelSchema(prompt);
+        } catch (IOException exception) {
+            showStatus(generationStatus, "No se pudo cargar el esquema JSON del modelo: "
+                    + exception.getMessage(), true);
+            return;
+        }
 
         invalidateGeneratedModel();
         generationBusy = true;
@@ -787,10 +798,11 @@ public final class ModelFromStatementSection extends Section {
         Path resultPath = outputPath(outputFolder, client.provider(), model.id());
         runTask(() -> {
             AnalysisResult result = new StatementAnalyzer(client)
-                    .analyze(model.id(), prompt, statement, GenerationOptions.defaults());
+                    .analyze(model.id(), requestPrompt, statement, GenerationOptions.defaults());
             String prettyJson = result.prettyJson();
             ProjectModel projectModel;
             try {
+                ProjectModelSchema.validate(prettyJson);
                 projectModel = ModelIO.fromJson(prettyJson);
             } catch (IOException exception) {
                 throw new InvalidModelOutputException(exception.getMessage(), result.response(), exception);
@@ -830,6 +842,15 @@ public final class ModelFromStatementSection extends Section {
             generationBusy = false;
             updateGenerationControls();
         });
+    }
+
+    static String includeProjectModelSchema(String prompt) throws IOException {
+        String schema = ProjectModelSchema.jsonSchema();
+        if (prompt.contains(PROJECT_MODEL_SCHEMA_MARKER)) {
+            return prompt.replace(PROJECT_MODEL_SCHEMA_MARKER, schema);
+        }
+        return prompt.stripTrailing() + "\n\nJSON Schema canónico de ProjectModel 1.0:\n```json\n"
+                + schema + "\n```";
     }
 
     private void useLocalModel() {

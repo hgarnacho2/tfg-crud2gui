@@ -49,23 +49,34 @@ class ModelFromStatementSectionTest {
                             "source": {"root": null, "generatedAt": null, "filesParsed": 0, "warnings": []},
                             "types": [
                                 {"id": "PlataformaCompraVenta", "name": "PlataformaCompraVenta", "packageName": "",
-                                 "kind": "CLASS", "fields": [], "constructors": [], "methods": []},
+                                 "kind": "CLASS", "visibility": null, "modifiers": [], "enclosingType": null,
+                                 "superclass": null, "interfaces": [], "typeParameters": [], "annotations": [],
+                                 "javadoc": null, "location": null, "hasMainMethod": false, "fields": [],
+                                 "constructors": [], "methods": [], "enumConstants": [], "optional": false},
                                 {"id": "Usuario", "name": "Usuario", "packageName": "", "kind": "CLASS",
-                                 "optional": true,
-                                 "fields": [{"name": "email", "type": {"name": "String", "projectType": false,
-                                 "arguments": [], "arrayDimensions": 0}, "visibility": "PRIVATE", "modifiers": [],
-                                 "initializedInline": false, "optional": true}], "constructors": [],
-                                 "methods": [{"name": "getEmail", "returnType": {"name": "String", "projectType": false,
+                                 "visibility": null, "modifiers": [], "enclosingType": null, "superclass": null,
+                                 "interfaces": [], "typeParameters": [], "annotations": [], "javadoc": null,
+                                 "location": null, "hasMainMethod": false, "optional": true,
+                                 "fields": [{"name": "email", "type": {"name": "String", "qualifiedName": null,
+                                 "projectType": false, "arguments": [], "arrayDimensions": 0},
+                                 "visibility": "PRIVATE", "modifiers": [], "initializedInline": false,
+                                 "annotations": [], "javadoc": null, "location": null, "optional": true}],
+                                 "constructors": [], "methods": [{"name": "getEmail",
+                                 "returnType": {"name": "String", "qualifiedName": null, "projectType": false,
                                  "arguments": [], "arrayDimensions": 0}, "visibility": "PUBLIC", "modifiers": [],
-                                 "parameters": [], "hasBody": true, "optional": true}]},
+                                 "parameters": [], "thrown": [], "annotations": [], "hasBody": true,
+                                 "javadoc": null, "location": null, "optional": true}], "enumConstants": []},
                                 {"id": "Producto", "name": "Producto", "packageName": "", "kind": "CLASS",
-                                 "fields": [], "constructors": [], "methods": []}
+                                 "visibility": null, "modifiers": [], "enclosingType": null, "superclass": null,
+                                 "interfaces": [], "typeParameters": [], "annotations": [], "javadoc": null,
+                                 "location": null, "hasMainMethod": false, "fields": [], "constructors": [],
+                                 "methods": [], "enumConstants": [], "optional": false}
                             ],
                             "relations": [
                                 {"kind": "COMPOSITION", "from": "PlataformaCompraVenta", "to": "Usuario",
-                                 "via": "usuarios", "multiplicity": "0..*", "confidence": "HIGH"},
+                                 "via": "usuarios", "multiplicity": "0..*", "confidence": "HIGH", "evidence": null},
                                 {"kind": "COMPOSITION", "from": "Usuario", "to": "Producto",
-                                 "via": "productos", "multiplicity": "0..*", "confidence": "HIGH"}
+                                 "via": "productos", "multiplicity": "0..*", "confidence": "HIGH", "evidence": null}
                             ],
                             "analysis": null,
                             "layout": null
@@ -121,6 +132,18 @@ class ModelFromStatementSectionTest {
                 }
             };
         }
+    }
+
+    @Test
+    void replacesPromptSchemaMarkerWithoutDroppingSurroundingInstructions() throws Exception {
+        String prompt = "Reglas de inferencia.\n{{PROJECT_MODEL_JSON_SCHEMA}}\nFin de las reglas.";
+
+        String expanded = ModelFromStatementSection.includeProjectModelSchema(prompt);
+
+        assertTrue(expanded.startsWith("Reglas de inferencia.\n{"));
+        assertTrue(expanded.endsWith("\nFin de las reglas."));
+        assertTrue(expanded.contains("\"title\": \"CRUD2GUI ProjectModel 1.0\""));
+        assertFalse(expanded.contains("{{PROJECT_MODEL_JSON_SCHEMA}}"));
     }
 
     @TempDir
@@ -544,7 +567,9 @@ class ModelFromStatementSectionTest {
             assertFalse(fullPath.isManaged());
             assertFalse(((Button) section.lookup("#statement-step-5")).isDisabled());
             assertTrue(((Button) section.lookup("#statement-step-6")).isDisabled());
-            assertEquals("Instrucciones para inferir clases.", provider.prompt.get());
+            assertTrue(provider.prompt.get().startsWith("Instrucciones para inferir clases."));
+            assertTrue(provider.prompt.get().contains("\"title\": \"CRUD2GUI ProjectModel 1.0\""));
+            assertFalse(provider.prompt.get().contains("{{PROJECT_MODEL_JSON_SCHEMA}}"));
             assertEquals("Texto del enunciado para el modelo.", provider.statement.get());
                 ((Button) section.lookup("#statement-step-5")).fire();
                 assertEquals(1, ((StackPane) section.lookup("#model-statement-editor-host"))
@@ -662,7 +687,8 @@ class ModelFromStatementSectionTest {
         awaitStatus(status, "Análisis completado");
         String firstOutputName = onFx(() ->
             ((Label) section.lookup("#model-statement-output-filename")).getText());
-        for (String invalid : List.of("{\"types\":[{\"id\":\"A\"]}", "[1,2]", "{\"schemaVersion\":\"99.0\"}")) {
+        for (String invalid : List.of("{\"types\":[{\"id\":\"A\"]}", "[1,2]", "{\"schemaVersion\":\"99.0\"}",
+            "{\"schemaVersion\":\"1.0\",\"types\":[],\"relations\":[]}")) {
             provider.answer.set(invalid);
             onFx(() -> {
                 ((Button) section.lookup("#model-statement-generate-model")).fire();

@@ -544,8 +544,6 @@ class TeacherModelSectionsTest {
                 ((Label) section.lookup("#teacher-context-stage-code-model-path")).getText());
             assertEquals("validacion.json",
                 ((Label) section.lookup("#teacher-context-stage-validation-report-file")).getText());
-                assertEquals("Entradas para validar",
-                    ((Label) section.lookup(".workflow-context-validation-inputs-title")).getText());
             for (String stage : java.util.List.of("statement-pdf", "statement-extracted", "statement-filtered",
                     "statement-model", "statement-refined-model", "code-folder", "code-model",
                     "validation-report")) {
@@ -559,8 +557,8 @@ class TeacherModelSectionsTest {
             assertFalse(((Button) section.lookup("#teacher-context-validation-input-statement-reveal")).isDisabled());
             Label codeBadge = (Label) section.lookup("#teacher-context-validation-input-code-badge");
             Label statementBadge = (Label) section.lookup("#teacher-context-validation-input-statement-badge");
-            assertEquals("CODIGO", codeBadge.getText());
-            assertEquals("ENUNCIADO", statementBadge.getText());
+            assertEquals("MODELO OBTENIDO DEL CODIGO", codeBadge.getText());
+            assertEquals("MODELO INFERIDO DEL ENUNCIADO", statementBadge.getText());
             assertTrue(codeBadge.getStyleClass().contains("workflow-context-input-badge"));
             assertTrue(statementBadge.getStyleClass().contains("workflow-context-input-badge"));
             assertEquals("modelo-codigo.json",

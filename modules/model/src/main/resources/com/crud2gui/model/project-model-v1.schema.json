@@ -1,0 +1,365 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:crud2gui:schema:project-model-v1",
+  "title": "CRUD2GUI ProjectModel 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "expectedManagerId", "source", "types", "relations", "analysis", "layout"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "expectedManagerId": { "type": ["string", "null"] },
+    "source": {
+      "$ref": "#/definitions/SourceInfo"
+    },
+    "types": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/TypeInfo" }
+    },
+    "relations": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Relation" }
+    },
+    "analysis": {
+      "oneOf": [
+        { "$ref": "#/definitions/Analysis" },
+        { "type": "null" }
+      ]
+    },
+    "layout": {
+      "oneOf": [
+        { "$ref": "#/definitions/Layout" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "definitions": {
+    "SourceInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "generatedAt", "filesParsed", "warnings"],
+      "properties": {
+        "root": { "type": ["string", "null"] },
+        "generatedAt": { "type": ["string", "null"] },
+        "filesParsed": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "TypeInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "name", "packageName", "kind", "visibility", "modifiers", "enclosingType", "superclass",
+        "interfaces", "typeParameters", "annotations", "javadoc", "location", "hasMainMethod", "fields",
+        "constructors", "methods", "enumConstants", "optional"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "packageName": { "type": "string" },
+        "kind": { "$ref": "#/definitions/TypeKind" },
+        "visibility": {
+          "oneOf": [
+            { "$ref": "#/definitions/Visibility" },
+            { "type": "null" }
+          ]
+        },
+        "modifiers": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Modifier" },
+          "uniqueItems": true
+        },
+        "enclosingType": { "type": ["string", "null"] },
+        "superclass": {
+          "oneOf": [
+            { "$ref": "#/definitions/TypeRef" },
+            { "type": "null" }
+          ]
+        },
+        "interfaces": { "type": "array", "items": { "$ref": "#/definitions/TypeRef" } },
+        "typeParameters": { "type": "array", "items": { "type": "string" } },
+        "annotations": { "type": "array", "items": { "$ref": "#/definitions/AnnotationInfo" } },
+        "javadoc": {
+          "oneOf": [
+            { "$ref": "#/definitions/JavadocInfo" },
+            { "type": "null" }
+          ]
+        },
+        "location": {
+          "oneOf": [
+            { "$ref": "#/definitions/Location" },
+            { "type": "null" }
+          ]
+        },
+        "hasMainMethod": { "type": "boolean" },
+        "fields": { "type": "array", "items": { "$ref": "#/definitions/FieldInfo" } },
+        "constructors": { "type": "array", "items": { "$ref": "#/definitions/ConstructorInfo" } },
+        "methods": { "type": "array", "items": { "$ref": "#/definitions/MethodInfo" } },
+        "enumConstants": { "type": "array", "items": { "$ref": "#/definitions/EnumConstantInfo" } },
+        "optional": { "type": "boolean" }
+      }
+    },
+    "TypeRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "qualifiedName", "projectType", "arguments", "arrayDimensions"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "qualifiedName": { "type": ["string", "null"] },
+        "projectType": { "type": "boolean" },
+        "arguments": { "type": "array", "items": { "$ref": "#/definitions/TypeRef" } },
+        "arrayDimensions": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "FieldInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "visibility", "modifiers", "initializedInline", "annotations",
+        "javadoc", "location", "optional"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "$ref": "#/definitions/TypeRef" },
+        "visibility": {
+          "oneOf": [
+            { "$ref": "#/definitions/Visibility" },
+            { "type": "null" }
+          ]
+        },
+        "modifiers": { "type": "array", "items": { "$ref": "#/definitions/Modifier" }, "uniqueItems": true },
+        "initializedInline": { "type": "boolean" },
+        "annotations": { "type": "array", "items": { "$ref": "#/definitions/AnnotationInfo" } },
+        "javadoc": {
+          "oneOf": [
+            { "$ref": "#/definitions/JavadocInfo" },
+            { "type": "null" }
+          ]
+        },
+        "location": {
+          "oneOf": [
+            { "$ref": "#/definitions/Location" },
+            { "type": "null" }
+          ]
+        },
+        "optional": { "type": "boolean" }
+      }
+    },
+    "ConstructorInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["visibility", "parameters", "thrown", "annotations", "javadoc", "location"],
+      "properties": {
+        "visibility": {
+          "oneOf": [
+            { "$ref": "#/definitions/Visibility" },
+            { "type": "null" }
+          ]
+        },
+        "parameters": { "type": "array", "items": { "$ref": "#/definitions/ParameterInfo" } },
+        "thrown": { "type": "array", "items": { "$ref": "#/definitions/TypeRef" } },
+        "annotations": { "type": "array", "items": { "$ref": "#/definitions/AnnotationInfo" } },
+        "javadoc": {
+          "oneOf": [
+            { "$ref": "#/definitions/JavadocInfo" },
+            { "type": "null" }
+          ]
+        },
+        "location": {
+          "oneOf": [
+            { "$ref": "#/definitions/Location" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "MethodInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "returnType", "visibility", "modifiers", "parameters", "thrown", "annotations",
+        "hasBody", "javadoc", "location", "optional"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "returnType": {
+          "oneOf": [
+            { "$ref": "#/definitions/TypeRef" },
+            { "type": "null" }
+          ]
+        },
+        "visibility": {
+          "oneOf": [
+            { "$ref": "#/definitions/Visibility" },
+            { "type": "null" }
+          ]
+        },
+        "modifiers": { "type": "array", "items": { "$ref": "#/definitions/Modifier" }, "uniqueItems": true },
+        "parameters": { "type": "array", "items": { "$ref": "#/definitions/ParameterInfo" } },
+        "thrown": { "type": "array", "items": { "$ref": "#/definitions/TypeRef" } },
+        "annotations": { "type": "array", "items": { "$ref": "#/definitions/AnnotationInfo" } },
+        "hasBody": { "type": "boolean" },
+        "javadoc": {
+          "oneOf": [
+            { "$ref": "#/definitions/JavadocInfo" },
+            { "type": "null" }
+          ]
+        },
+        "location": {
+          "oneOf": [
+            { "$ref": "#/definitions/Location" },
+            { "type": "null" }
+          ]
+        },
+        "optional": { "type": "boolean" }
+      }
+    },
+    "ParameterInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "varargs"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "$ref": "#/definitions/TypeRef" },
+        "varargs": { "type": "boolean" }
+      }
+    },
+    "EnumConstantInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "javadoc"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "javadoc": {
+          "oneOf": [
+            { "$ref": "#/definitions/JavadocInfo" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "AnnotationInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": { "name": { "type": "string", "minLength": 1 } }
+    },
+    "JavadocInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "tags"],
+      "properties": {
+        "description": { "type": ["string", "null"] },
+        "tags": {
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "Location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line"],
+      "properties": {
+        "file": { "type": ["string", "null"] },
+        "line": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "Relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "from", "to", "via", "multiplicity", "confidence", "evidence"],
+      "properties": {
+        "kind": { "$ref": "#/definitions/RelationKind" },
+        "from": { "type": "string", "minLength": 1 },
+        "to": { "type": "string", "minLength": 1 },
+        "via": { "type": ["string", "null"] },
+        "multiplicity": { "type": ["string", "null"] },
+        "confidence": { "$ref": "#/definitions/Confidence" },
+        "evidence": {
+          "oneOf": [
+            { "$ref": "#/definitions/Evidence" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["createdWithNew", "assignedFromParameter", "initializedInline", "exposedBySetter", "usedIn"],
+      "properties": {
+        "createdWithNew": { "type": "boolean" },
+        "assignedFromParameter": { "type": "boolean" },
+        "initializedInline": { "type": "boolean" },
+        "exposedBySetter": { "type": "boolean" },
+        "usedIn": { "type": ["string", "null"] }
+      }
+    },
+    "Analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["managerClass", "alternatives", "subManagers", "entryPoints", "manualOverride"],
+      "properties": {
+        "managerClass": {
+          "oneOf": [
+            { "$ref": "#/definitions/ManagerCandidate" },
+            { "type": "null" }
+          ]
+        },
+        "alternatives": { "type": "array", "items": { "$ref": "#/definitions/ManagerCandidate" } },
+        "subManagers": { "type": "array", "items": { "type": "string" } },
+        "entryPoints": { "type": "array", "items": { "type": "string" } },
+        "manualOverride": { "type": "boolean" }
+      }
+    },
+    "ManagerCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "score", "confidence", "reasons"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "score": { "type": "number" },
+        "confidence": { "$ref": "#/definitions/Confidence" },
+        "reasons": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["positions"],
+      "properties": {
+        "positions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/Point" }
+        }
+      }
+    },
+    "Point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+    "TypeKind": {
+      "type": "string",
+      "enum": ["CLASS", "INTERFACE", "ENUM", "RECORD", "ANNOTATION"]
+    },
+    "RelationKind": {
+      "type": "string",
+      "enum": ["INHERITANCE", "REALIZATION", "COMPOSITION", "AGGREGATION", "ASSOCIATION", "DEPENDENCY"]
+    },
+    "Visibility": {
+      "type": "string",
+      "enum": ["PUBLIC", "PROTECTED", "PACKAGE", "PRIVATE"]
+    },
+    "Modifier": {
+      "type": "string",
+      "enum": ["ABSTRACT", "STATIC", "FINAL", "SYNCHRONIZED", "NATIVE", "TRANSIENT", "VOLATILE", "DEFAULT", "SEALED"]
+    },
+    "Confidence": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"]
+    }
+  }
+}
