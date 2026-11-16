@@ -33,9 +33,26 @@ import org.slf4j.LoggerFactory;
 public final class Crud2GuiDesktopApp extends Application {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Crud2GuiDesktopApp.class);
-        private static final String SYSTEM_BROWSER_SUCCESS_MESSAGE =
+    
+    /**
+     * Mensaje de éxito mostrado al usuario cuando la autenticación se realiza
+     * en el navegador predeterminado del sistema ({@link AuthenticationBrowserMode#SYSTEM}).
+     * 
+     * Indica al usuario que puede volver a CRUD2GUI y cerrar la pestaña del navegador,
+     * ya que la aplicación completará internamente el proceso de autenticación.
+     */
+    private static final String SYSTEM_BROWSER_SUCCESS_MESSAGE =
             "Ya puedes volver a CRUD2GUI y cerrar esta pestaña.";
-        private static final String WEBVIEW_SUCCESS_MESSAGE = "La aplicación continuará automáticamente.";
+    
+    /**
+     * Mensaje de éxito mostrado al usuario cuando la autenticación se realiza
+     * embebida en un componente WebView dentro de CRUD2GUI ({@link AuthenticationBrowserMode#WEBVIEW}).
+     * 
+     * Indica al usuario que la aplicación continuará automáticamente sin necesidad
+     * de realizar acciones adicionales; el flujo permanece integrado en CRUD2GUI.
+     */
+    private static final String WEBVIEW_SUCCESS_MESSAGE = "La aplicación continuará automáticamente.";
+    
     private AuthenticationBrowserMode authenticationBrowserMode = AuthenticationBrowserMode.WEBVIEW;
 
     /**

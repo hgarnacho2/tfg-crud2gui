@@ -73,20 +73,34 @@ public final class StudentDashboardView extends BorderPane {
         };
     }
 
-    /** Secciones disponibles en el menú del alumno, en orden de presentación. */
+    /**
+     * Secciones disponibles en el menú del alumno, en orden de presentación.
+     * 
+     * Cada sección representa una funcionalidad diferente del panel del estudiante
+     * y proporciona un nombre visible para mostrarse en la interfaz de usuario.
+     */
     private enum StudentSection {
-        CONTEXT("Contexto"),
-        MODEL_FROM_CODE("Modelo desde C\u00f3digo"),
+        CONTEXT("Contexto"),        
+        MODEL_FROM_CODE("Modelo desde Código"),
         MODEL_VALIDATION("Validar modelos"),
         CRUD("CRUD");
 
         private final String label;
 
+        /**
+         * Construye una sección del menú del estudiante.
+         * 
+         * @param label el nombre visible en el menú
+         */
         StudentSection(String label) {
             this.label = label;
         }
 
-        /** @return nombre visible en el menú y en la ruta de la cabecera */
+        /**
+         * Obtiene el nombre visible en el menú y en la ruta de la cabecera.
+         * 
+         * @return el nombre de la sección para mostrar en la interfaz de usuario
+         */
         private String label() {
             return label;
         }
