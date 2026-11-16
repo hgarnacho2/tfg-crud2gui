@@ -58,12 +58,13 @@ class StatementAnalyzerTest {
     @Test
     void promptDefinesExpectedManagerAndAnalyzerPreservesItInTheResult() throws Exception {
         String prompt;
-        try (var resource = getClass().getResourceAsStream("/prompts/prompt-v6.txt")) {
+        try (var resource = getClass().getResourceAsStream("/prompts/prompt-v7.txt")) {
             assertTrue(resource != null, "Debe existir el prompt de referencia.");
             prompt = new String(resource.readAllBytes(), StandardCharsets.UTF_8);
         }
-        assertTrue(prompt.contains("clasifica cada relación enumerada como COMPOSITION y no añadas AMBIGUO para ella"));
-        assertTrue(prompt.contains("Si el tipo destino es un enumerado, usa siempre ASSOCIATION y no AMBIGUO"));
+        assertTrue(prompt.contains("registra una firma por cada combinación distinta de nombre y tipos de parámetros"));
+        assertTrue(prompt.contains("Si el destino es un enumerado, usa siempre ASSOCIATION y no avises AMBIGUO"));
+        assertTrue(prompt.contains("Un setter indica mutabilidad, no opcionalidad."));
         assertTrue(prompt.contains("{{PROJECT_MODEL_JSON_SCHEMA}}"));
         String example = """
             {"schemaVersion":"1.0","expectedManagerId":"Clase","types":[{"id":"Clase"}]}

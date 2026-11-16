@@ -75,7 +75,8 @@ public final class TeacherDashboardView extends BorderPane {
     }
 
     private void showSection(TeacherSection section) {
-        scroll.setFitToHeight(section == TeacherSection.MODEL_FROM_STATEMENT
+        scroll.setFitToHeight(section == TeacherSection.STATEMENT
+            || section == TeacherSection.MODEL_FROM_STATEMENT
                 || section == TeacherSection.MODEL_FROM_CODE);
         Node page = pages.computeIfAbsent(section, this::createPage);
         if (page instanceof ModelFromStatementSection modelFromStatement) {

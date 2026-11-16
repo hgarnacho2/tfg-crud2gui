@@ -208,8 +208,9 @@ public class ModelFromCodeSection extends Section {
         VBox extractionContent = new VBox(14,
                 UiComponents.panelHeading("Obtener modelo",
                         "Analiza los ficheros Java y genera un modelo JSON compatible con el modelo del enunciado."),
-                UiComponents.outputSettings(outputFilename, outputFolderLabel, changeOutputFolderButton),
-                extractModelButton, openOutputFolderButton, generatedModel, extractionStatus);
+                UiComponents.outputSettings(outputFilename, outputFolderLabel,
+                    changeOutputFolderButton, openOutputFolderButton),
+                extractModelButton, generatedModel, extractionStatus);
         VBox.setVgrow(generatedModel, Priority.ALWAYS);
         VBox.setVgrow(extractionContent, Priority.ALWAYS);
         VBox extractionPanel = UiComponents.surface(extractionContent);

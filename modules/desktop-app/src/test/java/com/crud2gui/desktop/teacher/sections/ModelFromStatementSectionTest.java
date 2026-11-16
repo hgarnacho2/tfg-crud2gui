@@ -513,6 +513,9 @@ class ModelFromStatementSectionTest {
         Path promptFile = directory.resolve("prompt-modelo.txt");
         Path initialOutputDirectory = directory.resolve("output-inicial");
         Path selectedOutputDirectory = directory.resolve("output-seleccionado");
+        Path reviewedOutputDirectory = directory.resolve("output-confirmado");
+        Files.createDirectories(reviewedOutputDirectory);
+        AtomicReference<Path> selectedOutputFolder = new AtomicReference<>(selectedOutputDirectory);
         Files.writeString(textFile, "Texto del enunciado para el modelo.");
         Files.writeString(promptFile, "Instrucciones para inferir clases.");
         FakeProvider provider = new FakeProvider("fake",
@@ -520,7 +523,7 @@ class ModelFromStatementSectionTest {
 
         ModelFromStatementSection section = onFx(() -> new ModelFromStatementSection(
             owner -> textFile.toFile(), owner -> promptFile.toFile(),
-            (owner, current) -> selectedOutputDirectory.toFile(), List.of(provider), initialOutputDirectory));
+            (owner, current) -> selectedOutputFolder.get().toFile(), List.of(provider), initialOutputDirectory));
         onFx(() -> {
             ((Button) section.lookup("#model-statement-select-text")).fire();
             ((Button) section.lookup("#model-statement-select-prompt")).fire();
@@ -544,6 +547,8 @@ class ModelFromStatementSectionTest {
                 ((Button) section.lookup("#model-statement-change-output-folder")).fire();
                 assertEquals(selectedOutputDirectory.toAbsolutePath().normalize().toString(),
                     ((Label) section.lookup("#model-statement-output-folder")).getText());
+                assertEquals("modelo-enunciado_practica_23-filtrado-gemini-3.5-flash-lite.json",
+                    ((Label) section.lookup("#model-statement-output-filename")).getText());
             ((Button) section.lookup("#model-statement-generate-model")).fire();
             return null;
         });
@@ -559,7 +564,7 @@ class ModelFromStatementSectionTest {
             assertEquals("", ((Label) section.lookup("#model-statement-diagram-status")).getText());
             assertEquals("modelo-enunciado_practica_23-filtrado-gemini-3.5-flash-lite.json", outputName.getText());
             Path outputPath = Path.of(outputDirectory.getText()).resolve(outputName.getText());
-            assertTrue(outputPath.startsWith(selectedOutputDirectory.toAbsolutePath().normalize()));
+            assertEquals(selectedOutputDirectory.toAbsolutePath().normalize(), outputPath.getParent());
             assertEquals(outputPath.getFileName().toString(), outputName.getText());
             assertTrue(Files.isRegularFile(outputPath));
             Label fullPath = (Label) section.lookup("#model-statement-generation-output-path");
@@ -572,11 +577,18 @@ class ModelFromStatementSectionTest {
             assertFalse(provider.prompt.get().contains("{{PROJECT_MODEL_JSON_SCHEMA}}"));
             assertEquals("Texto del enunciado para el modelo.", provider.statement.get());
                 ((Button) section.lookup("#statement-step-5")).fire();
+            selectedOutputFolder.set(reviewedOutputDirectory);
+            ((Button) section.lookup("#model-statement-change-review-output-folder")).fire();
+            assertEquals(reviewedOutputDirectory.toAbsolutePath().normalize().toString(),
+                ((Label) section.lookup("#model-statement-review-output-folder")).getText());
+            assertEquals("modelo-enunciado_practica_23-filtrado-gemini-3.5-flash-lite-revisado.json",
+                ((Label) section.lookup("#model-statement-review-output-filename")).getText());
+            assertTrue(section.lookup("#model-statement-open-review-output-folder") instanceof Button);
                 assertEquals(1, ((StackPane) section.lookup("#model-statement-editor-host"))
                         .getChildren().size());
                 ((Button) section.lookup("#model-statement-confirm-model")).fire();
-                Path validated = outputPath.resolveSibling(outputPath.getFileName().toString()
-                    .replace(".json", "-revisado.json"));
+            Path validated = reviewedOutputDirectory.resolve(outputPath.getFileName().toString()
+                .replace(".json", "-revisado.json"));
                 assertTrue(Files.isRegularFile(validated));
                 assertTrue(Files.readString(validated).contains("\"expectedManagerId\" : \"PlataformaCompraVenta\""));
                 assertTrue(((Label) section.lookup("#model-statement-refine-status")).getText()
@@ -757,10 +769,12 @@ class ModelFromStatementSectionTest {
 
         Button generationStep = (Button) section.lookup("#statement-step-4");
         Button refineStep = (Button) section.lookup("#statement-step-5");
+        Button generateModelButton = (Button) section.lookup("#model-statement-generate-model");
         Button localModelButton = (Button) section.lookup("#model-statement-use-local-model");
         Label generationStatus = (Label) section.lookup("#model-statement-generation-status");
+        assertTrue(generateModelButton.getParent() == localModelButton.getParent());
         assertEquals("Obtener modelo mediante LLM",
-            ((Button) section.lookup("#model-statement-generate-model")).getText());
+            generateModelButton.getText());
         assertEquals("Trabajar con modelo local", localModelButton.getText());
         assertFalse(generationStep.isDisabled());
         generationStep.fire();

@@ -86,14 +86,22 @@ public final class ModelFromStatementSection extends Section {
     private final BiFunction<Window, Path, File> chooseOutputFolder;
     private final Function<Window, File> chooseLocalModelFile;
     private Path outputFolder;
+        private Path reviewOutputFolder;
     private final Label outputFilename = UiComponents.labelWithGraphic("Modelo inferido del enunciado",
             List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
     private final Label outputFolderLabel = UiComponents.label("",
             List.of("statement-file-path", "statement-output-folder"));
+        private final Label reviewOutputFilename = UiComponents.labelWithGraphic("Modelo revisado",
+            List.of("statement-file-name"), UiComponents.label("JSON", List.of("statement-file-badge")), 12);
+        private final Label reviewOutputFolderLabel = UiComponents.label("", List.of("statement-file-path"));
     private final Button changeOutputFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
             List.of("statement-change-folder", "secondary-button"), this::changeOutputFolder);
     private final Button openOutputFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
             List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
+        private final Button changeReviewOutputFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
+            List.of("statement-change-folder", "secondary-button"), this::changeReviewOutputFolder);
+        private final Button openReviewOutputFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
+            List.of("statement-open-folder", "secondary-button"), this::openReviewOutputFolder);
     private final Label requestProvider = requestValue("model-statement-request-provider");
     private final Label requestModel = requestValue("model-statement-request-model");
     private final Label requestPrompt = requestValue("model-statement-request-prompt");
@@ -186,6 +194,7 @@ public final class ModelFromStatementSection extends Section {
         this.workflow = workflow;
         this.outputFolder = Objects.requireNonNull(outputDirectory, "outputDirectory")
                 .toAbsolutePath().normalize();
+        this.reviewOutputFolder = this.outputFolder;
         Button selectTextButton = UiComponents.actionButton("Seleccionar texto filtrado",
                 List.of("statement-select"), this::selectTextFile);
         selectTextButton.setId("model-statement-select-text");
@@ -243,10 +252,15 @@ public final class ModelFromStatementSection extends Section {
         useLocalModelButton.setId("model-statement-use-local-model");
         changeOutputFolderButton.setId("model-statement-change-output-folder");
         openOutputFolderButton.setId("model-statement-open-output-folder");
+        changeReviewOutputFolderButton.setId("model-statement-change-review-output-folder");
+        openReviewOutputFolderButton.setId("model-statement-open-review-output-folder");
         outputFilename.setId("model-statement-output-filename");
         outputFolderLabel.setId("model-statement-output-folder");
+        reviewOutputFilename.setId("model-statement-review-output-filename");
+        reviewOutputFolderLabel.setId("model-statement-review-output-folder");
         generationOutputPath.setId("model-statement-generation-output-path");
         updateOutputFolderLabel();
+        updateReviewOutputSettings();
         generatedModel.setId("model-statement-generated-json");
         generatedModel.setVisible(false);
         generatedModel.setManaged(false);
@@ -288,13 +302,14 @@ public final class ModelFromStatementSection extends Section {
                 requestRow("Prompt", requestPrompt),
                 requestRow("Enunciado", requestStatement));
         requestSummary.getStyleClass().add("model-request-summary");
+        HBox generationActions = new HBox(8, generateModelButton, useLocalModelButton);
         VBox generationContent = new VBox(14,
                 UiComponents.panelHeading("Obtener modelo",
                         "Envía el prompt y el enunciado al cliente seleccionado."),
                 requestSummary, UiComponents.outputSettings(outputFilename, outputFolderLabel,
-                        changeOutputFolderButton),
-                generateModelButton, useLocalModelButton, generationOutputPath,
-                openOutputFolderButton, generatedModel, generationStatus);
+                    changeOutputFolderButton, openOutputFolderButton),
+            generationActions, generationOutputPath,
+                generatedModel, generationStatus);
         VBox.setVgrow(generatedModel, Priority.ALWAYS);
         VBox.setVgrow(generationContent, Priority.ALWAYS);
         VBox generationPanel = UiComponents.surface(generationContent);
@@ -304,6 +319,8 @@ public final class ModelFromStatementSection extends Section {
         VBox refineContent = new VBox(14,
                 UiComponents.panelHeading("Revisar modelo",
                         "Revisa y edita el modelo obtenido. Al confirmarlo se guardará una copia validada."),
+            UiComponents.outputSettings(reviewOutputFilename, reviewOutputFolderLabel,
+                changeReviewOutputFolderButton, openReviewOutputFolderButton),
                 editorHost, confirmModelButton, refineStatus);
         VBox.setVgrow(editorHost, Priority.ALWAYS);
         VBox.setVgrow(refineContent, Priority.ALWAYS);
@@ -763,6 +780,7 @@ public final class ModelFromStatementSection extends Section {
         showStatus(diagramStatus, "", false);
         outputFilename.setText("Modelo inferido del enunciado");
         updateOutputFolderLabel();
+        updateReviewOutputSettings();
         generationOutputPath.setText("");
         showStatus(generationStatus, "", false);
     }
@@ -795,7 +813,7 @@ public final class ModelFromStatementSection extends Section {
         showStatus(generationStatus, "Analizando enunciado con " + provider.id()
                 + " (" + model.id() + ")...", false);
         ModelClient client = selectedClient;
-        Path resultPath = outputPath(outputFolder, client.provider(), model.id());
+        Path resultPath = outputPath(outputFolder, model.id());
         runTask(() -> {
             AnalysisResult result = new StatementAnalyzer(client)
                     .analyze(model.id(), requestPrompt, statement, GenerationOptions.defaults());
@@ -932,6 +950,8 @@ public final class ModelFromStatementSection extends Section {
         }
         modelEditor.setSaveVisible(false);
         generatedModelPath = modelPath;
+        reviewOutputFolder = modelPath.toAbsolutePath().normalize().getParent();
+        updateReviewOutputSettings();
         editorHost.getChildren().setAll(modelEditor.getView());
         showStatus(refineStatus, "Edita el modelo si es necesario y pulsa «Confirmar modelo».", false);
         steps.get(4).setDisable(false);
@@ -941,11 +961,7 @@ public final class ModelFromStatementSection extends Section {
         if (modelEditor == null || generatedModelPath == null) {
             return;
         }
-        Path previouslyConfirmed = workflow == null ? null : workflow.getSuggestedInferredModel();
-        Path preferredPath = generatedModelPath.equals(previouslyConfirmed)
-                ? generatedModelPath
-                : validatedPath(generatedModelPath);
-        Path confirmedPath = uniqueOutputPath(preferredPath);
+        Path confirmedPath = reviewOutputPath();
         try {
             String json = modelEditor.currentJson();
             ProjectModel projectModel = ModelIO.fromJson(json);
@@ -962,6 +978,9 @@ public final class ModelFromStatementSection extends Section {
             steps.get(5).setDisable(true);
             return;
         }
+        reviewOutputFolder = confirmedPath.getParent();
+        reviewOutputFilename.setText(confirmedPath.getFileName().toString());
+        reviewOutputFolderLabel.setText(reviewOutputFolder.toString());
         showStatus(diagramStatus, "Diagrama de clases generado correctamente. Flujo completado.", false);
         showStatus(refineStatus, "Modelo confirmado y guardado en: " + confirmedPath
                 + "\nPuedes continuar con el paso 6: Diagrama de clases.", false);
@@ -985,7 +1004,7 @@ public final class ModelFromStatementSection extends Section {
         return count == null ? "N/D" : count.toString();
     }
 
-    private Path outputPath(Path folder, String provider, String model) {
+    private Path outputPath(Path folder, String model) {
         String sourceName = selectedStatementPath.getFileName().toString();
         int sourceExtension = sourceName.lastIndexOf('.');
         String sourceBase = sourceExtension > 0 ? sourceName.substring(0, sourceExtension) : sourceName;
@@ -994,10 +1013,7 @@ public final class ModelFromStatementSection extends Section {
         }
         String safeModel = model.replaceAll("[^A-Za-z0-9._-]", "_");
         String filename = "modelo-" + sourceBase + "-" + safeModel + ".json";
-        String modelDirectory = AnalysisResult.fileNameFor(provider, model);
-        modelDirectory = modelDirectory.substring(0, modelDirectory.lastIndexOf('.'));
-        Path output = folder.resolve(modelDirectory).resolve(filename);
-        return uniqueOutputPath(output);
+        return uniqueOutputPath(folder.resolve(filename));
     }
 
     private void changeOutputFolder() {
@@ -1006,6 +1022,17 @@ public final class ModelFromStatementSection extends Section {
             outputFolder = folder.toPath().toAbsolutePath().normalize();
             updateOutputFolderLabel();
             showStatus(generationStatus, "Carpeta de salida actualizada. Los resultados anteriores no se han movido.",
+                    false);
+        }
+    }
+
+    private void changeReviewOutputFolder() {
+        File folder = chooseOutputFolder.apply(getScene() == null ? null : getScene().getWindow(), reviewOutputFolder);
+        if (folder != null) {
+            reviewOutputFolder = folder.toPath().toAbsolutePath().normalize();
+            updateReviewOutputSettings();
+            showStatus(refineStatus,
+                    "La copia confirmada se guardará en la carpeta seleccionada. Los archivos existentes no se mueven.",
                     false);
         }
     }
@@ -1019,8 +1046,39 @@ public final class ModelFromStatementSection extends Section {
                 });
     }
 
+    private void openReviewOutputFolder() {
+        Path folder = reviewOutputFolder;
+        openOutputFolder(folder, () -> { },
+                failure -> showStatus(refineStatus, "No se pudo abrir la carpeta de salida: " + folder, true),
+                () -> { });
+    }
+
+    private Path reviewOutputPath() {
+        Path previouslyConfirmed = workflow == null ? null : workflow.getSuggestedInferredModel();
+        Path preferredPath = generatedModelPath.equals(previouslyConfirmed)
+                ? generatedModelPath
+                : validatedPath(generatedModelPath);
+        return uniqueOutputPath(reviewOutputFolder.resolve(preferredPath.getFileName()));
+    }
+
+    private void updateReviewOutputSettings() {
+        reviewOutputFolderLabel.setText(reviewOutputFolder.toString());
+        if (generatedModelPath == null) {
+            reviewOutputFilename.setText("Modelo revisado");
+            return;
+        }
+        reviewOutputFilename.setText(reviewOutputPath().getFileName().toString());
+    }
+
     private void updateOutputFolderLabel() {
         outputFolderLabel.setText(outputFolder.toString());
+        ModelInfo model = modelSelector.getValue();
+        if (selectedStatementPath == null || selectedClient == null || model == null) {
+            outputFilename.setText("Modelo inferido del enunciado");
+            return;
+        }
+        outputFilename.setText(outputPath(outputFolder, model.id())
+                .getFileName().toString());
     }
 
     private record GeneratedModel(AnalysisResult analysis, ProjectModel projectModel,

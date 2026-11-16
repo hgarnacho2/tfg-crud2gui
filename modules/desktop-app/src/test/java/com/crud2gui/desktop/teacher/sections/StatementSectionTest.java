@@ -300,13 +300,14 @@ class StatementSectionTest {
             assertNotSame(extractionStatus.getParent(), filterStatus.getParent());
             assertNotSame(controls.section(), selectionStatus.getParent());
             var openButtons = controls.section().lookupAll(".statement-open-folder");
+                var changeButtons = controls.section().lookupAll(".statement-change-folder");
             assertEquals(2, openButtons.size());
+                assertEquals(2, changeButtons.size());
             for (var button : openButtons) {
-                assertTrue(button.getParent() == extractionStatus.getParent()
-                        || button.getParent() == filterStatus.getParent());
-                var siblings = button.getParent().getChildrenUnmodifiable();
-                assertTrue(siblings.indexOf(button) < siblings.indexOf(
-                        button.getParent() == extractionStatus.getParent() ? extractionStatus : filterStatus));
+                var actions = button.getParent();
+                assertTrue(actions.getStyleClass().contains("statement-output-actions"));
+                assertEquals(1, actions.getChildrenUnmodifiable().stream()
+                    .filter(node -> node.getStyleClass().contains("statement-change-folder")).count());
             }
             for (Label label : List.of(selectionStatus, extractionStatus, filterStatus)) {
                 var siblings = label.getParent().getChildrenUnmodifiable();

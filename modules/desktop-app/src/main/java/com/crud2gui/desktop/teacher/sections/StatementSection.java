@@ -14,6 +14,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -163,21 +164,28 @@ public final class StatementSection extends Section {
 
 
 
-        VBox pdfPanel = UiComponents.surface(new VBox(14,
+        VBox pdfContent = new VBox(14,
                 UiComponents.panelHeading("Seleccionar PDF",
                         "En el primer paso, se selecciona el documento PDF que contiene el enunciado de la práctica.",
                         17, 8),
-                selectPDFButton, fileCard, pdfViewer, statuses.get(0)));
-        VBox extractionPanel = UiComponents.surface(new VBox(14,
+            selectPDFButton, fileCard, pdfViewer, statuses.get(0));
+        VBox.setVgrow(pdfContent, Priority.ALWAYS);
+        VBox.setVgrow(pdfViewer, Priority.ALWAYS);
+        VBox pdfPanel = UiComponents.surface(pdfContent);
+        VBox extractionContent = new VBox(14,
                 UiComponents.panelHeading("Extraer texto", "Una vez seleccionado el PDF, se extrae el contenido como texto plano."),
                 UiComponents.panelHeading("Salida", "Se generará un fichero de texto plano con el contenido extraído en la carpeta de salida seleccionada."),
-                UiComponents.outputSettings(outputFilename, outputFolderLabel, changeFolderButton),
+                UiComponents.outputSettings(outputFilename, outputFolderLabel, changeFolderButton, openFolderButton),
                 UiComponents.panelHeading("Iniciar el proceso", "El resultado se mostrará en el visor y se generará un archivo físico en la carpeta de salida."),
-                extractButton, extractedText, openFolderButton, statuses.get(1)));
-        VBox filterPanel = UiComponents.surface(new VBox(14,
+            extractButton, extractedText, statuses.get(1));
+        VBox.setVgrow(extractionContent, Priority.ALWAYS);
+        VBox.setVgrow(extractedText, Priority.ALWAYS);
+        VBox extractionPanel = UiComponents.surface(extractionContent);
+        VBox filterContent = new VBox(14,
                 UiComponents.panelHeading("Filtrar texto", "Antes de trabajar con un LLM que analice el contenido del enunciado, se aplica un filtro para optimizar el texto obtenido."),
                 UiComponents.panelHeading("Salida", "Se generará un fichero de texto plano con el contenido filtrado en la carpeta de salida."),
-                UiComponents.outputSettings(filterOutputFilename, filterOutputFolderLabel, filterChangeFolderButton),
+                UiComponents.outputSettings(filterOutputFilename, filterOutputFolderLabel,
+                    filterChangeFolderButton, filterOpenFolderButton),
                 UiComponents.panelHeading("Reglas de filtrado",
                         "Las reglas de filtrado aplicadas son las definidas en el archivo de configuración statement-filter-rules.json."),
                 UiComponents.fileContentPane("statement-filter-config", "Ver statement-filter-rules.json",
@@ -187,7 +195,10 @@ public final class StatementSection extends Section {
                 UiComponents.mutedText("El archivo de reglas se lee en cada filtrado. "
                         + "Si no se reconoce la estructura definida, se conserva el texto original."),
                 UiComponents.panelHeading("Iniciar el proceso", "Tomando como referencia el fichero generado en el paso anterior, se aplicará el filtro al texto extraído. El resultado se mostrará en el visor y se generará un archivo físico en la carpeta de salida."),
-                filterButton, filteredText, filterOpenFolderButton, statuses.get(2)));
+                filterButton, filteredText, statuses.get(2));
+            VBox.setVgrow(filterContent, Priority.ALWAYS);
+            VBox.setVgrow(filteredText, Priority.ALWAYS);
+            VBox filterPanel = UiComponents.surface(filterContent);
         panels = List.of(pdfPanel, extractionPanel, filterPanel);
 
 
@@ -202,7 +213,9 @@ public final class StatementSection extends Section {
         flow.getStyleClass().add("statement-flow");
         flow.setMaxHeight(Region.USE_PREF_SIZE);
         flow.setMaxWidth(Region.USE_PREF_SIZE);
+        panelHost.setId("statement-panel-host");
         panelHost.getChildren().addAll(panels);
+        VBox.setVgrow(panelHost, Priority.ALWAYS);
         getChildren().addAll(flow, panelHost, progress);
         showStep(0);
         updateState();

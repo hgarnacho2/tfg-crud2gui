@@ -3,6 +3,11 @@
     -fx-padding: 10px 12px;
 }
 
+#statement-filter-config > .title > .text {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
 .file-content > .content {
     -fx-padding: 12px;
     -fx-background-color: white;
