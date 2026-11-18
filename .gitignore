@@ -1,5 +1,8 @@
 # Credenciales locales
-.env
 .env.private
-/statement/.env.private
 /dist/
+
+/data/*
+!/data/1-statement/
+!/data/4-prompt/
+!/data/7-java_code/
