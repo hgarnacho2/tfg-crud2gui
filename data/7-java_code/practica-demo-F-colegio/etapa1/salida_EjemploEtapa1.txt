@@ -1,0 +1,8 @@
+Identificador de alumno: alumno1
+     Nombre: Sofía Navarro Lara
+     URL: https://www.miColegio.com/alumno1
+     FICHA:
+          Fecha de nacimiento: Tue Feb 12 00:00:00 CET 2008
+          Aficiones: Dibujo y baloncesto
+          Asignatura favorita: Matemáticas
+          Objetivos académicos: Estudiar Medicina

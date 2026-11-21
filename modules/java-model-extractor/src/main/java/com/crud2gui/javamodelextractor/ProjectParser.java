@@ -24,12 +24,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Analiza una carpeta con codigo fuente Java y construye un {@link ProjectModel} con los tipos,
- * sus miembros, la herencia, el javadoc, las relaciones UML y la clase gestora detectada.
+ * Coordina el analisis de una carpeta con codigo fuente Java y devuelve un
+ * {@link ProjectModel} con sus tipos, miembros, herencia, Javadoc, relaciones UML y clase gestora.
  *
- * <p>El analisis tiene dos pasadas: primero se parsean todos los ficheros y se registran los tipos
- * declarados; despues se extrae cada tipo resolviendo sus nombres contra ese registro. Los ficheros
- * con errores de sintaxis generan un aviso en {@link SourceInfo#warnings()} y no interrumpen el proceso.</p>
+ * <p>Localiza los fuentes mediante {@link FolderScanner} y utiliza JavaParser para obtener el arbol
+ * de sintaxis abstracta (AST) de cada fichero. Realiza dos pasadas: primero registra los tipos en
+ * {@link TypeIndex}; despues prepara el contexto de cada fichero y delega la extraccion de tipos
+ * y miembros en {@link FileTypeExtractor}, con ayuda de {@link TypeResolver}. Asi puede resolver
+ * referencias entre clases sin depender del orden de lectura de los archivos.</p>
+ *
+ * <p>Finalmente invoca a {@link RelationAnalyzer} y {@link ManagerDetector} y reune sus resultados,
+ * junto con la procedencia y los avisos, en el modelo. No compila ni ejecuta la solucion, ni
+ * serializa, valida contra el esquema o guarda el JSON: esas operaciones corresponden a otras fases.</p>
+ *
+ * <p>Los problemas de lectura o sintaxis de cada fichero se registran en {@link SourceInfo#warnings()}
+ * sin interrumpir el analisis de los demas ficheros.</p>
  */
 public final class ProjectParser {
 
@@ -37,6 +46,9 @@ public final class ProjectParser {
 
     /** Crea un analizador con la configuracion por defecto de {@link FolderScanner}. */
     public ProjectParser() {
+        // Llama al constructor principal con un escaner de carpetas por defecto.
+        // FolderScanner se encarga de buscar recursivamente los ficheros Java en la carpeta raíz.
+        // El root del FolderScanner se establecer al buscar los ficheros Java.
         this(new FolderScanner());
     }
 
@@ -68,55 +80,122 @@ public final class ProjectParser {
         return parse(root, managerOverride, ManagerDetectorConfig.loadDefault());
     }
 
+    /**
+     * Analiza un proyecto Java completo mediante dos pasadas sobre los ficheros fuente.
+     *
+     * <p><b>Proceso de análisis:</b></p>
+     * <ol>
+     *   <li><b>Pasada 1 - Registro de tipos:</b> Localiza todos los ficheros {@code .java} en la
+     *       carpeta raíz, los parsea con JavaParser (soporte Java 21) y registra los tipos de cada
+     *       fichero en un índice. Los errores de sintaxis se capturan como avisos sin interrumpir
+     *       el análisis de otros ficheros.</li>
+     *   <li><b>Pasada 2 - Extracción de tipos:</b> Para cada fichero, construye el contexto de
+     *       resolución (paquete e imports), y delega en {@link FileTypeExtractor} la extracción
+     *       detallada de tipos, miembros, herencia y anotaciones. El {@link TypeResolver} usa el
+     *       índice para resolver referencias cruzadas entre clases.</li>
+     *   <li><b>Análisis de relaciones:</b> Invoca a {@link RelationAnalyzer} para detectar
+     *       herencia, asociaciones y composiciones en el modelo de tipos extraído.</li>
+     *   <li><b>Detección de clase gestora:</b> Usa {@link ManagerDetector} con la configuración
+     *       proporcionada para identificar la clase coordinadora del proyecto. Si
+     *       {@code managerOverride} es no nulo, fuerza esa clase como gestora.</li>
+     * </ol>
+     *
+     * <p><b>Manejo de errores:</b> Los problemas de lectura o sintaxis se registran como avisos
+     * en la información de procedencia del modelo, permitiendo que el análisis continúe incluso
+     * si algunos ficheros no se pueden procesar correctamente.</p>
+     *
+     * @param root carpeta raíz del proyecto; se normalizará a ruta absoluta. Puede contener
+     *             subcarpetas y cualquier estructura de paquetes
+     * @param managerOverride identificador totalmente cualificado de la clase gestora
+     *                        (ej: {@code "com.example.MyManager"}), o {@code null} para permitir
+     *                        que el detector identifique automáticamente la clase coordinadora
+     * @param config configuración para el algoritmo de detección automática de clase gestora
+     *               (p.ej., patrones de nombre, anotaciones, heurísticas)
+     *
+     * @return {@link ProjectModel} poblado con tipos, miembros, relaciones, análisis y procedencia
+     *
+     * @throws IOException si {@code root} no es una carpeta accesible o no se puede recorrer
+     *
+     * @see TypeIndex
+     * @see FileTypeExtractor
+     * @see TypeResolver
+     * @see RelationAnalyzer
+     * @see ManagerDetector
+     */
     ProjectModel parse(Path root, String managerOverride, ManagerDetectorConfig config) throws IOException {
+        // Normalizar la ruta: convertir a absoluta y resolver enlaces/referencias relativas
         root = root.toAbsolutePath().normalize();
+        
+        // Localizar todos los ficheros .java bajo la carpeta raíz
         List<Path> files = scanner.findJavaFiles(root);
+        
+        // Almacenar problemas encontrados durante el análisis (errores de sintaxis, IO, etc.)
         List<String> warnings = new ArrayList<>();
 
+        // Configurar el parseador de Java con soporte a Java 21 y codificación UTF-8
         JavaParser javaParser = new JavaParser(new ParserConfiguration()
                 .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_21)
                 .setCharacterEncoding(StandardCharsets.UTF_8));
 
-        // Pasada 1: parsear y registrar tipos
+        // ===== PASADA 1: Parsear ficheros y registrar tipos =====
         List<Parsed> parsed = new ArrayList<>();
         TypeIndex index = new TypeIndex();
         for (Path file : files) {
             String rel = root.relativize(file).toString().replace('\\', '/');
             try {
                 ParseResult<CompilationUnit> result = javaParser.parse(file);
+                
+                // Si el parseado tuvo problemas (ej: errores de sintaxis), registrarlos
                 if (!result.isSuccessful()) {
                     String detail = result.getProblems().isEmpty() ? "error de sintaxis"
                             : result.getProblems().get(0).getMessage();
                     warnings.add(rel + ": " + detail);
                 }
+                
+                // Procesar el resultado si existe (aunque haya habido problemas menores)
                 if (result.getResult().isPresent()) {
                     CompilationUnit cu = result.getResult().get();
                     parsed.add(new Parsed(rel, cu));
+                    
+                    // Registrar todos los tipos (clases, interfaces, enums) de este fichero en el índice
                     String pkg = packageOf(cu);
                     for (TypeDeclaration<?> td : cu.getTypes()) {
                         register(index, pkg, null, td);
                     }
                 }
             } catch (IOException | ParseProblemException e) {
+                // Capturar excepciones sin interrumpir el análisis de otros ficheros
                 warnings.add(rel + ": " + e.getMessage());
             }
         }
 
-        // Pasada 2: extraer tipos
+        // ===== PASADA 2: Extraer información detallada de tipos y miembros =====
         TypeResolver resolver = new TypeResolver(index);
         List<TypeInfo> types = new ArrayList<>();
         for (Parsed p : parsed) {
+            // Construir el contexto de resolución (paquete + imports) para este fichero
             ResolutionContext base = contextOf(p.cu());
+            
+            // Extractor específico por fichero
             FileTypeExtractor extractor = new FileTypeExtractor(resolver, p.relativeFile());
+            
+            // Extraer información detallada de cada tipo raíz del fichero
             for (TypeDeclaration<?> td : p.cu().getTypes()) {
                 extractor.extract(td, null, base, types);
             }
         }
 
+        // ===== Análisis de relaciones UML =====
         List<CompilationUnit> units = parsed.stream().map(Parsed::cu).toList();
         List<Relation> relations = new RelationAnalyzer(resolver).analyze(types, units);
+        
+        // ===== Detección de clase gestora =====
         Analysis analysis = new ManagerDetector(resolver, config).analyze(types, relations, units, managerOverride);
+        
+        // ===== Compilar metadatos de procedencia =====
         SourceInfo source = new SourceInfo(root.toString(), Instant.now().toString(), files.size(), warnings);
+        
+        // Retornar el modelo completo con tipos, relaciones, análisis y procedencia
         return new ProjectModel(ProjectModel.CURRENT_SCHEMA, source, types, relations, analysis, null);
     }
 

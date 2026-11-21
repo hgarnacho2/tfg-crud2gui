@@ -1,0 +1,8 @@
+Identificador de socio: socio1
+     Nombre: Laura Prieto Gil
+     URL: https://www.miGym.com/socio1
+     FICHA:
+          Fecha de nacimiento: Sun Jan 24 00:00:00 CET 1988
+          Objetivo: Ganar masa muscular
+          Lesiones: Ninguna
+          Nivel de actividad: Intermedio

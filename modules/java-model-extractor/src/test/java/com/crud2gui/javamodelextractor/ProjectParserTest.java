@@ -59,6 +59,12 @@ class ProjectParserTest {
         assertFalse(ids.contains("com.tienda.Ignorado"));
     }
 
+    /** El modelo producido al analizar codigo Java se puede serializar conforme al esquema comun. */
+    @Test
+    void modeloExtraidoCumpleElEsquemaJson() {
+        assertDoesNotThrow(() -> ModelIO.toJson(tienda));
+    }
+
     /** Clase abstracta: modificadores, javadoc de tipo y de constructor, y metodo abstracto. */
     @Test
     void claseAbstractaConJavadoc() {
@@ -271,16 +277,17 @@ class ProjectParserTest {
     }
 
     @Test
-    void cargaPesosYTerminosDesdeConfiguracionExterna() throws Exception {
+    void cargaPesosYUmbralesDesdeConfiguracionExterna() throws Exception {
         Path configFile = Files.createTempFile("manager-analysis", ".json");
-        Files.writeString(configFile, "{\"weights\":{\"reachability\":2.5},\"managerNameTerms\":[]}");
+        Files.writeString(configFile,
+                "{\"weights\":{\"reachability\":2.5},\"confidence\":{\"mediumGap\":2.0}}");
 
         ManagerDetectorConfig config = ManagerDetectorConfig.load(configFile);
 
         assertEquals(2.5, config.reachabilityWeight);
-        assertTrue(config.managerNameTerms.isEmpty());
         assertEquals(7.0, config.rootWeight);
-        assertFalse(config.managerMethodTerms.isEmpty());
+        assertEquals(2.0, config.mediumConfidenceGap);
+        assertEquals(4.0, config.highConfidenceGap);
     }
 
     private static void assertManager(String fixture, String expectedId) throws Exception {

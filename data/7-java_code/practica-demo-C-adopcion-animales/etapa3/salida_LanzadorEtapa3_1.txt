@@ -1,0 +1,109 @@
+-----------------------------------
+Creamos la plataforma de adopciones
+-----------------------------------
+Creada plataforma de adopciones Huellas
+----------------
+Creamos refugios
+----------------
+Creado refugio refugio.huellas@correo.es
+Creado refugio amigospeludos@mimail.com
+-----------------
+Añadimos refugios
+-----------------
+El refugio con email refugio.huellas@correo.es ha sido añadido
+El refugio con email amigospeludos@mimail.com ha sido añadido
+----------------
+Creamos animales
+----------------
+Creado animal con id 1
+Creado animal con id 2
+Creado animal con id 3
+Creado animal con id 4
+------------------------------------
+Añadimos los animales a los refugios
+------------------------------------
+El estado del animal con id 1 ha sido modificado a estado DISPONIBLE
+El animal con id 1 se ha añadido al refugio refugio.huellas@correo.es
+El estado del animal con id 2 ha sido modificado a estado DISPONIBLE
+El animal con id 2 se ha añadido al refugio amigospeludos@mimail.com
+El estado del animal con id 3 ha sido modificado a estado DISPONIBLE
+El animal con id 3 se ha añadido al refugio amigospeludos@mimail.com
+El estado del animal con id 4 ha sido modificado a estado DISPONIBLE
+El animal con id 4 se ha añadido al refugio refugio.huellas@correo.es
+---------------------------------
+Eliminamos un animal a un refugio
+---------------------------------
+El animal con id 1 se ha eliminado de la lista del refugio refugio.huellas@correo.es
+ID: 4
+Titulo: Toby, cachorro de labrador
+Tasa de adopcion: 75.0
+Descripcion: Cachorro de cuatro meses. Vacunado, sin esterilizar.
+Estado: DISPONIBLE
+Raza: Labrador
+Peso: 9.5 kg
+Adiestrado: No
+-----------------------------
+Imprimimos todos los animales
+-----------------------------
+ID: 4
+Titulo: Toby, cachorro de labrador
+Tasa de adopcion: 75.0
+Descripcion: Cachorro de cuatro meses. Vacunado, sin esterilizar.
+Estado: DISPONIBLE
+Raza: Labrador
+Peso: 9.5 kg
+Adiestrado: No
+ID: 2
+Titulo: Simba, gato atigrado
+Tasa de adopcion: 40.0
+Descripcion: Gato joven y juguetón. Esterilizado y vacunado.
+Estado: DISPONIBLE
+Edad: 14 meses
+Esterilizado: Si
+ID: 3
+Titulo: Nala, gata siamesa
+Tasa de adopcion: 45.0
+Descripcion: Gata tranquila, ideal para piso. Vacunada y con chip.
+Estado: DISPONIBLE
+Edad: 30 meses
+Esterilizado: No
+El estado del animal con id 2 ha sido modificado a estado ADOPTADO
+-----------------------------------
+Imprimimos los animales disponibles
+-----------------------------------
+ID: 4
+Titulo: Toby, cachorro de labrador
+Tasa de adopcion: 75.0
+Descripcion: Cachorro de cuatro meses. Vacunado, sin esterilizar.
+Estado: DISPONIBLE
+Raza: Labrador
+Peso: 9.5 kg
+Adiestrado: No
+ID: 3
+Titulo: Nala, gata siamesa
+Tasa de adopcion: 45.0
+Descripcion: Gata tranquila, ideal para piso. Vacunada y con chip.
+Estado: DISPONIBLE
+Edad: 30 meses
+Esterilizado: No
+---------------------------------
+Imprimimos los animales adoptados
+---------------------------------
+ID: 2
+Titulo: Simba, gato atigrado
+Tasa de adopcion: 40.0
+Descripcion: Gato joven y juguetón. Esterilizado y vacunado.
+Estado: ADOPTADO
+Edad: 14 meses
+Esterilizado: Si
+-------------------------------------------------
+Imprimimos los animales disponibles de un refugio
+-------------------------------------------------
+ID: 4
+Titulo: Toby, cachorro de labrador
+Tasa de adopcion: 75.0
+Descripcion: Cachorro de cuatro meses. Vacunado, sin esterilizar.
+Estado: DISPONIBLE
+Raza: Labrador
+Peso: 9.5 kg
+Adiestrado: No

@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Configuracion inmutable del detector de clase gestora.
@@ -30,23 +28,17 @@ final class ManagerDetectorConfig {
     final double collectionUsageWeight;
     /** Peso por instanciarse desde un punto de entrada o una prueba. */
     final double entryPointWeight;
-    /** Peso menor para coincidencias lexicas, usadas solo como desempate. */
-    final double lexicalWeight;
     /** Diferencia minima de puntuacion para asignar confianza alta. */
     final double highConfidenceGap;
     /** Diferencia minima de puntuacion para asignar confianza media. */
     final double mediumConfidenceGap;
     /** Puntuacion minima que debe tener una candidata para alcanzar confianza alta. */
     final double highConfidenceMinimumScore;
-    /** Terminos que se buscan en nombres de clases como indicio lexico. */
-    final List<String> managerNameTerms;
-    /** Terminos que se buscan en nombres de metodos como indicio lexico. */
-    final List<String> managerMethodTerms;
 
     /**
      * Construye la configuracion a partir de un nodo JSON ya completado con valores base.
      *
-     * @param root objeto JSON con secciones {@code weights}, {@code confidence} y terminos lexicos
+     * @param root objeto JSON con secciones {@code weights} y {@code confidence}
      */
     private ManagerDetectorConfig(JsonNode root) {
         JsonNode weights = root.path("weights");
@@ -56,14 +48,10 @@ final class ManagerDetectorConfig {
         collectionWeight = number(weights, "collections");
         collectionUsageWeight = number(weights, "collectionUsage");
         entryPointWeight = number(weights, "entryPoint");
-        lexicalWeight = number(weights, "lexical");
         highConfidenceGap = number(confidence, "highGap");
         mediumConfidenceGap = number(confidence, "mediumGap");
         highConfidenceMinimumScore = number(confidence, "highMinimumScore");
-        managerNameTerms = strings(root.path("managerNameTerms"));
-        managerMethodTerms = strings(root.path("managerMethodTerms"));
     }
-
     /**
      * Carga la configuracion predeterminada incluida en los recursos del parser.
      *
@@ -134,21 +122,4 @@ final class ManagerDetectorConfig {
         return node.path(field).isNumber() ? node.path(field).doubleValue() : 0.0;
     }
 
-    /**
-     * Extrae una lista JSON de cadenas, descarta valores vacios y normaliza a minusculas.
-     *
-     * @param node nodo JSON que se espera que sea un array
-     * @return lista inmutable de terminos; vacia si el nodo no es un array
-     */
-    private static List<String> strings(JsonNode node) {
-        List<String> values = new ArrayList<>();
-        if (node.isArray()) {
-            node.forEach(value -> {
-                if (value.isTextual() && !value.asText().isBlank()) {
-                    values.add(value.asText().toLowerCase(java.util.Locale.ROOT));
-                }
-            });
-        }
-        return List.copyOf(values);
-    }
 }

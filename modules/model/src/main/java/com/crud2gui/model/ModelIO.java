@@ -1,49 +1,52 @@
 package com.crud2gui.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
  * Lectura y escritura del metamodelo en JSON.
  *
- * <p>El JSON se escribe con sangria y sin los campos nulos. Al leer se ignoran las propiedades
- * desconocidas, de modo que un fichero generado por una version menor posterior sigue siendo legible.</p>
+ * <p>El JSON se escribe con sangria e incluye los campos nulos requeridos por el esquema. Antes de
+ * devolverlo o escribirlo, se valida con {@link ProjectModelSchema}. Al leer se ignoran las
+ * propiedades desconocidas, de modo que un fichero generado por una version menor posterior sigue
+ * siendo legible.</p>
  */
 public final class ModelIO {
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .enable(SerializationFeature.INDENT_OUTPUT)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private ModelIO() { }
 
     /**
-     * Escribe el modelo en un fichero JSON, sobrescribiendolo si existe.
+     * Valida y escribe el modelo en un fichero JSON, sobrescribiendolo si existe.
      *
      * @param model modelo a guardar
      * @param file  fichero de destino
-     * @throws IOException si no se puede escribir el fichero
+     * @throws IOException si el JSON no cumple el esquema o no se puede escribir el fichero
      */
     public static void write(ProjectModel model, Path file) throws IOException {
-        MAPPER.writeValue(file.toFile(), model);
+        Files.writeString(file, toJson(model), StandardCharsets.UTF_8);
     }
 
     /**
-     * Serializa el modelo a una cadena JSON.
+     * Serializa el modelo a una cadena JSON y comprueba que cumple el esquema.
      *
      * @param model modelo a serializar
      * @return el JSON con sangria
-     * @throws IOException si el modelo no se puede serializar
+     * @throws IOException si el modelo no se puede serializar o el JSON no cumple el esquema
      */
     public static String toJson(ProjectModel model) throws IOException {
-        return MAPPER.writeValueAsString(model);
+        String json = MAPPER.writeValueAsString(model);
+        ProjectModelSchema.validate(json);
+        return json;
     }
 
     /**

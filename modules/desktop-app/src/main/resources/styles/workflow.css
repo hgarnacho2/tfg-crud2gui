@@ -87,7 +87,28 @@
 .model-request-field-value {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: #263c35;
+    -fx-text-fill: #135c48;
+    -fx-background-color: #f1f8f4;
+    -fx-background-radius: 6px;
+    -fx-border-color: #86b8a5;
+    -fx-border-radius: 6px;
+    -fx-padding: 5px 10px;
+}
+
+.model-request-field-value:missing {
+    -fx-text-fill: #9a3412;
+    -fx-background-color: #fff3e6;
+    -fx-border-color: #e6a15c;
+}
+
+.model-request-file-name {
+    -fx-text-fill: #135c48;
+    -fx-font-weight: bold;
+}
+
+.model-request-file-path {
+    -fx-text-fill: #66736e;
+    -fx-font-weight: normal;
 }
 
 .model-generation-output-path {

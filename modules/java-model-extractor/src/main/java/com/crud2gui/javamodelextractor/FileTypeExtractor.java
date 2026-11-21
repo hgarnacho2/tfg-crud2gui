@@ -41,7 +41,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Convierte las declaraciones de tipo de un fichero en {@link TypeInfo}, incluidas las clases internas.
+ * Convierte las declaraciones Java de clases (concretas o abstractas), interfaces, enums, records y
+ * anotaciones ({@code @interface}) en {@link TypeInfo}. Tambien extrae recursivamente las declaraciones
+ * de tipo anidadas.
  *
  * <p>Aplica las reglas implicitas de Java: los miembros de una interfaz son publicos, sus metodos sin
  * cuerpo son abstractos y sus campos son estaticos y finales; los constructores de un enum son privados.</p>
@@ -62,7 +64,8 @@ final class FileTypeExtractor {
     }
 
     /**
-     * Extrae un tipo y, a continuacion, sus tipos internos, y los anade a la lista de salida.
+     * Extrae una declaracion de tipo (clase, interfaz, enum, record o anotacion) y, a continuacion,
+     * sus declaraciones de tipo anidadas; anade primero la externa y despues las internas a la salida.
      *
      * @param td          declaracion a extraer
      * @param enclosingId id del tipo contenedor, o {@code null} si es de primer nivel

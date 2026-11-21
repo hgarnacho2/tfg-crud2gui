@@ -49,6 +49,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
     private Path filteredText;
     /** Último modelo generado desde el enunciado, todavía no confirmado. */
     private Path generatedStatementModel;
+    private boolean statementModelLocal;
     /** Último modelo del enunciado validado y confirmado por el usuario. */
     private Path confirmedStatementModel;
     /** Último modelo de clases extraído del código Java. */
@@ -131,6 +132,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         extractedText = null;
         filteredText = null;
         generatedStatementModel = null;
+        statementModelLocal = false;
         confirmedStatementModel = null;
         codeModel = null;
         clearValidationReport();
@@ -173,7 +175,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         Path selected = normalize(path);
         if (!Objects.equals(selectedPromptFile, selected)) {
             selectedPromptFile = selected;
-            invalidateStatementModelsForInputChange();
+            invalidateStatementModelsForLlmChange();
             persist();
         }
     }
@@ -266,6 +268,11 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         return usable(generatedStatementModel);
     }
 
+    /** Indica si el modelo del enunciado se cargo desde un archivo local, sin depender del LLM. */
+    public boolean isStatementModelLocal() {
+        return statementModelLocal;
+    }
+
     /**
      * Devuelve el modelo del enunciado elegido manualmente o el último modelo confirmado.
      *
@@ -313,7 +320,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         if (!Objects.equals(selectedModelProviderId, selected)) {
             selectedModelProviderId = selected;
             selectedModelId = null;
-            invalidateStatementModelsForInputChange();
+            invalidateStatementModelsForLlmChange();
             persist();
         }
     }
@@ -327,7 +334,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         String selected = normalizeId(modelId);
         if (!Objects.equals(selectedModelId, selected)) {
             selectedModelId = selected;
-            invalidateStatementModelsForInputChange();
+            invalidateStatementModelsForLlmChange();
             persist();
         }
     }
@@ -457,7 +464,17 @@ public final class TeacherWorkflowContext implements WorkflowContext {
      * @param path archivo JSON generado
      */
     public void recordGeneratedStatementModel(Path path) {
+        recordStatementModel(path, false);
+    }
+
+    /** Registra un modelo local pendiente de confirmacion, independiente del prompt y del LLM. */
+    public void recordLocalStatementModel(Path path) {
+        recordStatementModel(path, true);
+    }
+
+    private void recordStatementModel(Path path, boolean local) {
         generatedStatementModel = normalize(path);
+        statementModelLocal = local && generatedStatementModel != null;
         clearValidationReport();
         confirmedStatementModel = null;
         if (!inferredModelManual) {
@@ -561,6 +578,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
     /** Limpia las rutas de modelos inferidos y conserva una selección manual vigente. */
     private void clearStatementModels() {
         generatedStatementModel = null;
+        statementModelLocal = false;
         confirmedStatementModel = null;
         if (!inferredModelManual) {
             selectedInferredModel = null;
@@ -573,6 +591,12 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         selectedInferredModel = null;
         clearStatementModels();
         clearValidationReport();
+    }
+
+    private void invalidateStatementModelsForLlmChange() {
+        if (!statementModelLocal) {
+            invalidateStatementModelsForInputChange();
+        }
     }
 
     /**
@@ -654,6 +678,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
             extractedText = readPath(root, "extractedText");
             filteredText = readPath(root, "filteredText");
             generatedStatementModel = readPath(root, "generatedStatementModel");
+            statementModelLocal = root.path("statementModelLocal").asBoolean(false);
             confirmedStatementModel = readPath(root, "confirmedStatementModel");
             codeModel = readPath(root, "codeModel");
             validationReport = readPath(root, "validationReport");
@@ -722,6 +747,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         writePath(root, "extractedText", extractedText);
         writePath(root, "filteredText", filteredText);
         writePath(root, "generatedStatementModel", generatedStatementModel);
+        root.put("statementModelLocal", statementModelLocal);
         writePath(root, "confirmedStatementModel", confirmedStatementModel);
         writePath(root, "codeModel", codeModel);
         writePath(root, "validationReport", validationReport);

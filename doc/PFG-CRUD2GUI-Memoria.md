@@ -272,7 +272,7 @@ El estudiante es un alumno de la asignatura FUNDAMENTOS DE INFORMÁTICA que debe
 ```
 1. Docente carga enunciado PDF
    ↓
-2. CRUD2GUI extrae modelo esperado (RF-1: LLM)
+2. Docente obtiene modelo esperado mediante LLM (RF-1) o carga un JSON local
    ↓
 3. Docente valida modelo en GUI generada (RF-4: CRUD)
    ↓
@@ -282,6 +282,8 @@ El estudiante es un alumno de la asignatura FUNDAMENTOS DE INFORMÁTICA que debe
    ↓
 6. Estudiantes descargan GUI referencia
 ```
+
+En la sección «Modelo desde Enunciado», ambas vías parten de seleccionar un archivo de texto como contexto de la práctica. La generación automática requiere además un prompt y un LLM; la carga de un modelo local permite omitir esas dos selecciones. En ambos casos, el modelo se revisa y confirma antes de ofrecerse como referencia para la comparación.
 
 **Flujo de trabajo del estudiante (desarrollo y validación):**
 
@@ -350,10 +352,14 @@ CRUD2GUI implementa cuatro funcionalidades nucleares que conforman el flujo de t
 1. Extrae el texto del documento PDF y lo convierte a texto plano estructurado.
 2. Aplica un proceso de optimización que elimina información redundante o no relevante para el modelo.
 3. Envía una petición a un servicio LLM (Large Language Model) con un prompt estructurado.
-4. Recibe y parsea una respuesta en formato JSON estructurado que representa un modelo válido para la resolución del problema.
+4. Recibe y comprueba una respuesta en formato JSON estructurado como propuesta de modelo de referencia.
+5. Permite al docente revisar, editar y confirmar el modelo obtenido. La corrección del formato no garantiza por sí sola que el modelo resuelva el enunciado.
 
-**Entrada:** Archivo PDF con enunciado de práctica.  
-**Salida:** Instancia de modelo estructurado (Statement con sus Transactions asociadas).
+**Vía alternativa:** El docente puede cargar un modelo JSON local compatible con `ProjectModel`, sin seleccionar prompt, proveedor ni modelo LLM. En esta vía se mantiene la selección del texto del enunciado como contexto, aunque la lectura del JSON no lo necesita técnicamente. El modelo local pasa por la misma revisión y confirmación que el generado automáticamente.
+
+**Entrada:** Archivo PDF con enunciado de práctica para el procesamiento inicial; la sección de obtención del modelo utiliza un archivo de texto seleccionado y, según la vía, un prompt y un LLM o un archivo JSON local.
+
+**Salida:** Modelo de referencia `ProjectModel` en JSON, revisado y confirmado por el docente.
 
 #### RF-2: Obtener un Modelo partiendo de Código Fuente Java
 
@@ -1012,16 +1018,125 @@ El sistema `DotEnv` proporciona una solución robusta y flexible para gestión d
 
 El módulo `java-model-extractor` transforma una carpeta con los fuentes de una solución Java en un `ProjectModel`, la misma estructura de datos que se utiliza para representar el modelo de referencia obtenido del enunciado (véase el apartado 6.3.1). La extracción se realiza mediante **análisis estático**: no necesita compilar ni ejecutar la solución y no consulta al LLM. La comparación con el enunciado se realiza posteriormente, en el módulo `model-validator`.
 
+Para interpretar el código se utiliza **JavaParser**, una biblioteca de análisis sintáctico de Java incorporada mediante la dependencia Maven `com.github.javaparser:javaparser-core`. Un *parser* o analizador sintáctico reconoce la estructura del código según la gramática del lenguaje y la representa mediante objetos que pueden recorrerse y consultarse. El nombre de paquete `com.github.javaparser` pertenece a la biblioteca y fue elegido por sus autores; su uso no implica conectarse a GitHub ni enviar los fuentes a un servicio remoto.
+
+JavaParser construye un **árbol de sintaxis abstracta**, denominado **AST** por sus siglas en inglés (*Abstract Syntax Tree*). Este árbol representa elementos como clases, atributos, métodos, sentencias y expresiones, y las relaciones de contención entre ellos. A diferencia de buscar palabras o patrones en el texto, permite distinguir una declaración de atributo de una variable local, o una llamada a un método de su declaración. Aunque los nodos pueden conservar ubicaciones y comentarios, el objetivo del árbol es representar la estructura del programa, no reproducir su presentación textual.
+
+Un AST es un representación de la estructura de un programas. Cada lenguaje necesita un analizador que conozca su sintaxis, y la estructura concreta de sus nodos depende del lenguaje y de la herramienta utilizada. **JavaParser es una biblioteca específica para analizar código Java**, mientras que el AST es la representación que esta biblioteca genera a partir de ese código.
+
+En CRUD2GUI, la relación entre ambos es, por tanto: **fichero fuente Java → JavaParser → AST → extracción de información → `ProjectModel`**. Por ejemplo, al analizar una clase con un atributo y un método, JavaParser crea nodos para sus declaraciones; el extractor consulta esos nodos para incorporar los datos relevantes al modelo. El apartado 7.2.1 muestra un ejemplo concreto de código y su árbol simplificado.
+
+El AST no debe confundirse con `ProjectModel`: el primero es la representación sintáctica que proporciona JavaParser; el segundo es el modelo de clases de CRUD2GUI, que selecciona información del AST, incorpora las relaciones derivadas y se intercambia en JSON. JavaParser no ejecuta el código, no es un LLM y no sustituye al compilador ni verifica por sí solo la corrección funcional de la solución.
+
+**El papel de `ProjectParser`: coordinación del análisis del proyecto**
+
+`ProjectParser` recibe una carpeta con código Java y devuelve un modelo que describe su estructura. Actúa como coordinador: reparte el trabajo entre las clases especializadas y reúne sus resultados, en lugar de realizar por sí mismo todas las operaciones de extracción.
+
+Por ejemplo, si la carpeta contiene `Persona.java`, `Asignatura.java` y `Escuela.java`, el proceso que coordina es el siguiente:
+
+1. **Localizar los fuentes.** Solicita a `FolderScanner` los archivos `.java` de la carpeta y sus subcarpetas.
+2. **Obtener los AST.** Utiliza JavaParser para analizar cada archivo y representar su estructura sintáctica.
+3. **Registrar los tipos.** Construye un `TypeIndex` con los tipos encontrados, antes de extraer sus miembros y resolver sus referencias.
+4. **Extraer los detalles.** Prepara el contexto de cada fichero y encarga a `FileTypeExtractor` obtener atributos, constructores, métodos y demás información de los tipos. `TypeResolver` ayuda a identificar las referencias a otros tipos.
+5. **Analizar las relaciones y la gestora.** Invoca a `RelationAnalyzer` y `ManagerDetector` para completar la información del modelo.
+6. **Reunir el resultado.** Construye y devuelve un `ProjectModel` con los tipos, las relaciones, el análisis de la gestora y los datos de procedencia y avisos.
+
+La distinción entre la biblioteca y el coordinador es la siguiente:
+
+| Componente | Responsabilidad |
+|------------|-----------------|
+| JavaParser | Analizar la sintaxis de cada archivo y producir un AST. |
+| `ProjectParser` | Coordinar el análisis del proyecto completo y construir su `ProjectModel`. |
+
+`ProjectParser` no ejecuta la solución ni guarda el JSON: devuelve un objeto Java. La serialización y la validación contra el esquema corresponden a una fase posterior, descrita en el apartado 7.2.4.
+
 #### 7.2.1. Localización, lectura e indexación de los tipos
 
 `FolderScanner` recorre de forma recursiva la carpeta seleccionada y localiza los ficheros `.java`, sin exigir una estructura como `src/main/java`. El paquete se obtiene de la declaración `package` de cada fichero, no de su ruta. Se excluyen los directorios ocultos, las carpetas de salida o dependencias configuradas —como `target` y `build`— y los ficheros `module-info.java` y `package-info.java`.
 
-`ProjectParser` realiza la extracción en dos pasadas:
+**Ejemplo de código y AST.** Considérese la siguiente clase:
 
-1. **Lectura e indexación.** JavaParser lee los ficheros en UTF-8, con el nivel de lenguaje configurado para Java 21, y construye su árbol de sintaxis abstracta (AST). A partir de las declaraciones registra los tipos de primer nivel y los anidados con un identificador que incluye el paquete y, si corresponde, el tipo contenedor; por ejemplo, `biblioteca.Biblioteca.Prestamo`. Los problemas de lectura o sintaxis detectados durante el análisis se registran como avisos, sin impedir el procesamiento de los demás ficheros.
-2. **Extracción de tipos y miembros.** Con el índice ya construido, `FileTypeExtractor` crea una entrada `TypeInfo` por cada declaración admitida: clase, interfaz, enumeración, `record` o tipo de anotación. Registra la visibilidad, los modificadores, los atributos, los constructores y las firmas de los métodos, además de la superclase, las interfaces y, cuando existen, las anotaciones, el Javadoc y la ubicación en el fuente. `TypeResolver` interpreta las referencias a tipos teniendo en cuenta los tipos contenedores, los `import` y el paquete; como último recurso, admite un nombre simple si es único en el índice. También conserva los argumentos genéricos y las dimensiones de los arrays. Los tipos externos o no resueltos se conservan como referencias, pero no se convierten en tipos del proyecto.
+```java
+class Persona {
+    private String nombre;
 
-Indexar los tipos antes de extraer sus miembros permite resolver una referencia aunque el fichero que declara el tipo se lea después. El AST permite, además, distinguir usos que tienen efectos distintos sobre el modelo: un atributo representa una referencia que la clase conserva, mientras que un parámetro de un método indica, por sí solo, un uso del tipo, no que la clase lo almacene.
+    public String getNombre() {
+        return nombre;
+    }
+}
+```
+
+JavaParser permite consultar la clase `Persona`, su atributo privado `nombre` de tipo `String` y su método público `getNombre`, sin parámetros y con retorno `String`. También representa el cuerpo del método y su sentencia `return`. Un esquema simplificado del AST es:
+
+```text
+CompilationUnit
+└── ClassOrInterfaceDeclaration: Persona
+    ├── FieldDeclaration: private
+    │   └── VariableDeclarator: nombre
+    │       └── ClassOrInterfaceType: String
+    └── MethodDeclaration: public getNombre()
+        ├── ClassOrInterfaceType: String (retorno)
+        └── BlockStmt
+            └── ReturnStmt
+                └── NameExpr: nombre
+```
+
+El esquema omite nodos y propiedades auxiliares. `CompilationUnit` representa la unidad de compilación del fichero; `ClassOrInterfaceDeclaration`, una clase o interfaz; `FieldDeclaration`, una declaración de atributos; y `VariableDeclarator`, cada variable de esa declaración. `MethodDeclaration` representa un método y `ReturnStmt`, una sentencia de retorno. Todos ellos derivan de `Node`; interfaces como `NodeWithAnnotations`, `NodeWithJavadoc` y `NodeWithModifiers` ofrecen acceso a propiedades compartidas por distintos tipos de nodo.
+
+`ProjectParser` organiza el trabajo en dos pasadas: primero averigua **qué tipos existen** y después extrae **cómo están definidos y a qué tipos hacen referencia**. No son dos lecturas completas de los archivos: la segunda pasada reutiliza los AST conservados en memoria durante la primera.
+
+**Primera pasada: lectura e indexación**
+
+Su objetivo es construir un catálogo de los tipos declarados en el proyecto, antes de intentar resolver las referencias entre ellos:
+
+1. JavaParser lee cada fichero en UTF-8, con el nivel de lenguaje configurado para Java 21, y obtiene su AST.
+2. `ProjectParser` conserva cada AST disponible junto con la ruta relativa del fichero.
+3. Recorre las declaraciones de tipos de primer nivel y, recursivamente, sus tipos anidados, y registra sus identificadores en `TypeIndex`. El identificador incluye el paquete y, si corresponde, el tipo contenedor; por ejemplo, `biblioteca.Biblioteca.Prestamo`.
+
+**Resultado:** los AST disponibles y un índice que permite buscar tipos por su nombre completo o simple. En esta fase todavía no se construyen los `TypeInfo` con sus atributos y métodos. Los problemas de lectura o sintaxis se registran como avisos, sin impedir el procesamiento de los demás ficheros; si JavaParser proporciona un AST pese a los problemas, se conserva para continuar el análisis.
+
+**Segunda pasada: extracción de tipos y miembros**
+
+Con el índice completo de los tipos encontrados, se recorren las declaraciones de los AST conservados:
+
+1. `ProjectParser` prepara el `ResolutionContext` de cada fichero con su paquete y sus imports. Este contexto aporta la información necesaria para interpretar los nombres de tipos; al recorrer tipos anidados, el extractor incorpora también los tipos contenedores.
+2. `FileTypeExtractor` crea una entrada `TypeInfo` por cada declaración admitida: clase, interfaz, enumeración, `record` o tipo de anotación. Registra la visibilidad, los modificadores, los atributos, los constructores y las firmas de los métodos, además de la superclase, las interfaces y, cuando existen, las anotaciones, el Javadoc y la ubicación en el fuente.
+3. Durante esa extracción, `TypeResolver` consulta el índice y el contexto para identificar las referencias a tipos del proyecto. Tiene en cuenta los tipos contenedores, los imports explícitos, el paquete y los imports con asterisco; como último recurso, admite un nombre simple si es único en el índice. También conserva los argumentos genéricos y las dimensiones de los arrays. Los tipos externos o no resueltos se conservan como referencias, pero no se convierten en tipos del proyecto.
+
+En esta segunda pasada se distinguen dos preguntas:
+
+- **Cómo está definido cada tipo:** se describe su estructura declarada. Por ejemplo, si es una clase o una interfaz, si es pública o abstracta, qué atributos tiene y con qué visibilidad, qué constructores y métodos declara, qué parámetros reciben, qué devuelven y de qué tipos hereda. No se trata de comprobar qué hace el programa al ejecutarse, sino de representar las declaraciones presentes en el código.
+- **A qué tipos hace referencia:** se identifican los tipos que aparecen en esas declaraciones, por ejemplo, el tipo de un atributo, de un parámetro o del retorno de un método, la superclase o las interfaces implementadas. No basta con copiar un nombre como `Persona`: se intenta determinar qué tipo concreto designa en ese fichero y si pertenece al proyecto analizado.
+
+Por ejemplo:
+
+```java
+package escuela;
+
+import personas.Persona;
+
+public class Escuela {
+    private Persona directora;
+
+    public Persona getDirectora() {
+        return directora;
+    }
+}
+```
+
+En cuanto a **su definición**, se registra que `escuela.Escuela` es una clase pública, que declara un atributo privado llamado `directora` y un método público `getDirectora` sin parámetros y con retorno `Persona`.
+
+En cuanto a **sus referencias**, el contexto indica que el nombre `Persona` procede del import `personas.Persona`. Si este tipo está registrado en `TypeIndex`, el resolutor identifica tanto el tipo del atributo como el retorno del método con el tipo del proyecto `personas.Persona`, en lugar de confundirlo con otra clase del mismo nombre. Si ese import apunta a un tipo que no figura en el índice, la referencia se conserva como externa o no resuelta, sin inventar una clase del proyecto.
+
+**Resultado:** la lista de tipos y miembros del modelo, con sus referencias a tipos interpretadas. Esta información permite que, en la fase posterior, `RelationAnalyzer` derive relaciones entre los tipos del proyecto, como la asociación de `Escuela` con `Persona` por el atributo `directora`. Después se analiza la clase gestora y se ensambla el `ProjectModel`.
+
+**Por qué se separan las dos pasadas**
+
+Indexar los tipos antes de extraer sus miembros permite resolver las referencias sin depender del orden de lectura de los archivos. Por ejemplo, si `Escuela.java` declara `private Persona directora;` y `Persona` está definida en otro fichero del proyecto, la primera pasada ya habrá registrado ambos tipos. Al extraer el atributo de `Escuela`, el resolutor puede identificar `Persona` aunque todavía no se hayan extraído sus atributos y métodos. Lo mismo permite tratar referencias mutuas entre clases.
+
+El AST permite, además, distinguir usos que tienen efectos distintos sobre el modelo: un atributo representa una referencia que la clase conserva, mientras que un parámetro de un método indica, por sí solo, un uso del tipo, no que la clase lo almacene.
+
+En el ejemplo, `FileTypeExtractor` transforma la declaración de `Persona` en un `TypeInfo`, el atributo `nombre` en un `FieldInfo` y el método `getNombre` en un `MethodInfo`. Como la clase no declara `public`, su visibilidad es de paquete; el atributo conserva la visibilidad privada y el método, la pública. El extractor registra la firma del método y que tiene cuerpo, pero no lo ejecuta ni comprueba que devuelva el valor esperado. Esta clase recibe las declaraciones ya parseadas, delega la resolución de tipos en `TypeResolver` y extrae recursivamente los tipos anidados; el cálculo de las relaciones UML corresponde a `RelationAnalyzer`.
 
 #### 7.2.2. Obtención de relaciones y construcción del modelo
 
@@ -1062,9 +1177,168 @@ Para estimar qué tipos coordina cada candidata, el detector construye un grafo 
 
 Si no hay candidatas estructurales, pero el modelo contiene tipos, el detector registra una selección de respaldo con puntuación cero y confianza baja: elige el primer tipo que no sea de prueba o, si todos lo son, el primero de la lista. Si el modelo está vacío, no propone ninguna gestora.
 
+#### 7.2.4. Validación del JSON extraído contra el esquema
+
+La información obtenida por `FileTypeExtractor` se contrasta con el contrato JSON **después de construir el modelo y serializarlo**, no dentro del extractor. `ProjectParser.parse()` devuelve un objeto Java `ProjectModel`; esta llamada, por sí sola, no valida todavía su representación JSON.
+
+**Visión general del flujo**
+
+```text
+Código fuente Java
+        ↓
+JavaParser → AST
+        ↓
+Extracción de tipos y miembros: FileTypeExtractor y TypeResolver
+        ↓
+Obtención de relaciones y gestora: RelationAnalyzer y ManagerDetector
+        ↓
+ProjectModel ensamblado por ProjectParser
+        ↓
+ModelIO.toJson(model): serialización mediante Jackson
+        ↓
+JSON serializado
+        ↓
+ProjectModelSchema.validate(json)
+        ↓
+Contraste con project-model-v1.schema.json
+        ↓
+Si cumple el esquema: devolución del JSON y guardado
+Si no lo cumple: excepción y cancelación del guardado
+```
+
+**Detalle de clases y colaboraciones**
+
+El siguiente diagrama amplía esta visión general y muestra las clases participantes, los datos intermedios y las colaboraciones auxiliares:
+
+<!-- mermaid-checked: quoted labels and arrows, safe labels, closed subgraphs, unique IDs -->
+```mermaid
+flowchart TD
+    subgraph JexEntradas["ENTRADAS"]
+        JexMain["Main<br/>Linea de comandos"]
+        JexDesktop["ModelFromCodeSection<br/>Interfaz JavaFX"]
+    end
+
+    subgraph JexExtraccion["JAVA-MODEL-EXTRACTOR - ANALISIS ESTATICO"]
+        JexProject["ProjectParser<br/>Orquesta las fases y ensambla el modelo"]
+        JexScanner["FolderScanner<br/>Localiza los ficheros .java"]
+        JexParser["JavaParser<br/>Analiza la sintaxis del codigo"]
+        JexAst["CompilationUnit / AST"]
+        JexIndex["TypeIndex<br/>Registro de tipos del proyecto"]
+        JexContext["ResolutionContext<br/>Paquete, imports y tipos contenedores"]
+        JexResolver["TypeResolver<br/>Resuelve referencias de tipos"]
+        JexExtractor["FileTypeExtractor<br/>Extrae tipos y miembros"]
+        JexRelations["RelationAnalyzer<br/>Deriva relaciones UML"]
+        JexManager["ManagerDetector<br/>Detecta la clase gestora"]
+        JexConfig["ManagerDetectorConfig<br/>Configura pesos y umbrales"]
+    end
+
+    subgraph JexModelo["MODEL - SERIALIZACION Y VALIDACION"]
+        JexResult["ProjectModel<br/>types, relations, analysis y source"]
+        JexIo["ModelIO.toJson<br/>Jackson serializa el modelo a JSON"]
+        JexValidator["ProjectModelSchema.validate<br/>Comprueba el JSON serializado"]
+        JexSchema["project-model-v1.schema.json<br/>Contrato JSON Schema Draft 7"]
+    end
+
+    JexSaved["Guardado del JSON validado"]
+    JexError["IOException<br/>Se cancela el guardado"]
+
+    JexMain --> JexProject
+    JexDesktop --> JexProject
+    JexProject --> JexScanner
+    JexScanner -->|"ficheros fuente"| JexParser
+    JexParser --> JexAst
+    JexAst -->|"pasada 1: indexacion"| JexIndex
+    JexAst -->|"pasada 2: extraccion"| JexExtractor
+    JexAst -.-> JexContext
+    JexIndex -.-> JexResolver
+    JexContext -.-> JexResolver
+    JexResolver -.-> JexExtractor
+    JexExtractor -->|"tipos y miembros"| JexRelations
+    JexAst -.-> JexRelations
+    JexResolver -.-> JexRelations
+    JexRelations -->|"tipos y relaciones"| JexManager
+    JexAst -.-> JexManager
+    JexResolver -.-> JexManager
+    JexConfig -.-> JexManager
+    JexManager -->|"resultados reunidos por ProjectParser"| JexResult
+    JexResult --> JexIo
+    JexIo -->|"JSON pendiente de validar"| JexValidator
+    JexSchema -.-> JexValidator
+    JexValidator -->|"cumple: toJson devuelve el JSON"| JexSaved
+    JexValidator -->|"incumple el esquema"| JexError
+
+    classDef entrada fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#fff
+    classDef extractor fill:#15803d,stroke:#22c55e,stroke-width:2px,color:#fff
+    classDef auxiliar fill:#bbf7d0,stroke:#16a34a,stroke-width:2px,color:#14532d
+    classDef externo fill:#e5e7eb,stroke:#6b7280,stroke-width:2px,color:#1f2937
+    classDef modelo fill:#1e40af,stroke:#60a5fa,stroke-width:2px,color:#fff
+    classDef contrato fill:#f3e8ff,stroke:#a78bfa,color:#581c87
+    classDef correcto fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d
+    classDef error fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#9a3412
+    class JexMain,JexDesktop entrada
+    class JexProject,JexScanner,JexExtractor,JexRelations,JexManager extractor
+    class JexIndex,JexContext,JexResolver,JexConfig auxiliar
+    class JexParser,JexAst externo
+    class JexResult,JexIo,JexValidator modelo
+    class JexSchema contrato
+    class JexSaved correcto
+    class JexError error
+    style JexEntradas fill:none,stroke:#60a5fa,stroke-width:2px
+    style JexExtraccion fill:none,stroke:#22c55e,stroke-width:2px
+    style JexModelo fill:none,stroke:#60a5fa,stroke-width:2px
+```
+
+*Diagrama de extracción del modelo desde código Java y validación contra JSON Schema.*
+
+**Leyenda de procedencia:** los nodos grises corresponden a la biblioteca externa JavaParser: la clase `JavaParser` y la estructura `CompilationUnit` que contiene el AST. El verde claro identifica las clases auxiliares propias: `TypeIndex`, `ResolutionContext`, `TypeResolver` y `ManagerDetectorConfig`. Las demás clases propias mantienen los colores de su módulo o función. Los nodos de guardado y cancelación representan resultados del proceso, no clases.
+
+Las flechas continuas representan el flujo principal de procesamiento; las discontinuas indican datos o colaboraciones auxiliares, no relaciones de herencia. `ProjectParser` coordina las fases, prepara el índice y el contexto de resolución y ensambla el resultado; el diagrama no implica que cada clase invoque directamente a la siguiente.
+
+La primera pasada obtiene los AST de JavaParser y registra los tipos en `TypeIndex`. En la segunda, `FileTypeExtractor` consulta `TypeResolver`, que utiliza ese índice y `ResolutionContext` para interpretar las referencias. `RelationAnalyzer` y `ManagerDetector` aprovechan también los AST y el resolutor; este último detector utiliza además `ManagerDetectorConfig`. Solo después de reunir los resultados en `ProjectModel` se pasa a la serialización y validación del módulo `model`.
+
+El esquema representa el contrato del formato, no una dependencia del parser: se aplica sobre el JSON serializado. La bifurcación final distingue el guardado de un JSON conforme de la cancelación mediante una excepción si incumple el contrato.
+
+La comprobación utiliza el [esquema canónico de ProjectModel](../modules/model/src/main/resources/com/crud2gui/model/project-model-v1.schema.json), definido con JSON Schema Draft 7. Verifica los campos obligatorios, los tipos de datos JSON, los valores enumerados y las demás restricciones declaradas en el contrato. La serialización incluye los valores `null` cuando corresponde: un campo obligatorio que admite `null` debe estar presente, aunque no contenga un valor.
+
+La operación [ModelIO.toJson()](../modules/model/src/main/java/com/crud2gui/model/ModelIO.java) solo devuelve la cadena después de que `ProjectModelSchema.validate()` termine correctamente. Si el JSON incumple el esquema, se lanza una `IOException` con los detalles de validación y el flujo no continúa al guardado. La comprobación está integrada en las dos entradas de la aplicación:
+
+- **Línea de comandos:** `Main` obtiene el modelo con `ProjectParser` y llama a `ModelIO.write(model, archivo)`, que utiliza `toJson()` antes de escribir.
+- **Interfaz de escritorio:** `ModelFromCodeSection` obtiene el modelo, llama a `ModelIO.toJson(model)` y escribe el archivo únicamente si la serialización y su validación han terminado correctamente.
+
+Se distinguen, por tanto, dos comprobaciones con objetivos diferentes:
+
+| Comprobación | Qué determina | Qué no garantiza |
+| --- | --- | --- |
+| Validación contra JSON Schema | Que la representación del modelo cumple el contrato de intercambio. | Que la extracción sea semánticamente correcta o que el código cumpla el enunciado. |
+| Comparación mediante `model-validator` | Las coincidencias y divergencias estructurales respecto al modelo de referencia. | Que los métodos se comporten correctamente al ejecutarse. |
+
+Esta separación permite rechazar un formato incompatible antes de guardarlo sin confundir la conformidad del JSON con la evaluación de la solución del estudiante.
+
 ### 7.3. Procesamiento de enunciados
 
-*Pendiente de desarrollar.*
+El tratamiento inicial del PDF se realiza en la sección «Enunciado», donde se extrae y filtra su texto. La sección docente `ModelFromStatementSection` utiliza un archivo de texto como entrada y organiza la obtención del modelo de referencia en seis pasos: **Seleccionar texto → Seleccionar prompt → Seleccionar LLM → Obtener modelo → Revisar modelo → Diagrama de clases**.
+
+Esta secuencia representa la vía de generación automática, pero no obliga a completar todos los pasos intermedios: también se permite importar un modelo previamente preparado.
+
+#### 7.3.1. Generación automática mediante LLM
+
+El docente selecciona el texto del enunciado, un archivo de prompt y un proveedor con un modelo LLM disponible. La aplicación incorpora al prompt el esquema canónico de `ProjectModel` y ejecuta el análisis en segundo plano mediante `StatementAnalyzer`. Antes de guardar la respuesta como modelo, comprueba su formato con `ProjectModelSchema` y la deserializa con `ModelIO`.
+
+Si la respuesta no es JSON válido o no es compatible con el formato esperado, se muestra el error y el texto recibido para poder inspeccionarlo; no se habilitan la revisión ni el diagrama como si se hubiera obtenido un modelo correcto. Una respuesta compatible se guarda en un archivo JSON y se presenta en el visor. Esta comprobación de formato no verifica la correspondencia semántica con los requisitos del enunciado.
+
+#### 7.3.2. Carga de un modelo local
+
+Después de cargar el texto de referencia, el docente puede acceder directamente al paso «Obtener modelo» y pulsar «Trabajar con modelo local». No necesita seleccionar un prompt ni configurar un LLM, y esta operación no envía una petición a un proveedor.
+
+La aplicación comprueba que el archivo seleccionado tenga extensión `.json`, sea legible y pueda deserializarse como `ProjectModel` mediante `ModelIO`. Si la carga falla, comunica el error y no habilita una revisión nueva. El archivo local no se convierte en un modelo confirmado por el mero hecho de poder leerse: el docente debe revisarlo y confirmarlo expresamente.
+
+La selección del texto en esta vía conserva el contexto de la práctica; no implica que la aplicación contraste automáticamente el contenido del JSON con ese texto.
+
+#### 7.3.3. Revisión y confirmación comunes
+
+Las dos vías muestran el resultado en `JsonEditorViewer`, en modo de solo lectura en el paso de obtención y con edición en el paso «Revisar modelo». El editor permite alternar entre árbol y texto. Al pulsar «Confirmar modelo», la aplicación deserializa el JSON editado y guarda una copia revisada, sin sobrescribir el archivo original. Solo entonces se habilita el diagrama y el modelo confirmado se ofrece como referencia para la validación.
+
+Los cambios en el prompt o en el LLM invalidan los resultados generados a partir de esas entradas, pero no un modelo cargado desde un archivo local ni su revisión. Cambiar el texto del enunciado sí invalida el modelo asociado, para evitar conservar una referencia de otra práctica. La distinción entre ambos orígenes se mantiene en el contexto persistente del docente (apartado 7.7).
 
 ### 7.4. Validación de modelos
 
@@ -1223,6 +1497,15 @@ Las operaciones principales de `WorkflowContext` son:
 | `recordValidationReport(Path, ValidationStatus)` | Registra el resultado y estado de la última validación. |
 | `getValidationReport()`, `getValidationStatus()` | Recuperan el reporte y su estado persistido. |
 
+Además del contrato común, `TeacherWorkflowContext` dispone de operaciones específicas para el modelo del enunciado:
+
+| Método | Responsabilidad |
+| --- | --- |
+| `recordGeneratedStatementModel(Path)` | Registra un modelo obtenido mediante LLM, pendiente de confirmación. |
+| `recordLocalStatementModel(Path)` | Registra un modelo importado desde un JSON local, independiente del prompt y del LLM. |
+| `isStatementModelLocal()` | Identifica el origen local para aplicar las reglas de invalidación. |
+| `recordConfirmedStatementModel(Path)` | Registra la copia revisada y la ofrece como referencia para validar. |
+
 #### 7.7.2. Persistencia del contexto
 
 Las implementaciones concretas `StudentWorkflowContext` y `TeacherWorkflowContext` persisten el estado en archivos JSON utilizando Jackson. El contexto de cada usuario se almacena en una carpeta privada bajo la carpeta del usuario del sistema operativo, identificado por el identificador de objeto (OID) de su cuenta.
@@ -1251,6 +1534,21 @@ El identificador se hashea con SHA-256 para evitar exponer directamente el OID d
   "validationStatus": "READY_FOR_CRUD"
 }
 ```
+
+**Campos específicos del contexto docente:**
+
+En el contexto docente también se guardan las entradas de la inferencia, el modelo obtenido y su revisión. Por ejemplo, un modelo importado y posteriormente confirmado incorpora estos campos:
+
+```json
+{
+  "selectedStatementText": "/ruta/absoluta/enunciado.txt",
+  "generatedStatementModel": "/ruta/absoluta/modelo-local.json",
+  "statementModelLocal": true,
+  "confirmedStatementModel": "/ruta/absoluta/modelo-local-revisado.json"
+}
+```
+
+El campo `statementModelLocal` conserva la procedencia incluso después de confirmar el modelo. Su valor es `false` para un modelo generado mediante LLM. Es un campo opcional del formato de versión 1: si no aparece en un contexto anterior, se interpreta como `false`, sin intentar deducir el origen a partir del nombre del archivo. Se persisten referencias y procedencia, no las modificaciones del editor que todavía no se hayan guardado.
 
 **Procesos de persistencia:**
 
@@ -1284,6 +1582,9 @@ El contexto se crea y se gestiona en el siguiente flujo:
 - Un cambio en la carpeta de código invalida: modelos generados, selecciones de Java si no son manuales, selecciones de enunciado y reportes.
 - Una nueva selección manual de modelo invalida: reportes de validación.
 - Un reporte nuevo captura el estado de validación (`ValidationStatus`) de ese momento.
+- Cambiar el prompt, el proveedor o el modelo LLM invalida el modelo del enunciado generado mediante LLM, su revisión y la validación dependiente. Si el origen es local, conserva esos resultados.
+- Cambiar el texto del enunciado invalida el modelo asociado y sus resultados dependientes, incluido el caso de origen local.
+- Sustituir un modelo local por otro generado mediante LLM restablece la dependencia respecto al prompt y al LLM. Reiniciar el contexto elimina también la marca de origen local, sin borrar los archivos.
 
 #### 7.7.4. Integración con las secciones del panel
 
@@ -1528,7 +1829,7 @@ Una sección es un componente visual que implementa una funcionalidad dentro del
 
 1. **`StudentContextSection` / `TeacherContextSection`**: Muestran el contexto actual (carpeta de código, modelos seleccionados) y permiten seleccionar nuevas rutas.
 2. **`ModelFromCodeSection`**: Permite al usuario seleccionar una carpeta de código fuente y genera un modelo JSON automáticamente.
-3. **`ModelFromStatementSection`** (solo docente): Permite escribir un enunciado en texto libre y genera un modelo JSON.
+3. **`ModelFromStatementSection`** (solo docente): Permite seleccionar el texto de un enunciado y obtener su modelo mediante LLM o cargar un JSON local, para revisarlo y confirmarlo.
 4. **`ModelValidationSection`**: Carga dos modelos (referencia e inferido), los compara y muestra el reporte de validación.
 5. **`CrudSection`**: Interfaz CRUD para manipular entidades del modelo seleccionado.
 
@@ -1556,6 +1857,30 @@ Cada sección lee del contexto en su construcción para inicializar su estado, y
 - **Escritura:** `workflow.selectCodeFolder(path)`, `workflow.recordCodeModel(path)`, etc.
 
 La interfaz `WorkflowContext` actúa como un mediador que garantiza consistencia entre secciones sin necesidad de coordinación directa.
+
+#### 8.6.1. Navegación y requisitos del modelo del enunciado
+
+Las tarjetas numeradas permiten acceder a cada paso sin ejecutar su acción. **Un paso accesible no equivale a un paso completado**: al cargar correctamente el texto del paso 1 se habilita el acceso a los pasos 2, 3 y 4, pero no se marcan como realizados.
+
+| Acción o paso | Condición de disponibilidad |
+| --- | --- |
+| Acceder a «Seleccionar prompt», «Seleccionar LLM» y «Obtener modelo» | Haber cargado el texto del paso 1. |
+| «Trabajar con modelo local» | Haber cargado el texto; no requiere prompt ni LLM. |
+| «Obtener modelo mediante LLM» | Texto y prompt no vacíos, proveedor seleccionado y cliente disponible con un modelo LLM seleccionado. |
+| «Revisar modelo» | Haber obtenido o cargado un modelo compatible y abierto su editor. |
+| «Diagrama de clases» | Haber confirmado y guardado la copia revisada del modelo. |
+
+Durante la generación automática se bloquean las acciones de generación y carga local y la navegación a los pasos de entrada. Al terminar, se recalcula su disponibilidad. Quitar la selección del proveedor o del modelo, o actualizar la lista de modelos, deshabilita la generación mediante LLM mientras falte una selección válida, sin bloquear por ello la vía local.
+
+Cambiar el prompt o el LLM conserva el visor y el editor de un modelo local ya cargado, sin descartar las modificaciones en curso. Esta conservación dentro de la sección no implica guardar automáticamente esas modificaciones para otra ejecución.
+
+#### 8.6.2. Resumen de la petición y visores JSON
+
+El paso «Obtener modelo» explica las dos alternativas. El bloque «Petición al LLM» aclara que prompt y LLM son necesarios solo para generación automática y que la vía local permite omitir los pasos 2 y 3.
+
+Sus valores se presentan como badges verdes cuando están seleccionados y naranjas con el texto «Sin seleccionar» cuando están pendientes. El aviso se refiere a los datos de la petición automática, no a un error que impida cargar un JSON local. En los badges de prompt y enunciado, el nombre del archivo aparece en negrita y la carpeta contenedora se muestra debajo, en gris y sin negrita.
+
+El visor JSON ofrece pestañas de árbol y texto. Cuando el árbol supera la altura disponible, utiliza desplazamiento vertical interno; la barra dispone de ancho y contraste explícitos para facilitar su identificación y se oculta cuando no es necesaria.
 
 ### 8.7. Componentes reutilizables: `UiComponents`
 
@@ -1620,15 +1945,42 @@ El cierre de sesión involucra varias fases:
 
 ### 9.1. Estrategia de pruebas
 
-*Pendiente de desarrollar.*
+Para el flujo de obtención del modelo del enunciado se combinan pruebas de la sección JavaFX y pruebas del contexto persistente:
+
+- [ModelFromStatementSectionTest](../modules/desktop-app/src/test/java/com/crud2gui/desktop/teacher/sections/ModelFromStatementSectionTest.java) ejecuta las acciones en el hilo de JavaFX y utiliza archivos temporales. El proveedor LLM simulado permite comprobar los estados de la interfaz y el tratamiento de respuestas sin depender de un servicio externo.
+- [TeacherWorkflowContextTest](../modules/desktop-app/src/test/java/com/crud2gui/desktop/teacher/TeacherWorkflowContextTest.java) verifica la escritura y recuperación del contexto, así como la conservación e invalidación de los resultados según sus dependencias.
+
+Estas pruebas focalizadas no constituyen una evaluación completa de la aplicación ni una medida de la calidad de las inferencias de un LLM real. La estrategia general del resto de funcionalidades queda pendiente de desarrollar.
 
 ### 9.2. Casos de prueba y evidencias
 
-*Pendiente de desarrollar.*
+Los casos relevantes para las dos vías de obtención del modelo incluyen:
+
+| Caso | Resultado comprobado |
+| --- | --- |
+| Cargar el texto sin seleccionar un prompt | Los pasos 2, 3 y 4 quedan accesibles; los pasos posteriores no se marcan como completados. |
+| Seleccionar o quitar un modelo LLM | La generación automática se habilita solo con sus entradas completas y se deshabilita al quitar una selección necesaria. |
+| Cargar un JSON local sin prompt ni LLM | Se permite revisar y confirmar el modelo; el diagrama se habilita después de la confirmación. |
+| Seleccionar un archivo local no válido | Se muestra el error y no se habilita una revisión nueva. |
+| Cambiar prompt o LLM con un modelo local cargado | Se conserva el editor, la referencia local y, si existe, su revisión. |
+| Recuperar un contexto con un modelo local confirmado | Se restaura su origen y se mantienen las reglas de conservación ante cambios del LLM. |
+| Cambiar el texto del enunciado | Se invalidan el modelo asociado, su revisión y la validación dependiente. |
+| Sustituir el modelo local por uno generado automáticamente | Los cambios posteriores del LLM vuelven a invalidar el resultado. |
+| Mostrar archivos en el resumen de la petición | La carpeta aparece en gris y con peso normal; el nombre del archivo conserva la negrita. |
+
+La ejecución focalizada se reproduce desde la raíz del proyecto con:
+
+```powershell
+mvn -pl 'modules\desktop-app' -am '-Dtest=ModelFromStatementSectionTest,TeacherWorkflowContextTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+```
+
+Maven Surefire genera las evidencias de ejecución en `modules/desktop-app/target/surefire-reports`. Estos informes son resultados de compilación y pruebas, no documentos permanentes de la memoria.
 
 ### 9.3. Resultados y limitaciones
 
-*Pendiente de desarrollar.*
+La ejecución focalizada registrada para estos cambios terminó con `BUILD SUCCESS` y código de salida 0: **22 pruebas ejecutadas, sin fallos, errores ni omisiones**. Corresponden a 13 pruebas de `ModelFromStatementSectionTest` y 9 de `TeacherWorkflowContextTest`.
+
+El resultado respalda la navegación alternativa, el control de requisitos de la generación automática y la persistencia de las dependencias del modelo local. No demuestra que un modelo importado satisfaga el enunciado ni que un LLM real produzca modelos correctos; tampoco sustituye una revisión visual de la interfaz en distintas resoluciones o una evaluación de usabilidad. La evaluación global del proyecto y sus resultados restantes quedan pendientes.
 
 ## 9. Distribución y uso
 

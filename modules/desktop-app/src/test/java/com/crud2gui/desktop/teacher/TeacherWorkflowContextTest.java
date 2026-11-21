@@ -135,6 +135,53 @@ class TeacherWorkflowContextTest {
     }
 
     @Test
+    void preservesPersistedLocalModelAndValidationWhenLlmInputsChange() throws Exception {
+        Path stateFile = directory.resolve("workflow.json");
+        Path statement = Files.writeString(directory.resolve("statement.txt"), "Enunciado.");
+        Path local = Files.writeString(directory.resolve("local.json"), "{}");
+        Path confirmed = Files.writeString(directory.resolve("local-reviewed.json"), "{}");
+        Path prompt = Files.writeString(directory.resolve("prompt.txt"), "Instrucciones.");
+        Path report = Files.writeString(directory.resolve("report.json"), "{\"valid\":true,\"readyForCrud\":true}");
+        TeacherWorkflowContext context = new TeacherWorkflowContext(stateFile);
+        context.selectStatementText(statement);
+        context.recordLocalStatementModel(local);
+        context.recordConfirmedStatementModel(confirmed);
+        context.recordValidationReport(report, ValidationStatus.READY_FOR_CRUD);
+
+        TeacherWorkflowContext restored = new TeacherWorkflowContext(stateFile);
+        restored.selectPromptFile(prompt);
+        restored.selectModelProvider("fake");
+        restored.selectModel("fake-model");
+        restored = new TeacherWorkflowContext(stateFile);
+        assertTrue(restored.isStatementModelLocal());
+        assertEquals(local, restored.getGeneratedStatementModel());
+        assertEquals(confirmed, restored.getSuggestedInferredModel());
+        assertEquals(report, restored.getValidationReport());
+
+        restored.selectStatementText(Files.writeString(directory.resolve("other.txt"), "Otro enunciado."));
+        restored = new TeacherWorkflowContext(stateFile);
+        assertFalse(restored.isStatementModelLocal());
+        assertNull(restored.getGeneratedStatementModel());
+        assertNull(restored.getSuggestedInferredModel());
+        assertNull(restored.getValidationReport());
+    }
+
+    @Test
+    void replacingLocalModelWithGeneratedModelRestoresLlmInputInvalidation() throws Exception {
+        Path stateFile = directory.resolve("workflow.json");
+        Path local = Files.writeString(directory.resolve("local.json"), "{}");
+        Path generated = Files.writeString(directory.resolve("generated.json"), "{}");
+        TeacherWorkflowContext context = new TeacherWorkflowContext(stateFile);
+        context.recordLocalStatementModel(local);
+        context.recordGeneratedStatementModel(generated);
+
+        TeacherWorkflowContext restored = new TeacherWorkflowContext(stateFile);
+        assertFalse(restored.isStatementModelLocal());
+        restored.selectModel("different-model");
+        assertNull(restored.getGeneratedStatementModel());
+    }
+
+    @Test
     void resetClearsPersistedContextWithoutDeletingGeneratedFiles() throws Exception {
         Path stateFile = directory.resolve("workflow.json");
         Path pdf = Files.writeString(directory.resolve("statement.pdf"), "not deleted");

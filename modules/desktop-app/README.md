@@ -148,6 +148,17 @@ El paso «Seleccionar prompt» sigue el mismo comportamiento: visor oculto y pan
 compacto hasta cargar el fichero correctamente. Entonces el visor ocupa la altura
 disponible y la etiqueta inferior confirma que se puede continuar con el paso 3:
 Seleccionar LLM. Cancelar o un error de lectura conserva el prompt anterior, si lo habia.
+Al cargar el texto del paso 1 se habilita el acceso a los pasos 2, 3 y 4, sin marcarlos como
+completados. Se puede cargar un modelo local en el paso 4 sin seleccionar prompt ni LLM;
+el texto se conserva como contexto del enunciado.
+El boton «Obtener modelo mediante LLM» solo se habilita con texto y prompt no vacios,
+cliente y modelo disponibles; se deshabilita de nuevo al quitar la seleccion o actualizar la lista.
+Cambiar el prompt o el LLM no descarta un modelo local ni su revision. Su origen local se
+conserva al recuperar el trabajo guardado. Cambiar el texto del enunciado si invalida el modelo.
+El resumen «Peticion al LLM» muestra badges verdes para los datos seleccionados y naranjas
+con «Sin seleccionar» para las entradas pendientes. Los badges de prompt y enunciado muestran
+el nombre en negrita y, debajo, la carpeta contenedora en gris y sin negrita. Una aclaracion
+indica que prompt y LLM son necesarios solo para generacion automatica, no para la via local.
 Si el LLM devuelve una respuesta con JSON incorrecto o incompatible con el modelo,
 el visor muestra el texto original sin modificarlo. La etiqueta inferior conserva
 el error y los pasos de revisión y diagrama permanecen bloqueados; esa respuesta no se guarda

@@ -20,6 +20,9 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.css.PseudoClass;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -246,7 +249,7 @@ class ModelFromStatementSectionTest {
                 assertTrue(section.lookup("#model-statement-text-card").getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("selected")));
             assertTrue(status.getText().contains("cargado correctamente"));
-            assertTrue(status.getText().contains("Puedes continuar con el paso 2: Seleccionar prompt."));
+            assertTrue(status.getText().contains("paso 4: Obtener modelo para cargar un JSON local."));
             assertFalse(((Button) section.lookup("#statement-step-2")).isDisabled());
             assertTrue(((Button) section.lookup("#statement-step-1")).getPseudoClassStates()
                     .contains(PseudoClass.getPseudoClass("completed")));
@@ -257,7 +260,9 @@ class ModelFromStatementSectionTest {
             assertTrue(((Button) section.lookup("#statement-step-2"))
                     .getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
             for (int i = 2; i < 6; i++) {
-                assertTrue(((Button) section.lookup("#statement-step-" + (i + 1))).isDisabled());
+                assertEquals(i >= 4, section.lookup("#statement-step-" + (i + 1)).isDisabled());
+                assertFalse(section.lookup("#statement-step-" + (i + 1)).getPseudoClassStates()
+                        .contains(PseudoClass.getPseudoClass("completed")));
             }
 
             assertFalse(prompt.isEditable());
@@ -332,6 +337,7 @@ class ModelFromStatementSectionTest {
         FakeProvider provider = new FakeProvider();
         Path stateFile = directory.resolve("llm-workflow.json");
         TeacherWorkflowContext saved = new TeacherWorkflowContext(stateFile);
+        saved.selectStatementText(Files.writeString(directory.resolve("statement.txt"), "Enunciado."));
         saved.selectModelProvider(provider.id());
         saved.selectModel("fake-model");
         TeacherWorkflowContext restored = new TeacherWorkflowContext(stateFile);
@@ -391,7 +397,9 @@ class ModelFromStatementSectionTest {
         onFx(() -> {
             assertEquals(reviewed.getFileName().toString(),
                 ((Label) section.lookup("#model-statement-output-filename")).getText());
-            assertTrue(((TextArea) section.lookup("#model-statement-generated-json")).isVisible());
+            assertTrue(((StackPane) section.lookup("#model-statement-generated-json")).isVisible());
+            assertTrue(section.generatedModelViewer() != null);
+            assertFalse(section.generatedModelViewer().isEditable());
             assertTrue(section.lookup("#statement-step-4").getPseudoClassStates()
                 .contains(PseudoClass.getPseudoClass("completed")));
             assertTrue(section.lookup("#statement-step-5").getPseudoClassStates()
@@ -556,10 +564,15 @@ class ModelFromStatementSectionTest {
         Label generationStatus = onFx(() -> (Label) section.lookup("#model-statement-generation-status"));
         awaitStatus(generationStatus, "Análisis completado");
         onFx(() -> {
-            TextArea result = (TextArea) section.lookup("#model-statement-generated-json");
+            StackPane result = (StackPane) section.lookup("#model-statement-generated-json");
             Label outputName = (Label) section.lookup("#model-statement-output-filename");
             Label outputDirectory = (Label) section.lookup("#model-statement-output-folder");
-            assertTrue(result.getText().contains("\"name\" : \"Usuario\""));
+            assertTrue(result.isVisible());
+            assertTrue(section.generatedModelViewer() != null);
+            assertFalse(section.generatedModelViewer().isEditable());
+            assertEquals("model-statement-generated-model-viewer",
+                    section.generatedModelViewer().getView().getId());
+            assertEquals(section.generatedModelViewer().getView(), result.getChildren().get(0));
             assertTrue(generationStatus.getText().contains("Puedes continuar con el paso 5: Revisar modelo."));
             assertEquals("", ((Label) section.lookup("#model-statement-diagram-status")).getText());
             assertEquals("modelo-enunciado_practica_23-filtrado-gemini-3.5-flash-lite.json", outputName.getText());
@@ -709,11 +722,13 @@ class ModelFromStatementSectionTest {
             });
             awaitStatus(status, "No se pudo obtener un JSON válido:");
             onFx(() -> {
-                TextArea viewer = (TextArea) section.lookup("#model-statement-generated-json");
+                StackPane result = (StackPane) section.lookup("#model-statement-generated-json");
+                TextArea viewer = (TextArea) result.getChildren().get(0);
                 assertEquals(invalid, viewer.getText());
                 assertTrue(viewer.isVisible());
                 assertTrue(viewer.isManaged());
                 assertFalse(viewer.isEditable());
+                assertTrue(section.generatedModelViewer() == null);
                 assertTrue(status.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
                 assertTrue(section.lookup("#statement-step-5").isDisabled());
                 assertFalse(section.lookup("#statement-step-4").getPseudoClassStates()
@@ -736,8 +751,10 @@ class ModelFromStatementSectionTest {
         onFx(() -> {
             assertFalse(section.lookup("#statement-step-5").isDisabled());
             assertFalse(status.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
-            assertTrue(((TextArea) section.lookup("#model-statement-generated-json")).getText()
-                    .contains("\"expectedManagerId\" : \"PlataformaCompraVenta\""));
+            assertTrue(section.generatedModelViewer() != null);
+            assertFalse(section.generatedModelViewer().isEditable());
+            assertEquals(section.generatedModelViewer().getView(),
+                    ((StackPane) section.lookup("#model-statement-generated-json")).getChildren().get(0));
                 String expectedName = firstOutputName.replaceFirst("\\.json$", "_1.json");
                 assertEquals(expectedName, ((Label) section.lookup("#model-statement-output-filename")).getText());
                 Path folder = Path.of(((Label) section.lookup("#model-statement-output-folder")).getText());
@@ -746,6 +763,148 @@ class ModelFromStatementSectionTest {
         });
     }
 
+
+    @Test
+    void enablesLlmGenerationOnlyWhileProviderAndModelAreSelected() throws Exception {
+        Path textFile = Files.writeString(directory.resolve("enunciado.txt"), "Texto del enunciado.");
+        Path promptFile = Files.writeString(directory.resolve("prompt.txt"), "Instrucciones del modelo.");
+        FakeProvider provider = new FakeProvider();
+        PseudoClass missing = PseudoClass.getPseudoClass("missing");
+        ModelFromStatementSection section = onFx(() -> {
+            ModelFromStatementSection created = new ModelFromStatementSection(
+                    owner -> textFile.toFile(), owner -> promptFile.toFile(),
+                    List.of(provider), directory.resolve("output"));
+            Scene scene = new Scene(created, 1200, 900);
+            scene.getStylesheets().add(getClass().getResource("/styles/app.css").toExternalForm());
+            created.applyCss();
+            created.layout();
+            assertTrue(created.lookup("#model-statement-generate-model").isDisabled());
+            for (String field : List.of("provider", "model", "prompt", "statement")) {
+                Label badge = (Label) created.lookup("#model-statement-request-" + field);
+                assertEquals("Sin seleccionar", badge.getText());
+                assertTrue(badge.getPseudoClassStates().contains(missing));
+                assertEquals(Color.web("#9a3412"), badge.getTextFill());
+                assertTrue(badge.getPadding().getTop() > 0);
+            }
+            ((Button) created.lookup("#model-statement-select-text")).fire();
+            ((Button) created.lookup("#model-statement-select-prompt")).fire();
+            ((Button) created.lookup("#statement-step-4")).fire();
+            assertTrue(created.lookup("#model-statement-generate-model").isDisabled());
+            assertFalse(created.lookup("#model-statement-use-local-model").isDisabled());
+            for (String field : List.of("prompt", "statement")) {
+                Label badge = (Label) created.lookup("#model-statement-request-" + field);
+                badge.applyCss();
+                assertFalse(badge.getPseudoClassStates().contains(missing));
+                assertEquals(Color.web("#135c48"), badge.getTextFill());
+                VBox lines = (VBox) badge.getGraphic();
+                Label filename = (Label) lines.getChildren().get(0);
+                Label folder = (Label) lines.getChildren().get(1);
+                Path selectedFile = field.equals("prompt") ? promptFile : textFile;
+                assertEquals(selectedFile.getFileName().toString(), filename.getText());
+                assertEquals(selectedFile.getParent().toString(), folder.getText());
+                assertEquals(Color.web("#66736e"), folder.getTextFill());
+                assertEquals(Font.font(folder.getFont().getFamily(), FontWeight.NORMAL,
+                        folder.getFont().getSize()), folder.getFont());
+                assertEquals(Font.font(filename.getFont().getFamily(), FontWeight.BOLD,
+                        filename.getFont().getSize()), filename.getFont());
+            }
+            ComboBox<?> providers = (ComboBox<?>) created.lookup("#model-statement-provider");
+            providers.getSelectionModel().select(0);
+            providers.getOnAction().handle(new ActionEvent());
+            return created;
+        });
+        Label status = onFx(() -> (Label) section.lookup("#model-statement-llm-status"));
+        awaitStatus(status, "1 modelos");
+        onFx(() -> {
+            Button generate = (Button) section.lookup("#model-statement-generate-model");
+            ComboBox<?> models = (ComboBox<?>) section.lookup("#model-statement-model");
+            ComboBox<?> providers = (ComboBox<?>) section.lookup("#model-statement-provider");
+            Label modelBadge = (Label) section.lookup("#model-statement-request-model");
+            assertTrue(generate.isDisabled());
+            models.getSelectionModel().select(0);
+            assertFalse(generate.isDisabled());
+            assertFalse(modelBadge.getPseudoClassStates().contains(missing));
+            models.getSelectionModel().clearSelection();
+            assertTrue(generate.isDisabled());
+            assertEquals("Sin seleccionar", modelBadge.getText());
+            assertTrue(modelBadge.getPseudoClassStates().contains(missing));
+            models.getSelectionModel().select(0);
+            assertFalse(generate.isDisabled());
+            providers.setValue(null);
+            providers.getOnAction().handle(new ActionEvent());
+            assertTrue(generate.isDisabled());
+            assertEquals("Sin seleccionar", modelBadge.getText());
+            assertTrue(modelBadge.getPseudoClassStates().contains(missing));
+            assertFalse(section.lookup("#statement-step-4").isDisabled());
+            assertFalse(section.lookup("#model-statement-use-local-model").isDisabled());
+            return null;
+        });
+    }
+
+    @Test
+    void preservesLocalModelAcrossLlmChangesAndWorkflowRestoration() throws Exception {
+        Path statement = Files.writeString(directory.resolve("statement.txt"), "Enunciado.");
+        Path anotherStatement = Files.writeString(directory.resolve("another-statement.txt"), "Otro enunciado.");
+        Path prompt = Files.writeString(directory.resolve("prompt.txt"), "Instrucciones.");
+        Path localModel = Files.writeString(directory.resolve("local.json"), MODEL_JSON);
+        Path stateFile = directory.resolve("local-workflow.json");
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(stateFile);
+        FakeProvider provider = new FakeProvider();
+        AtomicReference<Node> originalEditor = new AtomicReference<>();
+        ModelFromStatementSection section = onFx(() -> {
+            ModelFromStatementSection created = new ModelFromStatementSection(
+                    owner -> statement.toFile(), owner -> prompt.toFile(), (owner, current) -> null,
+                    List.of(provider), directory.resolve("output"), workflow, owner -> localModel.toFile());
+            new Scene(created, 1200, 900);
+            ((Button) created.lookup("#model-statement-select-text")).fire();
+            ((Button) created.lookup("#statement-step-4")).fire();
+            ((Button) created.lookup("#model-statement-use-local-model")).fire();
+            assertFalse(created.lookup("#statement-step-5").isDisabled());
+            originalEditor.set(((StackPane) created.lookup("#model-statement-editor-host")).getChildren().get(0));
+            ComboBox<?> providers = (ComboBox<?>) created.lookup("#model-statement-provider");
+            providers.getSelectionModel().select(0);
+            providers.getOnAction().handle(new ActionEvent());
+            return created;
+        });
+        awaitStatus(onFx(() -> (Label) section.lookup("#model-statement-llm-status")), "1 modelos");
+        onFx(() -> {
+            ((ComboBox<?>) section.lookup("#model-statement-model")).getSelectionModel().select(0);
+            assertTrue(section.lookup("#model-statement-generate-model").isDisabled());
+            ((Button) section.lookup("#model-statement-select-prompt")).fire();
+            assertFalse(section.lookup("#model-statement-generate-model").isDisabled());
+            assertEquals(originalEditor.get(),
+                    ((StackPane) section.lookup("#model-statement-editor-host")).getChildren().get(0));
+            ((Button) section.lookup("#model-statement-confirm-model")).fire();
+            assertFalse(section.lookup("#statement-step-6").isDisabled());
+            assertEquals(localModel, workflow.getGeneratedStatementModel());
+            return null;
+        });
+        TeacherWorkflowContext restored = new TeacherWorkflowContext(stateFile);
+        ModelFromStatementSection restoredSection = onFx(() -> {
+            ModelFromStatementSection created = new ModelFromStatementSection(
+                    owner -> anotherStatement.toFile(), owner -> prompt.toFile(), (owner, current) -> null,
+                    List.of(provider), directory.resolve("output"), restored);
+            new Scene(created, 1200, 900);
+            return created;
+        });
+        awaitStatus(onFx(() -> (Label) restoredSection.lookup("#model-statement-refine-status")),
+                "Modelo revisado restaurado");
+        onFx(() -> {
+            assertFalse(restoredSection.lookup("#statement-step-6").isDisabled());
+            ComboBox<?> providers = (ComboBox<?>) restoredSection.lookup("#model-statement-provider");
+            providers.setValue(null);
+            providers.getOnAction().handle(new ActionEvent());
+            ((Button) restoredSection.lookup("#model-statement-select-prompt")).fire();
+            assertEquals(localModel, restored.getGeneratedStatementModel());
+            assertFalse(restoredSection.lookup("#statement-step-6").isDisabled());
+            ((Button) restoredSection.lookup("#model-statement-select-text")).fire();
+            assertEquals(null, restored.getGeneratedStatementModel());
+            assertEquals(null, restored.getSuggestedInferredModel());
+            assertTrue(restoredSection.lookup("#statement-step-5").isDisabled());
+            assertTrue(restoredSection.lookup("#statement-step-6").isDisabled());
+            return null;
+        });
+    }
 
     @Test
     void loadsLocalModelWithoutLlmAndContinuesThroughConfirmation() throws Exception {
@@ -765,7 +924,6 @@ class ModelFromStatementSectionTest {
         root.applyCss();
         root.layout();
         ((Button) section.lookup("#model-statement-select-text")).fire();
-        ((Button) section.lookup("#model-statement-select-prompt")).fire();
 
         Button generationStep = (Button) section.lookup("#statement-step-4");
         Button refineStep = (Button) section.lookup("#statement-step-5");
@@ -778,6 +936,8 @@ class ModelFromStatementSectionTest {
         assertEquals("Trabajar con modelo local", localModelButton.getText());
         assertFalse(generationStep.isDisabled());
         generationStep.fire();
+        assertTrue(generateModelButton.isDisabled());
+        assertFalse(localModelButton.isDisabled());
 
         localModelButton.fire();
         assertTrue(generationStatus.getText().contains("No se pudo cargar el modelo local"));
@@ -791,8 +951,8 @@ class ModelFromStatementSectionTest {
         assertEquals(localModel.toAbsolutePath().normalize().getParent().toString(),
             ((Label) section.lookup("#model-statement-output-folder")).getText());
         assertFalse(refineStep.isDisabled());
-        assertTrue(((TextArea) section.lookup("#model-statement-generated-json")).getText()
-            .contains("\"expectedManagerId\""));
+        assertTrue(section.generatedModelViewer() != null);
+        assertFalse(section.generatedModelViewer().isEditable());
 
         refineStep.fire();
         ((Button) section.lookup("#model-statement-confirm-model")).fire();

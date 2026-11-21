@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.crud2gui.model.ModelIO;
@@ -17,6 +18,17 @@ import com.crud2gui.model.TypeInfo;
 class ModelIOTest {
 
     private static final Path EJEMPLO = Path.of("src/test/resources/ejemplo-plataforma.json");
+    private static final String MODELO_VACIO_VALIDO = """
+            {
+              "schemaVersion": "1.0",
+              "expectedManagerId": null,
+              "source": {"root": null, "generatedAt": null, "filesParsed": 0, "warnings": []},
+              "types": [],
+              "relations": [],
+              "analysis": null,
+              "layout": null
+            }
+            """;
 
     /** El JSON de ejemplo se lee y sus datos clave se reconstruyen correctamente. */
     @Test
@@ -39,6 +51,29 @@ class ModelIOTest {
         Path tmp = Files.createTempFile("modelo", ".json");
         ModelIO.write(original, tmp);
         assertEquals(original, ModelIO.read(tmp));
+    }
+
+    /** La serializacion incluye los campos nulos requeridos y valida el resultado contra el esquema. */
+    @Test
+    void serializaYValidaModeloConformeAlEsquema() throws Exception {
+        ProjectModel model = ModelIO.fromJson(MODELO_VACIO_VALIDO);
+
+        String json = ModelIO.toJson(model);
+
+        assertDoesNotThrow(() -> ProjectModelSchema.validate(json));
+        assertEquals(model, ModelIO.fromJson(json));
+    }
+
+    /** Un modelo que incumple el esquema no se serializa ni se escribe parcialmente. */
+    @Test
+    void rechazaSerializarModeloQueIncumpleElEsquema() throws Exception {
+        ProjectModel invalid = new ProjectModel(
+                ProjectModel.CURRENT_SCHEMA, null, null, List.of(), List.of(), null, null);
+        Path tmp = Files.createTempFile("modelo-invalido", ".json");
+
+        assertThrows(java.io.IOException.class, () -> ModelIO.toJson(invalid));
+        assertThrows(java.io.IOException.class, () -> ModelIO.write(invalid, tmp));
+        assertEquals(0, Files.size(tmp));
     }
 
     /** El JSON tambien se puede reconstruir directamente desde memoria. */
@@ -72,7 +107,6 @@ class ModelIOTest {
         assertTrue(optionalType.optional());
         assertTrue(optionalType.fields().get(0).optional());
         assertTrue(optionalType.methods().get(0).optional());
-        assertEquals(optionalModel, ModelIO.fromJson(ModelIO.toJson(optionalModel)));
         ProjectModel oldModel = ModelIO.fromJson("""
                 {"schemaVersion":"1.0","types":[{"id":"Antiguo","kind":"CLASS"}],"relations":[]}
                 """);

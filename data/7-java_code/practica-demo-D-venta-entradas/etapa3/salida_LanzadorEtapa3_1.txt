@@ -1,0 +1,109 @@
+--------------------------------
+Creamos la plataforma de eventos
+--------------------------------
+Creada plataforma de eventos Tickly
+---------------------
+Creamos organizadores
+---------------------
+Creado organizador sergionavarro@correo.es
+Creado organizador carmenlozano@mimail.com
+----------------------
+Añadimos organizadores
+----------------------
+El organizador con email sergionavarro@correo.es ha sido añadido
+El organizador con email carmenlozano@mimail.com ha sido añadido
+---------------
+Creamos eventos
+---------------
+Creado evento con id 1
+Creado evento con id 2
+Creado evento con id 3
+Creado evento con id 4
+----------------------------------------
+Añadimos los eventos a los organizadores
+----------------------------------------
+El estado del evento con id 1 ha sido modificado a estado DISPONIBLE
+El evento con id 1 se ha añadido al organizador sergionavarro@correo.es
+El estado del evento con id 2 ha sido modificado a estado DISPONIBLE
+El evento con id 2 se ha añadido al organizador carmenlozano@mimail.com
+El estado del evento con id 3 ha sido modificado a estado DISPONIBLE
+El evento con id 3 se ha añadido al organizador carmenlozano@mimail.com
+El estado del evento con id 4 ha sido modificado a estado DISPONIBLE
+El evento con id 4 se ha añadido al organizador sergionavarro@correo.es
+-------------------------------------
+Eliminamos un evento a un organizador
+-------------------------------------
+El evento con id 1 se ha eliminado de la lista del organizador sergionavarro@correo.es
+ID: 4
+Titulo: Concierto de rock en la sala Apolo
+Precio de entrada: 22.0
+Descripcion: Tres grupos locales en directo. Incluye consumición.
+Estado: DISPONIBLE
+Artista: Los Tejados
+Aforo: 450 personas
+----------------------------
+Imprimimos todos los eventos
+----------------------------
+ID: 4
+Titulo: Concierto de rock en la sala Apolo
+Precio de entrada: 22.0
+Descripcion: Tres grupos locales en directo. Incluye consumición.
+Estado: DISPONIBLE
+Artista: Los Tejados
+Aforo: 450 personas
+ID: 2
+Titulo: Conferencia sobre inteligencia artificial
+Precio de entrada: 15.0
+Descripcion: Charla divulgativa con preguntas. Incluye certificado.
+Estado: DISPONIBLE
+Ponente: Ana Beltrán
+Duracion: 1.5 h
+Online: Si
+ID: 3
+Titulo: Charla sobre sostenibilidad urbana
+Precio de entrada: 10.0
+Descripcion: Ponencia abierta con debate final.
+Estado: DISPONIBLE
+Ponente: Pablo Ruiz
+Duracion: 2.0 h
+Online: No
+El estado del evento con id 2 ha sido modificado a estado AGOTADO
+----------------------------------
+Imprimimos los eventos disponibles
+----------------------------------
+ID: 4
+Titulo: Concierto de rock en la sala Apolo
+Precio de entrada: 22.0
+Descripcion: Tres grupos locales en directo. Incluye consumición.
+Estado: DISPONIBLE
+Artista: Los Tejados
+Aforo: 450 personas
+ID: 3
+Titulo: Charla sobre sostenibilidad urbana
+Precio de entrada: 10.0
+Descripcion: Ponencia abierta con debate final.
+Estado: DISPONIBLE
+Ponente: Pablo Ruiz
+Duracion: 2.0 h
+Online: No
+-------------------------------
+Imprimimos los eventos agotados
+-------------------------------
+ID: 2
+Titulo: Conferencia sobre inteligencia artificial
+Precio de entrada: 15.0
+Descripcion: Charla divulgativa con preguntas. Incluye certificado.
+Estado: AGOTADO
+Ponente: Ana Beltrán
+Duracion: 1.5 h
+Online: Si
+----------------------------------------------------
+Imprimimos los eventos disponibles de un organizador
+----------------------------------------------------
+ID: 4
+Titulo: Concierto de rock en la sala Apolo
+Precio de entrada: 22.0
+Descripcion: Tres grupos locales en directo. Incluye consumición.
+Estado: DISPONIBLE
+Artista: Los Tejados
+Aforo: 450 personas

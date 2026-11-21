@@ -1,0 +1,29 @@
+Alumnos en el colegio:
+     alumno1: Sofía Navarro Lara
+     alumno2: Diego Herrero Soto
+Identificador de alumno: alumno2
+     Nombre: Diego Herrero Soto
+     URL: https://www.miColegio.com/alumno2
+     FICHA:
+          Fecha de nacimiento: Tue Nov 27 00:00:00 CET 2007
+          Aficiones: Videojuegos y guitarra
+          Asignatura favorita: Música
+          Objetivos académicos: Cursar un grado en Ingeniería
+     Entidad becaria: Fundación Educa Futuro
+     Importe de la beca: 1200 euros anuales
+No existe el alumno alumno56
+La password es incorrecta
+Password correcta
+Identificador de alumno: alumno2
+     Nombre: Diego Herrero Soto
+     URL: https://www.miColegio.com/alumno2
+     FICHA:
+          Fecha de nacimiento: Tue Nov 27 00:00:00 CET 2007
+          Aficiones: Videojuegos y guitarra
+          Asignatura favorita: Música
+          Objetivos académicos: Cursar un grado en Ingeniería
+     ANOTACIONES:
+          https://www.miColegio.com/anotacion/alumno2.1 Excelente actitud en el laboratorio
+          https://www.miColegio.com/anotacion/alumno2.2 Ha mejorado su nota de matemáticas
+     Entidad becaria: Fundación Educa Futuro
+     Importe de la beca: 1200 euros anuales

@@ -1,0 +1,110 @@
+-------------------------------------
+Creamos la plataforma de alojamientos
+-------------------------------------
+Creada plataforma de alojamientos Vacanza
+-------------------
+Creamos anfitriones
+-------------------
+Creado anfitrion lucia.mora@correo.es
+Creado anfitrion pablosanz@mimail.com
+Creado anfitrion elenaruiz@otromail.com
+--------------------
+Añadimos anfitriones
+--------------------
+El anfitrion con email lucia.mora@correo.es ha sido añadido
+El anfitrion con email pablosanz@mimail.com ha sido añadido
+El anfitrion con email elenaruiz@otromail.com ha sido añadido
+--------------------
+Creamos alojamientos
+--------------------
+Creado alojamiento con id 1
+Creado alojamiento con id 2
+Creado alojamiento con id 3
+Creado alojamiento con id 4
+Creado alojamiento con id 5
+-------------------------------------------
+Añadimos los alojamientos a los anfitriones
+-------------------------------------------
+El estado del alojamiento con id 1 ha sido modificado a estado DISPONIBLE
+El alojamiento con id 1 se ha añadido al anfitrion lucia.mora@correo.es
+El estado del alojamiento con id 2 ha sido modificado a estado DISPONIBLE
+El alojamiento con id 2 se ha añadido al anfitrion pablosanz@mimail.com
+El estado del alojamiento con id 3 ha sido modificado a estado DISPONIBLE
+El alojamiento con id 3 se ha añadido al anfitrion elenaruiz@otromail.com
+El estado del alojamiento con id 4 ha sido modificado a estado DISPONIBLE
+El alojamiento con id 4 se ha añadido al anfitrion lucia.mora@correo.es
+El estado del alojamiento con id 5 ha sido modificado a estado DISPONIBLE
+El alojamiento con id 5 se ha añadido al anfitrion elenaruiz@otromail.com
+------------------------------------
+Imprimimos la info de un alojamiento
+------------------------------------
+ID: 2
+Titulo: Casa rural en la sierra de Gredos
+Precio por noche: 140.0
+Descripcion: Casa de piedra con chimenea y barbacoa. Se admiten mascotas.
+Estado: DISPONIBLE
+----------------------------------
+Imprimimos la info de un anfitrion
+----------------------------------
+------------
+Nombre: Elena Ruiz Cano
+Email: elenaruiz@otromail.com
+------------
+ID: 3
+Titulo: Estudio en la playa de Valencia
+Precio por noche: 70.0
+Descripcion: Estudio nuevo a 50 metros de la playa. Cocina equipada.
+Estado: DISPONIBLE
+ID: 5
+Titulo: Cabaña junto al lago
+Precio por noche: 85.0
+Descripcion: Cabaña de madera junto al lago con barbacoa y zona de pesca.
+Estado: DISPONIBLE
+--------------------------------------------
+Eliminamos un anfitrion a partir de su email
+--------------------------------------------
+El anfitrion con email elenaruiz@otromail.com ha sido eliminado
+----------------------------------
+Imprimimos la lista de anfitriones
+----------------------------------
+------------
+Nombre: Lucía Mora Vidal
+Email: lucia.mora@correo.es
+------------
+ID: 1
+Titulo: Apartamento céntrico en Madrid
+Precio por noche: 95.0
+Descripcion: Luminoso, junto a la Puerta del Sol. Wifi y aire acondicionado.
+Estado: DISPONIBLE
+ID: 4
+Titulo: Loft con vistas en Barcelona
+Precio por noche: 120.5
+Descripcion: Loft moderno con vistas a la ciudad, cerca del metro.
+Estado: DISPONIBLE
+------------
+Nombre: Pablo Sanz Rey
+Email: pablosanz@mimail.com
+------------
+ID: 2
+Titulo: Casa rural en la sierra de Gredos
+Precio por noche: 140.0
+Descripcion: Casa de piedra con chimenea y barbacoa. Se admiten mascotas.
+Estado: DISPONIBLE
+----------------------------------------------------
+Imprimimos el total de alojamientos en la plataforma
+----------------------------------------------------
+ID: 1
+Titulo: Apartamento céntrico en Madrid
+Precio por noche: 95.0
+Descripcion: Luminoso, junto a la Puerta del Sol. Wifi y aire acondicionado.
+Estado: DISPONIBLE
+ID: 4
+Titulo: Loft con vistas en Barcelona
+Precio por noche: 120.5
+Descripcion: Loft moderno con vistas a la ciudad, cerca del metro.
+Estado: DISPONIBLE
+ID: 2
+Titulo: Casa rural en la sierra de Gredos
+Precio por noche: 140.0
+Descripcion: Casa de piedra con chimenea y barbacoa. Se admiten mascotas.
+Estado: DISPONIBLE

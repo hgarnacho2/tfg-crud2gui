@@ -59,13 +59,12 @@ import java.util.Set;
  *       + collectionWeight * min(domainCollectionFields, 2)
  *       + collectionUsageWeight * min(usedDomainCollections, 2)
  *       + entryPointWeight * instantiatedFromMainOrTest
- *       + lexicalWeight * hasConfiguredLexicalHint
  * }</pre>
  * <p>La fraccion de alcance es el numero de otros tipos concretos del dominio alcanzables dividido
  * por el numero de otros tipos concretos del dominio (como minimo uno). Los campos de coleccion
  * incluyen sus argumentos genericos, tanto claves como valores de mapas. El uso se reconoce en el
- * AST por llamadas a operaciones conocidas de coleccion e iteraciones {@code for-each}. Pesos,
- * terminos lexicos y umbrales de confianza vienen de {@code manager-analysis.json}.</p>
+ * AST por llamadas a operaciones conocidas de coleccion e iteraciones {@code for-each}. Pesos y
+ * umbrales de confianza vienen de {@code manager-analysis.json}.</p>
  *
  * <p>La candidata se elige por puntuacion descendente. La confianza compara la diferencia de
  * puntuacion entre candidatas vecinas con los umbrales configurados. Un override manual valido
@@ -249,10 +248,6 @@ final class ManagerDetector {
             reasons.add("Instanciada desde un punto de entrada o una prueba.");
         }
 
-        if (hasLexicalHint(type)) {
-            total += config.lexicalWeight;
-            reasons.add("Coincidencia lexica de baja ponderacion (solo desempate).");
-        }
         if (reasons.isEmpty()) reasons.add("Candidata por contener atributos de tipos del proyecto.");
         return new CandidateScore(total, List.copyOf(reasons), reachable.size(), collections, collectionUsage);
     }
@@ -374,24 +369,6 @@ final class ManagerDetector {
             }
         }
         return used;
-    }
-
-    /**
-     * Comprueba si el nombre de clase o algun metodo contiene terminos lexicos configurados.
-     *
-     * @param type candidata cuyos nombres se comparan
-     * @return {@code true} si hay una coincidencia; solo se anade como desempate de bajo peso
-     */
-    private boolean hasLexicalHint(TypeInfo type) {
-        String className = type.name().toLowerCase(Locale.ROOT);
-        if (containsTerm(className, config.managerNameTerms)) return true;
-        return type.methods().stream().map(method -> method.name().toLowerCase(Locale.ROOT))
-                .anyMatch(name -> containsTerm(name, config.managerMethodTerms));
-    }
-
-    /** Busca cualquiera de los terminos configurados como subcadena del texto dado. */
-    private static boolean containsTerm(String value, List<String> terms) {
-        return terms.stream().anyMatch(value::contains);
     }
 
     /**

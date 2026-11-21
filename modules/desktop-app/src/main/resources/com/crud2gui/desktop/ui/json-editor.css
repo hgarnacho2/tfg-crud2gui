@@ -185,3 +185,13 @@
 .json-editor .scroll-bar .decrement-button { -fx-padding: 0; }
 .json-editor .scroll-bar .increment-arrow,
 .json-editor .scroll-bar .decrement-arrow { -fx-padding: 0; -fx-shape: ""; }
+.json-editor .tree-view .scroll-bar:vertical {
+    -fx-min-width: 12;
+    -fx-pref-width: 12;
+    -fx-max-width: 12;
+    -fx-background-color: #f1f6f4;
+}
+.json-editor .tree-view .scroll-bar:vertical .thumb {
+    -fx-background-color: #8da99e;
+    -fx-min-height: 36;
+}
