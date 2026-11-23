@@ -75,6 +75,49 @@ public final class UiComponents {
     private UiComponents() {
     }
 
+    public static Label contextOriginBadge(String id, String text) {
+        Label badge = new Label(text);
+        badge.setId(id);
+        badge.getStyleClass().add("workflow-context-origin-badge");
+        String explanation = switch (text) {
+            case "ENTRADA" -> "Archivo o carpeta seleccionado como entrada inicial del flujo.";
+            case "GENERADO" -> "Archivo generado por la aplicación en esta etapa.";
+            case "SELECCIONADO" -> "Archivo elegido manualmente (también podría haberse generado previamente con la aplicación).";
+            case "ORIGEN DESCONOCIDO" -> "El contexto guardado no contiene información sobre el origen de este modelo.";
+            default -> throw new IllegalArgumentException("Estado de contexto desconocido: " + text);
+        };
+        Tooltip tooltip = new Tooltip(explanation);
+        tooltip.setStyle("-fx-font-size: 12px;");
+        badge.setTooltip(tooltip);
+        return badge;
+    }
+
+    public static Label contextUnavailableLabel() {
+        Label label = new Label("Archivo no disponible");
+        label.getStyleClass().add("workflow-context-unavailable");
+        Tooltip tooltip = new Tooltip("El archivo ya no existe o no se puede leer. "
+                + "Recupera el archivo o selecciona otro.");
+        tooltip.setStyle("-fx-font-size: 12px;");
+        label.setTooltip(tooltip);
+        return label;
+    }
+
+    public static VBox contextSecondaryFile(String id, String badgeText, Path file) {
+        Label name = new Label(file.getFileName().toString());
+        name.setId(id + "-file");
+        name.getStyleClass().add("workflow-context-input-file");
+        name.setWrapText(true);
+        name.setMinWidth(0);
+        HBox row = new HBox(8, contextOriginBadge(id + "-origin", badgeText), name,
+                revealFileButton(id + "-reveal", file));
+        row.setAlignment(Pos.CENTER_LEFT);
+        Label path = new Label(file.toAbsolutePath().normalize().getParent().toString());
+        path.setId(id + "-path");
+        path.getStyleClass().add("workflow-context-stage-path");
+        path.setWrapText(true);
+        return new VBox(4, row, path);
+    }
+
     public static Button revealFileButton(String id, Path file) {
         SVGPath icon = new SVGPath();
         icon.setContent("M1 4 L6 4 L8 6 L17 6 L17 16 L1 16 Z");

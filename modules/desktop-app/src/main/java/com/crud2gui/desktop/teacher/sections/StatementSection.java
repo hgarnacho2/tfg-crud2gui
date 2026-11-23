@@ -6,6 +6,7 @@ import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.PdfViewer;
 import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
 import com.crud2gui.common.env.DotEnv;
+import com.crud2gui.common.path.OutputDirectoryResolver;
 import com.crud2gui.statement.extractor.StatementExtractor;
 import com.crud2gui.statement.filter.StatementFilter;
 import com.crud2gui.statement.filter.StatementFilterConfigJson;
@@ -44,7 +45,7 @@ import java.util.concurrent.Callable;
  * vuelve a invalidar el filtrado.</p>
  *
  * <p>Los resultados se muestran en visores de solo lectura y se guardan en UTF-8
- * en la carpeta de salida elegida, previa confirmación si el destino ya existe.
+ * en las carpetas de salida elegidas, sin sobrescribir archivos existentes.
  * El filtro carga {@code statement-filter-rules.json} en cada ejecución mediante
  * la ruta resuelta por {@link #filterConfigurationPath()}.</p>
  *
@@ -93,13 +94,16 @@ public final class StatementSection extends Section {
     private final StackPane panelHost = new StackPane();
     private Path selectedPdf;
     private Path outputFolder;
+    private Path filterOutputFolder;
+    private boolean filterFollowsExtracted;
+    private boolean filterFolderSelected;
     private boolean busy;
     private boolean filterCompleted;
     private int currentStep;
 
     /**
      * Construye los tres paneles con los diálogos de selección de PDF,
-     * carpeta y confirmación de sobrescritura. Inicialmente solo está habilitado
+     * y carpeta. Inicialmente solo está habilitado
      * el paso de selección y no se carga ningún documento.
      */
     public StatementSection() {
@@ -152,13 +156,13 @@ public final class StatementSection extends Section {
         extractButton = UiComponents.actionButton("Extraer texto", List.of("statement-extract"), this::extractText);
         filterButton = UiComponents.actionButton("Filtrar texto", List.of("statement-filter"), this::filterText);
         changeFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
-                List.of("statement-change-folder", "secondary-button"), this::changeOutputFolder);
+                List.of("statement-change-folder", "secondary-button"), () -> changeOutputFolder(false));
         filterChangeFolderButton = UiComponents.actionButton("Cambiar carpeta de salida",
-                List.of("statement-change-folder", "secondary-button"), this::changeOutputFolder);
+                List.of("statement-change-folder", "secondary-button"), () -> changeOutputFolder(true));
         openFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
-                List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
+                List.of("statement-open-folder", "secondary-button"), () -> openOutputFolder(false));
         filterOpenFolderButton = UiComponents.actionButton("Abrir carpeta de salida",
-                List.of("statement-open-folder", "secondary-button"), this::openOutputFolder);
+                List.of("statement-open-folder", "secondary-button"), () -> openOutputFolder(true));
         extractedText.setId("statement-raw-text");
         filePath.setMaxWidth(Double.MAX_VALUE);
 
@@ -268,7 +272,7 @@ public final class StatementSection extends Section {
     }
 
     /**
-     * Conserva el PDF elegido, establece su carpeta como destino inicial y limpia
+     * Conserva el PDF elegido, establece los destinos iniciales y limpia
      * los resultados de extracción y filtrado del documento anterior.
      * Actualiza las tarjetas, vuelve al primer panel e inicia la previsualización.
      *
@@ -280,8 +284,14 @@ public final class StatementSection extends Section {
         if (workflow != null) {
             workflow.selectStatementPdf(selectedPdf);
         }
-        outputFolder = selectedPdf.getParent();
-        updateOutputFolderLabel();
+        String configuredOutput = DotEnv.getStringVar("STATEMENT_TEXT_OUTPUT_DIR", null);
+        outputFolder = resolveTextOutputDirectory(configuredOutput, selectedPdf.getParent());
+        String configuredFilterOutput = DotEnv.getStringVar("STATEMENT_FILTERED_OUTPUT_DIR", null);
+        filterFollowsExtracted = configuredFilterOutput == null;
+        filterFolderSelected = false;
+        filterOutputFolder = resolveTextOutputDirectory(configuredFilterOutput, outputFolder);
+        updateOutputFolderLabel(false);
+        updateOutputFolderLabel(true);
         filename.setText(file.getName());
         filePath.setText(selectedPdf.getParent().toString());
         fileCard.pseudoClassStateChanged(SELECTED, true);
@@ -292,6 +302,12 @@ public final class StatementSection extends Section {
         pdfViewer.load(selectedPdf);
         showStatus(0, "PDF seleccionado. Puedes continuar con el paso 2: Extraer texto.", false);
         restoreSavedTextOutputs();
+    }
+
+    private static Path resolveTextOutputDirectory(String configuredPath, Path fallback) {
+        return configuredPath == null ? fallback : OutputDirectoryResolver.resolve(Path.of(""),
+                root -> Files.isRegularFile(root.resolve("modules/statement-text-extractor/pom.xml")),
+                fallback, configuredPath);
     }
 
     private void restoreSavedTextOutputs() {
@@ -312,6 +328,10 @@ public final class StatementSection extends Section {
             extractedText.positionCaret(0);
             outputFilename.setText(extractedPath.getFileName().toString());
             outputFolderLabel.setText(extractedPath.toAbsolutePath().normalize().getParent().toString());
+            if (filterFollowsExtracted && !filterFolderSelected) {
+                filterOutputFolder = extractedPath.toAbsolutePath().normalize().getParent();
+                updateOutputFolderLabel(true);
+            }
             showStatus(1, "Texto extraído restaurado.\nArchivo generado: " + extractedPath, false);
         } catch (IOException | SecurityException exception) {
             showStatus(1, "No se pudo restaurar el texto extraído. Vuelve a ejecutar la extracción.", true);
@@ -324,8 +344,9 @@ public final class StatementSection extends Section {
             try {
                 filteredText.setText(Files.readString(filteredPath, StandardCharsets.UTF_8));
                 filteredText.positionCaret(0);
-                filterOutputFilename.setText(filteredPath.getFileName().toString());
-                filterOutputFolderLabel.setText(filteredPath.toAbsolutePath().normalize().getParent().toString());
+                if (filteredPath.toAbsolutePath().normalize().getParent().equals(filterOutputFolder)) {
+                    filterOutputFilename.setText(filteredPath.getFileName().toString());
+                }
                 filterCompleted = true;
                 showStatus(2, "Texto filtrado restaurado.\nArchivo generado: " + filteredPath, false);
             } catch (IOException | SecurityException exception) {
@@ -336,15 +357,26 @@ public final class StatementSection extends Section {
     }
 
     /**
-     * Solicita una carpeta de salida y actualiza los destinos previstos de ambos TXT.
+     * Solicita una carpeta de salida y actualiza el destino del paso correspondiente.
      * Cancelar conserva la carpeta actual. Elegir otra carpeta no mueve los archivos
      * ya generados ni vuelve a ejecutar la extracción o el filtrado.
      */
-    private void changeOutputFolder() {
-        File folder = chooseFolder.apply(getScene() == null ? null : getScene().getWindow(), outputFolder);
+    private void changeOutputFolder(boolean filtered) {
+        Path current = filtered ? filterOutputFolder : outputFolder;
+        File folder = chooseFolder.apply(getScene() == null ? null : getScene().getWindow(), current);
         if (folder != null) {
-            outputFolder = folder.toPath().toAbsolutePath().normalize();
-            updateOutputFolderLabel();
+            Path selected = folder.toPath().toAbsolutePath().normalize();
+            if (filtered) {
+                filterOutputFolder = selected;
+                filterFolderSelected = true;
+            } else {
+                outputFolder = selected;
+                if (extractedText.getText().isBlank() && filterFollowsExtracted && !filterFolderSelected) {
+                    filterOutputFolder = selected;
+                    updateOutputFolderLabel(true);
+                }
+            }
+            updateOutputFolderLabel(filtered);
             showStatus(currentStep, "Carpeta de salida actualizada. Los archivos ya generados no se han movido.", false);
         }
     }
@@ -354,8 +386,8 @@ public final class StatementSection extends Section {
      * tarea auxiliar. Comprueba que exista y que el sistema admita la apertura;
      * solo comunica el error, en el panel desde el que se solicitó.
      */
-    private void openOutputFolder() {
-        Path folder = outputFolder;
+    private void openOutputFolder(boolean filtered) {
+        Path folder = filtered ? filterOutputFolder : outputFolder;
         int step = currentStep;
         openOutputFolder(folder, () -> {
                     busy = true;
@@ -368,17 +400,16 @@ public final class StatementSection extends Section {
     }
 
     /**
-     * Actualiza las etiquetas de nombre y ruta de las dos tarjetas de salida a partir
+     * Actualiza las etiquetas de nombre y ruta de la tarjeta de salida a partir
      * del PDF y la carpeta actuales. Describe destinos previstos, no garantiza que
      * los archivos existan ni modifica archivos en disco.
      */
-    private void updateOutputFolderLabel() {
-        Path extractedPath = outputPath(false);
-        Path filteredPath = outputPath(true);
-        outputFilename.setText(extractedPath.getFileName().toString());
-        outputFolderLabel.setText(extractedPath.getParent().toString());
-        filterOutputFilename.setText(filteredPath.getFileName().toString());
-        filterOutputFolderLabel.setText(filteredPath.getParent().toString());
+    private void updateOutputFolderLabel(boolean filtered) {
+        Path output = outputPath(filtered);
+        Label name = filtered ? filterOutputFilename : outputFilename;
+        Label folder = filtered ? filterOutputFolderLabel : outputFolderLabel;
+        name.setText(output.getFileName().toString());
+        folder.setText(output.getParent().toString());
     }
 
     /**
@@ -397,20 +428,21 @@ public final class StatementSection extends Section {
         if (!base.startsWith("texto-")) {
             base = "texto-" + base;
         }
-        return uniqueOutputPath(outputFolder.resolve(base + (filtered ? "-filtrado.txt" : ".txt")));
+        Path folder = filtered ? filterOutputFolder : outputFolder;
+        return uniqueOutputPath(folder.resolve(base + (filtered ? "-filtrado.txt" : ".txt")));
     }
 
     /**
-     * Escribe el resultado en UTF-8 sin crear directorios padre. Si se autorizó
-     * sobrescribir, trunca el archivo existente; en caso contrario exige crear uno
-     * nuevo, evitando reemplazar un archivo aparecido después de la comprobación.
+     * Escribe el resultado en UTF-8, creando la carpeta de destino si es necesario.
+     * Exige crear un archivo nuevo para no reemplazar archivos existentes.
      *
-     * @param output ruta de destino y autorización de sobrescritura capturadas previamente
+     * @param output ruta de destino capturada previamente
      * @param content texto que se debe guardar
      * @throws IOException si no puede escribirse el destino, por ejemplo por permisos,
-     *                     ausencia de su carpeta o conflicto con el modo de creación
+     *                     imposibilidad de crear su carpeta o conflicto con el modo de creación
      */
     private static void writeOutput(Path output, String content) throws IOException {
+        Files.createDirectories(output.getParent());
         Files.writeString(output, content, StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
     }
@@ -444,6 +476,10 @@ public final class StatementSection extends Section {
             extractedText.positionCaret(0);
             outputFilename.setText(output.getFileName().toString());
             outputFolderLabel.setText(output.getParent().toString());
+            if (filterFollowsExtracted && !filterFolderSelected) {
+                filterOutputFolder = output.getParent();
+                updateOutputFolderLabel(true);
+            }
             if (workflow != null) {
                 workflow.recordExtractedText(output);
             }

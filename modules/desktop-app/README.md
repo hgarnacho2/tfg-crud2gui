@@ -118,13 +118,17 @@ muestra progreso. Los errores permiten reintentar. No se realiza OCR ni se envia
 a servicios externos. El estado se conserva al navegar por el
 dashboard. El modulo extractor hereda Java 21 del proyecto padre.
 
-La carpeta de salida predeterminada es la del PDF y se puede cambiar antes de cada
-operacion. Para `enunciado.pdf`, el paso 2 guarda `texto-enunciado.txt` y el paso 3 guarda
+Las carpetas de salida se configuran independientemente en `.env.public`:
+`STATEMENT_TEXT_OUTPUT_DIR` para el texto extraído y `STATEMENT_FILTERED_OUTPUT_DIR` para el
+filtrado. Si están vacías, el texto extraído se guarda junto al PDF y el filtrado junto al
+texto extraído. Las rutas pueden ser absolutas o relativas a la raíz del proyecto; si no
+se encuentra la raíz, se usa el directorio de trabajo. Cada carpeta se puede cambiar
+antes de su operación. Para `enunciado.pdf`, el paso 2 guarda `texto-enunciado.txt` y el paso 3 guarda
 `texto-enunciado-filtrado.txt`, ambos en UTF-8. El destino se muestra durante el proceso y
 la ruta generada aparece solo en el mensaje final inferior, tras guardar
-correctamente. Los archivos existentes requieren confirmacion antes de sobrescribir;
-cancelar conserva los resultados. Cambiar la carpeta no mueve archivos anteriores;
-seleccionar otro PDF restablece el destino a su carpeta. No se guarda un TXT vacio si
+correctamente. Los archivos existentes no se sobrescriben: se añade un sufijo al nombre.
+Cancelar conserva los resultados. Cambiar la carpeta no mueve archivos anteriores;
+seleccionar otro PDF restablece los destinos configurados. No se guarda un TXT vacio si
 el PDF no contiene texto. Si el filtro no reconoce la estructura, guarda el original
 en el archivo `-filtrado.txt` con un aviso explicito.
 La configuracion de salida aparece dentro de los pasos 2 y 3, justo despues de su
@@ -171,8 +175,23 @@ se sustituyen por `_`. Tras generarlo, la tarjeta de destino muestra el nombre d
 su carpeta real, sin repetir la ruta completa en otra etiqueta.
 Con un JSON valido se habilita el paso 5 «Revisar modelo», que abre el JSON generado en el
 editor `JsonEditorViewer` (paquete `com.crud2gui.desktop.ui`). «Confirmar modelo» valida el JSON editado,
-lo guarda como copia `<nombre>-revisado.json` junto al original y habilita el paso 6
+lo guarda como copia `<nombre>-revisado.json` y habilita el paso 6
 «Diagrama de clases» con el modelo confirmado.
+
+Las carpetas predeterminadas se configuran en `.env.public`:
+
+- `STATEMENT_MODEL_OUTPUT_DIR`: modelos inferidos; por defecto `modules/statement-analyzer/output`.
+- `STATEMENT_REVIEW_OUTPUT_DIR`: modelos revisados; vacía por defecto, guarda junto al modelo original.
+- `JAVA_MODEL_OUTPUT_DIR`: modelos extraídos del código; por defecto `modules/java-model-extractor/output`.
+- `VALIDATION_REPORT_OUTPUT_DIR`: informes; por defecto `modules/model-validator/output`.
+
+Se admiten rutas absolutas y relativas; las relativas se resuelven desde la raíz del proyecto
+o, si no se encuentra, desde el directorio de trabajo. Sin configurar los destinos de modelos
+inferidos, código o informes se conservan sus rutas anteriores, o `output` si no se encuentra
+la raíz. La carpeta del informe no modifica la ubicación de `validation-options.json`.
+También pueden establecerse mediante propiedades Java o variables de entorno del sistema,
+con la precedencia habitual de `DotEnv`. Los selectores de carpeta permiten cambiar el destino
+para el trabajo actual.
 
 ### Seleccion de codigo del docente
 
@@ -192,7 +211,11 @@ Tras cargar el contenido, un mensaje verde confirma la seleccion e indica que se
 continuar al paso 2: Obtener modelo.
 El paso «Obtener modelo» muestra la tarjeta de destino JSON y permite cambiar o abrir
 la carpeta de salida. Guarda cada resultado con fecha y hora, sin sobrescribir los
-anteriores; por defecto utiliza `modules/java-model-extractor/output`.
+anteriores. La ruta predeterminada se configura con `JAVA_MODEL_OUTPUT_DIR` en `.env.public`
+y usa `modules/java-model-extractor/output`. Las rutas relativas se resuelven desde la raíz
+del proyecto; también se admiten rutas absolutas. Si no se encuentra la raíz, las rutas
+relativas se resuelven desde el directorio de trabajo. Sin configuración, se conserva el
+destino anterior (o `output` en el directorio de trabajo si no se encuentra la raíz).
 El panel permanece compacto y alineado arriba hasta obtener y guardar el modelo.
 Entonces el visor JSON ocupa la altura disponible y el estado inferior indica la
 ruta guardada y que se puede continuar con el diagrama. Si falla la escritura, el
@@ -219,6 +242,16 @@ y el último modelo del enunciado confirmado. Las rutas que el usuario elige man
 recuerdan y tienen prioridad hasta que cambia la entrada de su flujo. Si una ruta ya no
 existe, no se carga y se puede seleccionar otro archivo. Cambiar de PDF, carpeta Java o
 texto de enunciado invalida las salidas dependientes de esa entrada.
+
+En «Contexto» del docente y del alumno, las tarjetas muestran el texto y los modelos seleccionados, con etiquetas
+que distinguen la selección manual de los resultados generados. Si ambos son distintos, se
+conserva también la referencia al resultado generado. Una selección manual no implica que se
+conozca el origen del archivo. Si una selección ya no está disponible, se muestra un aviso. Para un
+modelo del enunciado de un contexto anterior sin información de origen se indica «ORIGEN DESCONOCIDO».
+En el contexto docente, el texto extraído muestra «GENERADO» o «SELECCIONADO» si se ha elegido
+manualmente como entrada. El PDF original y las carpetas de código seleccionadas en los
+contextos docente y alumno muestran «ENTRADA».
+Los informes de validación disponibles muestran «GENERADO», además de su estado de validación.
 
 También se recuerdan el proveedor LLM y el modelo seleccionados. Al retomar, se consulta de
 nuevo el catálogo del proveedor y solo se restaura el modelo si sigue disponible; si no,

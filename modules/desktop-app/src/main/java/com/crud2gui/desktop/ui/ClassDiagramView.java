@@ -555,10 +555,7 @@ public final class ClassDiagramView extends Pane {
 
     private static void drawRelationLabel(GraphicsContext graphics, Relation relation,
                                           Point2D from, Point2D to, Color color) {
-        String label = relation.via() == null ? relation.kind().name().toLowerCase() : relation.via();
-        if (relation.multiplicity() != null && !relation.multiplicity().isBlank()) {
-            label += "  " + relation.multiplicity();
-        }
+        String label = relationLabel(relation);
         double x = (from.getX() + to.getX()) / 2;
         double y = (from.getY() + to.getY()) / 2;
         double labelWidth = label.length() * 7.2 + 14;
@@ -566,6 +563,16 @@ public final class ClassDiagramView extends Pane {
         graphics.fillRoundRect(x - labelWidth / 2, y - 12, labelWidth, 22, 8, 8);
         graphics.setFill(color);
         graphics.fillText(label, x - labelWidth / 2 + 7, y + 4);
+    }
+
+    static String relationLabel(Relation relation) {
+        String label = relation.via() != null ? relation.via()
+                : relation.kind() == RelationKind.INHERITANCE ? relationName(relation.kind())
+                : relation.kind().name().toLowerCase();
+        if (relation.multiplicity() != null && !relation.multiplicity().isBlank()) {
+            label += "  " + relation.multiplicity();
+        }
+        return label;
     }
 
     private static Color relationColor(RelationKind kind) {

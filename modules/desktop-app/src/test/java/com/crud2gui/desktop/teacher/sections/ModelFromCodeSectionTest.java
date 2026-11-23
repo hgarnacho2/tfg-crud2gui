@@ -33,6 +33,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -65,6 +66,54 @@ class ModelFromCodeSectionTest {
         }
         started.get(10, TimeUnit.SECONDS);
         Platform.setImplicitExit(false);
+    }
+
+    @Test
+    void configuredOutputDirectoryAppearsInSection() throws Exception {
+        Assumptions.assumeTrue(System.getenv("JAVA_MODEL_OUTPUT_DIR") == null
+                || System.getenv("JAVA_MODEL_OUTPUT_DIR").isBlank());
+        String previous = System.getProperty("JAVA_MODEL_OUTPUT_DIR");
+        Path configured = directory.resolve("configured-output").toAbsolutePath();
+        try {
+            System.setProperty("JAVA_MODEL_OUTPUT_DIR", configured.toString());
+            onFx(() -> {
+                ModelFromCodeSection section = new ModelFromCodeSection();
+                assertEquals(configured.toString(),
+                        ((Label) section.lookup("#model-code-output-folder")).getText());
+                return null;
+            });
+        } finally {
+            if (previous == null) {
+                System.clearProperty("JAVA_MODEL_OUTPUT_DIR");
+            } else {
+                System.setProperty("JAVA_MODEL_OUTPUT_DIR", previous);
+            }
+        }
+    }
+
+    @Test
+    void readsOutputDirectoryFromPublicEnvironmentFile() throws Exception {
+        Assumptions.assumeTrue(System.getenv("JAVA_MODEL_OUTPUT_DIR") == null
+                || System.getenv("JAVA_MODEL_OUTPUT_DIR").isBlank());
+        Path configured = directory.resolve("public-output").toAbsolutePath();
+        Files.writeString(directory.resolve(".env.public"), "JAVA_MODEL_OUTPUT_DIR=" + configured);
+        String previousDirectory = System.getProperty("user.dir");
+        String previousOutput = System.getProperty("JAVA_MODEL_OUTPUT_DIR");
+        try {
+            System.setProperty("user.dir", directory.toString());
+            System.clearProperty("JAVA_MODEL_OUTPUT_DIR");
+            onFx(() -> {
+                ModelFromCodeSection section = new ModelFromCodeSection();
+                assertEquals(configured.toString(),
+                        ((Label) section.lookup("#model-code-output-folder")).getText());
+                return null;
+            });
+        } finally {
+            System.setProperty("user.dir", previousDirectory);
+            if (previousOutput != null) {
+                System.setProperty("JAVA_MODEL_OUTPUT_DIR", previousOutput);
+            }
+        }
     }
 
     @Test

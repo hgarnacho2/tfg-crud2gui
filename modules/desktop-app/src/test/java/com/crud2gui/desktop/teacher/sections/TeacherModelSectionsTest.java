@@ -1,5 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.crud2gui.authenticator.entraid.AuthenticatedUser;
 import com.crud2gui.desktop.teacher.TeacherDashboardView;
 import com.crud2gui.desktop.teacher.TeacherWorkflowContext;
@@ -16,6 +18,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -50,6 +53,36 @@ class TeacherModelSectionsTest {
         }
         started.get(10, TimeUnit.SECONDS);
         Platform.setImplicitExit(false);
+    }
+
+    @Test
+    void configuredReportDirectoryDoesNotChangeValidationOptionsLocation() throws Exception {
+        Assumptions.assumeTrue(System.getenv("VALIDATION_REPORT_OUTPUT_DIR") == null
+                || System.getenv("VALIDATION_REPORT_OUTPUT_DIR").isBlank());
+        Path configDirectory = Files.createDirectories(directory.resolve("modules/model-validator/conf"));
+        Files.writeString(configDirectory.resolve("validation-options.json"), "{\"methods\": false}");
+        Path reportDirectory = directory.resolve("other/reports");
+        Path unrelatedConfig = Files.createDirectories(directory.resolve("other/conf"));
+        Files.writeString(unrelatedConfig.resolve("validation-options.json"), "{\"methods\": true}");
+        String oldDirectory = System.getProperty("user.dir");
+        String oldOutput = System.getProperty("VALIDATION_REPORT_OUTPUT_DIR");
+        try {
+            System.setProperty("user.dir", directory.toString());
+            System.setProperty("VALIDATION_REPORT_OUTPUT_DIR", reportDirectory.toString());
+            onFx(() -> {
+                ModelValidationSection section = new ModelValidationSection();
+                attach(section);
+                assertEquals(reportDirectory.toString(),
+                        ((Label) section.lookup("#model-validation-output-path")).getText());
+                assertFalse(((javafx.scene.control.CheckBox)
+                        section.lookup("#validation-option-methods")).isSelected());
+                return null;
+            });
+        } finally {
+            System.setProperty("user.dir", oldDirectory);
+            if (oldOutput == null) System.clearProperty("VALIDATION_REPORT_OUTPUT_DIR");
+            else System.setProperty("VALIDATION_REPORT_OUTPUT_DIR", oldOutput);
+        }
     }
 
     @Test
@@ -508,16 +541,28 @@ class TeacherModelSectionsTest {
             root.layout();
             assertEquals("enunciado.pdf",
                 ((Label) section.lookup("#teacher-context-stage-statement-pdf-file")).getText());
+            assertEquals("ENTRADA",
+                ((Label) section.lookup("#teacher-context-stage-statement-pdf-origin")).getText());
             assertEquals(pdf.toAbsolutePath().normalize().getParent().toString(),
                 ((Label) section.lookup("#teacher-context-stage-statement-pdf-path")).getText());
             assertEquals("enunciado.txt",
                 ((Label) section.lookup("#teacher-context-stage-statement-extracted-file")).getText());
+            assertEquals("GENERADO",
+                ((Label) section.lookup("#teacher-context-stage-statement-extracted-origin")).getText());
             assertEquals("enunciado-filtrado.txt",
                 ((Label) section.lookup("#teacher-context-stage-statement-filtered-file")).getText());
+            assertEquals("GENERADO",
+                ((Label) section.lookup("#teacher-context-stage-statement-filtered-origin")).getText());
             assertEquals("modelo-enunciado.json",
                 ((Label) section.lookup("#teacher-context-stage-statement-model-file")).getText());
+            assertEquals("GENERADO",
+                ((Label) section.lookup("#teacher-context-stage-statement-model-origin")).getText());
             assertEquals("modelo-enunciado-validated.json",
                 ((Label) section.lookup("#teacher-context-stage-statement-refined-model-file")).getText());
+            assertEquals("GENERADO",
+                ((Label) section.lookup("#teacher-context-stage-statement-refined-model-origin")).getText());
+            assertNull(section.lookup("#teacher-context-validation-input-code-origin"));
+            assertNull(section.lookup("#teacher-context-validation-input-statement-origin"));
             assertEquals("Listo para CRUD",
                 ((Label) section.lookup("#teacher-context-validation-status")).getText());
                 assertEquals("✓", ((Label) section.lookup("#teacher-context-validation-status-icon")).getText());
@@ -534,6 +579,8 @@ class TeacherModelSectionsTest {
                     ((Label) inferredModelStage.lookup("#teacher-context-model-prompt-file")).getText());
             assertEquals("src",
                 ((Label) section.lookup("#teacher-context-stage-code-folder-file")).getText());
+            assertEquals("ENTRADA",
+                ((Label) section.lookup("#teacher-context-stage-code-folder-origin")).getText());
             assertEquals(codeFolder.toAbsolutePath().normalize().toString(),
                 ((Label) section.lookup("#teacher-context-stage-code-folder-path")).getText());
             assertEquals(((VBox) section.lookup("#teacher-context-stage-statement-pdf")).getWidth(),
@@ -544,6 +591,8 @@ class TeacherModelSectionsTest {
                 ((Label) section.lookup("#teacher-context-stage-code-model-path")).getText());
             assertEquals("validacion.json",
                 ((Label) section.lookup("#teacher-context-stage-validation-report-file")).getText());
+            assertEquals("GENERADO",
+                ((Label) section.lookup("#teacher-context-stage-validation-report-origin")).getText());
             for (String stage : java.util.List.of("statement-pdf", "statement-extracted", "statement-filtered",
                     "statement-model", "statement-refined-model", "code-folder", "code-model",
                     "validation-report")) {
@@ -578,6 +627,136 @@ class TeacherModelSectionsTest {
         }
 
     @Test
+    void showsRestoredManualInputsAndReportsMissingFiles() throws Exception {
+        Path state = directory.resolve("manual-workflow.json");
+        Path text = Files.writeString(directory.resolve("manual.txt"), "texto");
+        Path localModel = Files.writeString(directory.resolve("local.json"), "{}");
+        Path codeModel = Files.writeString(directory.resolve("codigo-manual.json"), "{}");
+        Path reference = Files.writeString(directory.resolve("referencia-manual.json"), "{}");
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(state);
+        workflow.selectStatementText(text);
+        workflow.recordLocalStatementModel(localModel);
+        workflow.selectJavaModel(codeModel);
+        workflow.selectInferredModel(reference);
+        TeacherWorkflowContext restored = new TeacherWorkflowContext(state);
+
+        onFx(() -> {
+            TeacherContextSection section = new TeacherContextSection(restored);
+            assertEquals("manual.txt",
+                ((Label) section.lookup("#teacher-context-stage-statement-filtered-file")).getText());
+            assertEquals("SELECCIONADO",
+                ((Label) section.lookup("#teacher-context-stage-statement-filtered-origin")).getText());
+            assertEquals("SELECCIONADO",
+                ((Label) section.lookup("#teacher-context-stage-statement-model-origin")).getText());
+            assertEquals("codigo-manual.json",
+                ((Label) section.lookup("#teacher-context-stage-code-model-file")).getText());
+            assertEquals("referencia-manual.json",
+                ((Label) section.lookup("#teacher-context-stage-statement-refined-model-file")).getText());
+            for (String id : java.util.List.of("code-model", "statement-refined-model")) {
+                assertEquals("SELECCIONADO",
+                    ((Label) section.lookup("#teacher-context-stage-" + id + "-origin")).getText());
+            }
+            for (String id : java.util.List.of("code", "statement")) {
+                assertEquals("SELECCIONADO",
+                    ((Label) section.lookup("#teacher-context-validation-input-" + id + "-origin")).getText());
+            }
+            Files.delete(text);
+            section.refresh();
+            VBox filtered = (VBox) section.lookup("#teacher-context-stage-statement-filtered");
+            assertEquals("Archivo no disponible",
+                ((Label) filtered.lookup(".workflow-context-unavailable")).getText());
+            assertTrue(((Button) filtered.lookup("#teacher-context-stage-statement-filtered-reveal")).isDisabled());
+            return null;
+        });
+    }
+
+    @Test
+    void keepsGeneratedFilesVisibleWhenDifferentInputsAreSelected() throws Exception {
+        Path extracted = Files.writeString(directory.resolve("extraido.txt"), "texto");
+        Path filtered = Files.writeString(directory.resolve("filtrado.txt"), "filtrado");
+        Path manualText = Files.writeString(directory.resolve("manual.txt"), "texto");
+        Path generatedModel = Files.writeString(directory.resolve("generado.json"), "{}");
+        Path manualModel = Files.writeString(directory.resolve("manual.json"), "{}");
+        Path reviewedModel = Files.writeString(directory.resolve("revisado.json"), "{}");
+        Path manualReference = Files.writeString(directory.resolve("referencia.json"), "{}");
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("workflow-inputs.json"));
+        workflow.recordExtractedText(extracted);
+        workflow.recordFilteredText(filtered);
+        workflow.selectStatementText(manualText);
+        workflow.recordCodeModel(generatedModel);
+        workflow.selectJavaModel(manualModel);
+        workflow.recordConfirmedStatementModel(reviewedModel);
+        workflow.selectInferredModel(manualReference);
+
+        onFx(() -> {
+            TeacherContextSection section = new TeacherContextSection(workflow);
+            assertEquals("manual.txt",
+                ((Label) section.lookup("#teacher-context-stage-statement-filtered-file")).getText());
+            assertEquals("filtrado.txt",
+                ((Label) section.lookup("#teacher-context-statement-filtered-generated-file")).getText());
+            assertEquals("GENERADO",
+                ((Label) section.lookup("#teacher-context-statement-filtered-generated-origin")).getText());
+            assertEquals("manual.json",
+                ((Label) section.lookup("#teacher-context-stage-code-model-file")).getText());
+            assertEquals("generado.json",
+                ((Label) section.lookup("#teacher-context-code-model-generated-file")).getText());
+            assertEquals("revisado.json",
+                ((Label) section.lookup("#teacher-context-statement-refined-model-generated-file")).getText());
+            assertEquals("GENERADO",
+                ((Label) section.lookup("#teacher-context-statement-refined-model-generated-origin")).getText());
+            workflow.selectStatementText(filtered);
+            section.refresh();
+            assertNull(section.lookup("#teacher-context-statement-filtered-generated-file"));
+            workflow.selectStatementText(extracted);
+            section.refresh();
+            assertEquals("SELECCIONADO",
+                ((Label) section.lookup("#teacher-context-stage-statement-extracted-origin")).getText());
+            assertEquals("GENERADO",
+                ((Label) section.lookup("#teacher-context-stage-statement-filtered-origin")).getText());
+            return null;
+        });
+    }
+
+    @Test
+    void labelsGeneratedExtractedTextAndLeavesEmptyStageUnlabelled() throws Exception {
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("extracted-workflow.json"));
+        Path extracted = Files.writeString(directory.resolve("extraido.txt"), "texto");
+        onFx(() -> {
+            TeacherContextSection section = new TeacherContextSection(workflow);
+            assertNull(section.lookup("#teacher-context-stage-statement-extracted-origin"));
+            workflow.recordExtractedText(extracted);
+            section.refresh();
+            assertEquals("extraido.txt",
+                ((Label) section.lookup("#teacher-context-stage-statement-extracted-file")).getText());
+            assertEquals("GENERADO",
+                ((Label) section.lookup("#teacher-context-stage-statement-extracted-origin")).getText());
+            return null;
+        });
+    }
+
+    @Test
+    void preservesUnknownModelOriginInOlderContext() throws Exception {
+        Path state = directory.resolve("old-workflow.json");
+        Path model = Files.writeString(directory.resolve("model.json"), "{}");
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(state);
+        workflow.recordGeneratedStatementModel(model);
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode stored = (ObjectNode) mapper.readTree(state.toFile());
+        stored.remove("statementModelLocal");
+        mapper.writeValue(state.toFile(), stored);
+
+        TeacherWorkflowContext restored = new TeacherWorkflowContext(state);
+        restored.selectCodeFolder(Files.createDirectory(directory.resolve("source")));
+        TeacherWorkflowContext reloaded = new TeacherWorkflowContext(state);
+        onFx(() -> {
+            TeacherContextSection section = new TeacherContextSection(reloaded);
+            assertEquals("ORIGEN DESCONOCIDO",
+                ((Label) section.lookup("#teacher-context-stage-statement-model-origin")).getText());
+            return null;
+        });
+    }
+
+    @Test
     void showsPromptBadgeAndEmptyStateWhenNoPromptIsSelected() throws Exception {
         TeacherWorkflowContext workflow = new TeacherWorkflowContext(directory.resolve("empty-workflow.json"));
         TeacherContextSection section = onFx(() -> {
@@ -591,6 +770,9 @@ class TeacherModelSectionsTest {
         });
 
         onFx(() -> {
+            assertNull(section.lookup("#teacher-context-stage-statement-pdf-origin"));
+            assertNull(section.lookup("#teacher-context-stage-code-folder-origin"));
+            assertNull(section.lookup("#teacher-context-stage-validation-report-origin"));
             VBox inferredModelStage = (VBox) section.lookup("#teacher-context-stage-statement-model");
             Label stageTitle = (Label) inferredModelStage.lookup(".workflow-context-stage-title");
             assertEquals(Color.web("#75837d"), stageTitle.getTextFill());

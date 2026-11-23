@@ -19,6 +19,9 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -41,6 +44,20 @@ class StatementSectionTest {
 
     @TempDir
     Path directory;
+
+    private String previousWorkingDirectory;
+
+    @BeforeEach
+    void isolateEnvironmentFile() throws Exception {
+        previousWorkingDirectory = System.getProperty("user.dir");
+        Files.writeString(directory.resolve(".env.public"), "");
+        System.setProperty("user.dir", directory.toString());
+    }
+
+    @AfterEach
+    void restoreWorkingDirectory() {
+        System.setProperty("user.dir", previousWorkingDirectory);
+    }
 
     @BeforeAll
     static void startJavaFx() throws Exception {
@@ -594,6 +611,133 @@ class StatementSectionTest {
     }
 
     @Test
+    void configuresTextOutputFromPublicEnvironmentAndFallsBackToPdfFolder() throws Exception {
+        Assumptions.assumeTrue(System.getenv("STATEMENT_TEXT_OUTPUT_DIR") == null
+                || System.getenv("STATEMENT_TEXT_OUTPUT_DIR").isBlank());
+        Assumptions.assumeTrue(System.getenv("STATEMENT_FILTERED_OUTPUT_DIR") == null
+                || System.getenv("STATEMENT_FILTERED_OUTPUT_DIR").isBlank());
+        Assumptions.assumeTrue(System.getenv("STATEMENT_FILTER_CONFIG_PATH") == null
+                || System.getenv("STATEMENT_FILTER_CONFIG_PATH").isBlank());
+        Path pdf = createPdf("configured.pdf", "Inicio\nContenido\nFin", false);
+        Path output = directory.resolve("new").resolve("text-output");
+        Path filteredOutput = directory.resolve("other").resolve("filtered-output");
+        Path environment = directory.resolve(".env.public");
+        Files.writeString(environment, "STATEMENT_TEXT_OUTPUT_DIR=" + output
+                + "\nSTATEMENT_FILTERED_OUTPUT_DIR=" + filteredOutput);
+        Path config = Files.writeString(directory.resolve("rules.json"), """
+                {"sectionRules": [
+                    {"heading": "Inicio", "action": "START"},
+                    {"heading": "Fin", "action": "STOP"}
+                ]}
+                """);
+        String oldDirectory = System.getProperty("user.dir");
+        String oldOutput = System.getProperty("STATEMENT_TEXT_OUTPUT_DIR");
+        String oldFilteredOutput = System.getProperty("STATEMENT_FILTERED_OUTPUT_DIR");
+        String oldConfig = System.getProperty("STATEMENT_FILTER_CONFIG_PATH");
+        try {
+            System.setProperty("user.dir", directory.toString());
+            System.clearProperty("STATEMENT_TEXT_OUTPUT_DIR");
+            System.clearProperty("STATEMENT_FILTERED_OUTPUT_DIR");
+            System.setProperty("STATEMENT_FILTER_CONFIG_PATH", config.toString());
+            Controls controls = onFx(() -> controls(new AtomicReference<>(pdf.toFile())));
+            onFx(() -> {
+                controls.select().fire();
+                assertEquals(output.toString(), ((Label) controls.text().getParent()
+                        .lookup(".statement-output-folder")).getText());
+                assertEquals(filteredOutput.toString(), ((Label) controls.filtered().getParent()
+                        .lookup(".statement-output-folder")).getText());
+                return null;
+            });
+            extract(controls);
+            onFx(() -> {
+                controls.step(3).fire();
+                return null;
+            });
+            runOperation(controls, controls.filter());
+            assertTrue(Files.isRegularFile(output.resolve("texto-configured.txt")));
+            assertEquals("Inicio\nContenido\n", Files.readString(filteredOutput.resolve("texto-configured-filtrado.txt")));
+
+            Files.writeString(environment, "STATEMENT_TEXT_OUTPUT_DIR=" + output + "\nSTATEMENT_FILTERED_OUTPUT_DIR=\n");
+            onFx(() -> {
+                controls.select().fire();
+                return null;
+            });
+            extract(controls);
+            onFx(() -> {
+                assertEquals(output.toString(), ((Label) controls.filtered().getParent()
+                        .lookup(".statement-output-folder")).getText());
+                return null;
+            });
+            Files.writeString(environment, "STATEMENT_TEXT_OUTPUT_DIR=\nSTATEMENT_FILTERED_OUTPUT_DIR=\n");
+            onFx(() -> {
+                controls.select().fire();
+                for (var settings : controls.section().lookupAll(".statement-output-settings")) {
+                    assertEquals(directory.toString(),
+                            ((Label) settings.lookup(".statement-output-folder")).getText());
+                }
+                return null;
+            });
+        } finally {
+            System.setProperty("user.dir", oldDirectory);
+            if (oldOutput == null) System.clearProperty("STATEMENT_TEXT_OUTPUT_DIR");
+            else System.setProperty("STATEMENT_TEXT_OUTPUT_DIR", oldOutput);
+            if (oldFilteredOutput == null) System.clearProperty("STATEMENT_FILTERED_OUTPUT_DIR");
+            else System.setProperty("STATEMENT_FILTERED_OUTPUT_DIR", oldFilteredOutput);
+            if (oldConfig == null) System.clearProperty("STATEMENT_FILTER_CONFIG_PATH");
+            else System.setProperty("STATEMENT_FILTER_CONFIG_PATH", oldConfig);
+        }
+    }
+
+    @Test
+    void changingFilterDestinationDoesNotChangeExtractionDestination() throws Exception {
+        Assumptions.assumeTrue(System.getenv("STATEMENT_TEXT_OUTPUT_DIR") == null
+                || System.getenv("STATEMENT_TEXT_OUTPUT_DIR").isBlank());
+        Assumptions.assumeTrue(System.getenv("STATEMENT_FILTERED_OUTPUT_DIR") == null
+                || System.getenv("STATEMENT_FILTERED_OUTPUT_DIR").isBlank());
+        Path pdf = createPdf("separate.pdf", "Texto para filtrar.", false);
+        Path sourceFolder = directory.resolve("extracted");
+        Path filterFolder = Files.createDirectory(directory.resolve("filtered"));
+        AtomicReference<File> chosen = new AtomicReference<>(filterFolder.toFile());
+        String oldOutput = System.getProperty("STATEMENT_TEXT_OUTPUT_DIR");
+        String oldFilteredOutput = System.getProperty("STATEMENT_FILTERED_OUTPUT_DIR");
+        try {
+            System.setProperty("STATEMENT_TEXT_OUTPUT_DIR", sourceFolder.toString());
+            System.setProperty("STATEMENT_FILTERED_OUTPUT_DIR", directory.resolve("configured-filter").toString());
+            Controls controls = onFx(() -> {
+                StatementSection section = new StatementSection(owner -> pdf.toFile(),
+                        (owner, current) -> chosen.get(), null);
+                new Scene(section, 960, 680);
+                return new Controls(section, (Button) section.lookup(".statement-select"),
+                        (Button) section.lookup(".statement-extract"), (Button) section.lookup(".statement-filter"),
+                        (TextArea) section.lookup("#statement-raw-text"), (Label) section.lookup(".status-message"),
+                        (TextArea) section.lookup(".statement-filtered-text"));
+            });
+            onFx(() -> {
+                controls.select().fire();
+                return null;
+            });
+            extract(controls);
+            onFx(() -> {
+                controls.step(3).fire();
+                ((Button) controls.filtered().getParent().lookup(".statement-change-folder")).fire();
+                assertEquals(filterFolder.toString(), ((Label) controls.filtered().getParent()
+                        .lookup(".statement-output-folder")).getText());
+                assertEquals(sourceFolder.toString(), ((Label) controls.text().getParent()
+                        .lookup(".statement-output-folder")).getText());
+                return null;
+            });
+            runOperation(controls, controls.filter());
+            assertTrue(Files.isRegularFile(filterFolder.resolve("texto-separate-filtrado.txt")));
+            assertTrue(Files.isRegularFile(sourceFolder.resolve("texto-separate.txt")));
+        } finally {
+            if (oldOutput == null) System.clearProperty("STATEMENT_TEXT_OUTPUT_DIR");
+            else System.setProperty("STATEMENT_TEXT_OUTPUT_DIR", oldOutput);
+            if (oldFilteredOutput == null) System.clearProperty("STATEMENT_FILTERED_OUTPUT_DIR");
+            else System.setProperty("STATEMENT_FILTERED_OUTPUT_DIR", oldFilteredOutput);
+        }
+    }
+
+    @Test
     void changesOutputFolderPreservesExistingFilesAndReportsWriteFailures() throws Exception {
         Path pdf = createPdf("output.pdf", "Texto para guardar.", false);
         Path destination = Files.createDirectory(directory.resolve("results"));
@@ -679,11 +823,12 @@ class StatementSectionTest {
         Files.writeString(invalidDestination, "Un archivo no es una carpeta");
         folder.set(invalidDestination.toFile());
         onFx(() -> {
-            ((Button) section.lookup(".statement-change-folder")).fire();
+            controls.step(2).fire();
+            ((Button) controls.text().getParent().lookup(".statement-change-folder")).fire();
             return null;
         });
         extract(controls);
-        runOperation(controls, onFx(() -> (Button) section.lookup(".statement-open-folder")));
+        runOperation(controls, onFx(() -> (Button) controls.text().getParent().lookup(".statement-open-folder")));
         onFx(() -> {
             assertTrue(controls.status().getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
             assertTrue(controls.status().getText().contains(invalidDestination.toString()));

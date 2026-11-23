@@ -25,6 +25,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.css.PseudoClass;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -932,6 +933,46 @@ class ModelFromStatementSectionTest {
             assertTrue(restoredSection.lookup("#statement-step-6").isDisabled());
             return null;
         });
+    }
+
+    @Test
+    void configuredOutputDirectoriesApplyToGeneratedAndReviewedModels() throws Exception {
+        Assumptions.assumeTrue(System.getenv("STATEMENT_MODEL_OUTPUT_DIR") == null
+                || System.getenv("STATEMENT_MODEL_OUTPUT_DIR").isBlank());
+        Assumptions.assumeTrue(System.getenv("STATEMENT_REVIEW_OUTPUT_DIR") == null
+                || System.getenv("STATEMENT_REVIEW_OUTPUT_DIR").isBlank());
+        String oldOutput = System.getProperty("STATEMENT_MODEL_OUTPUT_DIR");
+        String oldReview = System.getProperty("STATEMENT_REVIEW_OUTPUT_DIR");
+        Path generatedDirectory = directory.resolve("generated");
+        Path reviewedDirectory = directory.resolve("nested").resolve("reviewed");
+        Path textFile = Files.writeString(directory.resolve("statement.txt"), "Texto del enunciado.");
+        Path localModel = Files.writeString(directory.resolve("local.json"), MODEL_JSON);
+        try {
+            System.setProperty("STATEMENT_MODEL_OUTPUT_DIR", generatedDirectory.toString());
+            System.setProperty("STATEMENT_REVIEW_OUTPUT_DIR", reviewedDirectory.toString());
+            onFx(() -> {
+                ModelFromStatementSection defaults = new ModelFromStatementSection();
+                assertEquals(generatedDirectory.toString(),
+                        ((Label) defaults.lookup("#model-statement-output-folder")).getText());
+
+                ModelFromStatementSection section = new ModelFromStatementSection(
+                        owner -> textFile.toFile(), owner -> null, (owner, current) -> null,
+                        List.of(), generatedDirectory, null, owner -> localModel.toFile());
+                ((Button) section.lookup("#model-statement-select-text")).fire();
+                ((Button) section.lookup("#model-statement-use-local-model")).fire();
+                assertEquals(reviewedDirectory.toString(),
+                        ((Label) section.lookup("#model-statement-review-output-folder")).getText());
+                ((Button) section.lookup("#model-statement-confirm-model")).fire();
+                assertTrue(Files.isRegularFile(reviewedDirectory.resolve("local-revisado.json")));
+                assertFalse(((Button) section.lookup("#statement-step-6")).isDisabled());
+                return null;
+            });
+        } finally {
+            if (oldOutput == null) System.clearProperty("STATEMENT_MODEL_OUTPUT_DIR");
+            else System.setProperty("STATEMENT_MODEL_OUTPUT_DIR", oldOutput);
+            if (oldReview == null) System.clearProperty("STATEMENT_REVIEW_OUTPUT_DIR");
+            else System.setProperty("STATEMENT_REVIEW_OUTPUT_DIR", oldReview);
+        }
     }
 
     @Test

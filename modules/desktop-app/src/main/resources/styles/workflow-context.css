@@ -200,6 +200,20 @@
     -fx-font-weight: bold;
 }
 
+.workflow-context-origin-badge {
+    -fx-padding: 3px 6px;
+    -fx-background-color: #e8f0f3;
+    -fx-background-radius: 3px;
+    -fx-text-fill: #426270;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.workflow-context-unavailable {
+    -fx-text-fill: #a33a32;
+    -fx-font-size: 12px;
+}
+
 .workflow-context-input-code {
     -fx-background-color: #e8f0f3;
     -fx-text-fill: #426270;

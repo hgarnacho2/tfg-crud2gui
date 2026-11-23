@@ -43,6 +43,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class UiComponentsTest {
 
     @Test
+    void contextStatusLabelsExplainTheirMeaning() throws Exception {
+        onJavaFxThread(() -> {
+            assertTrue(UiComponents.contextOriginBadge("input", "ENTRADA").getTooltip().getText()
+                    .contains("entrada inicial del flujo"));
+            assertTrue(UiComponents.contextOriginBadge("generated", "GENERADO").getTooltip().getText()
+                    .contains("generado por la aplicación"));
+            assertTrue(UiComponents.contextOriginBadge("selected", "SELECCIONADO").getTooltip().getText()
+                    .contains("elegido manualmente"));
+            assertTrue(UiComponents.contextOriginBadge("unknown", "ORIGEN DESCONOCIDO").getTooltip().getText()
+                    .contains("no contiene información"));
+            assertTrue(UiComponents.contextUnavailableLabel().getTooltip().getText()
+                    .contains("no existe o no se puede leer"));
+        });
+    }
+
+    @Test
     void validationStatusesHaveNoContainer() throws Exception {
         onJavaFxThread(() -> {
             VBox root = new VBox();

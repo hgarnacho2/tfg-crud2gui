@@ -101,6 +101,11 @@ public final class StudentWorkflowContext implements WorkflowContext {
         return usable(selectedJavaModel);
     }
 
+    /** Devuelve la selección registrada incluso si el archivo ya no está disponible. */
+    public Path getRecordedJavaModel() {
+        return selectedJavaModel;
+    }
+
     /** Devuelve el último modelo generado desde código, aunque haya una selección manual activa. */
     @Override
     public Path getGeneratedCodeModel() {
@@ -123,6 +128,11 @@ public final class StudentWorkflowContext implements WorkflowContext {
     @Override
     public Path getSelectedInferredModel() {
         return usable(selectedInferredModel);
+    }
+
+    /** Devuelve la selección registrada incluso si el archivo ya no está disponible. */
+    public Path getRecordedInferredModel() {
+        return selectedInferredModel;
     }
 
     @Override

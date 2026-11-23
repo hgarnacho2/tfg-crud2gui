@@ -1,6 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
 import com.crud2gui.common.env.DotEnv;
+import com.crud2gui.common.path.OutputDirectoryResolver;
 import com.crud2gui.desktop.ui.JsonEditorViewer;
 import com.crud2gui.desktop.ui.ClassDiagramView;
 import com.crud2gui.desktop.ui.UiComponents;
@@ -506,14 +507,13 @@ public final class ModelFromStatementSection extends Section {
     }
 
     private static Path defaultOutputDirectory() {
-        Path directory = Path.of("").toAbsolutePath().normalize();
-        while (directory != null) {
-            if (Files.isRegularFile(directory.resolve("modules/statement-analyzer/pom.xml"))) {
-                return directory.resolve("modules/statement-analyzer/output");
-            }
-            directory = directory.getParent();
-        }
-        return Path.of("output");
+        return resolveStatementOutputDirectory(DotEnv.getStringVar("STATEMENT_MODEL_OUTPUT_DIR", null));
+    }
+
+    private static Path resolveStatementOutputDirectory(String configuredPath) {
+        return OutputDirectoryResolver.resolve(Path.of(""),
+                root -> Files.isRegularFile(root.resolve("modules/statement-analyzer/pom.xml")),
+                Path.of("modules/statement-analyzer/output"), configuredPath);
     }
 
     private void showStep(int index) {
@@ -1024,7 +1024,10 @@ public final class ModelFromStatementSection extends Section {
         }
         modelEditor.setSaveVisible(false);
         generatedModelPath = modelPath;
-        reviewOutputFolder = modelPath.toAbsolutePath().normalize().getParent();
+        String configuredReviewOutput = DotEnv.getStringVar("STATEMENT_REVIEW_OUTPUT_DIR", null);
+        reviewOutputFolder = configuredReviewOutput == null
+                ? modelPath.toAbsolutePath().normalize().getParent()
+                : resolveStatementOutputDirectory(configuredReviewOutput);
         updateReviewOutputSettings();
         editorHost.getChildren().setAll(modelEditor.getView());
         showStatus(refineStatus, "Edita el modelo si es necesario y pulsa «Confirmar modelo».", false);
@@ -1040,6 +1043,7 @@ public final class ModelFromStatementSection extends Section {
             String json = modelEditor.currentJson();
             ProjectModel projectModel = ModelIO.fromJson(json);
             json = ModelIO.toJson(projectModel);
+            Files.createDirectories(confirmedPath.getParent());
             Files.writeString(confirmedPath, json + System.lineSeparator(), StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
             classDiagram.setModel(projectModel);

@@ -1,5 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.common.env.DotEnv;
+import com.crud2gui.common.path.OutputDirectoryResolver;
 import com.crud2gui.desktop.ui.JavaCodeViewer;
 import com.crud2gui.desktop.ui.ClassDiagramView;
 import com.crud2gui.desktop.ui.JsonEditorViewer;
@@ -608,14 +610,9 @@ public class ModelFromCodeSection extends Section {
     }
 
     private static Path defaultOutputDirectory() {
-        Path directory = Path.of("").toAbsolutePath().normalize();
-        while (directory != null) {
-            if (Files.isRegularFile(directory.resolve("modules/java-model-extractor/pom.xml"))) {
-                return directory.resolve("modules/java-model-extractor/output");
-            }
-            directory = directory.getParent();
-        }
-        return Path.of("output");
+        return OutputDirectoryResolver.resolve(Path.of(""),
+                root -> Files.isRegularFile(root.resolve("modules/java-model-extractor/pom.xml")),
+                Path.of("modules/java-model-extractor/output"), DotEnv.getStringVar("JAVA_MODEL_OUTPUT_DIR", null));
     }
 
     private void changeOutputFolder() {

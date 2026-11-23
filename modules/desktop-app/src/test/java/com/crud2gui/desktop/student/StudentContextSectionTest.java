@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StudentContextSectionTest {
@@ -43,6 +44,24 @@ class StudentContextSectionTest {
         }
         started.get(10, TimeUnit.SECONDS);
         Platform.setImplicitExit(false);
+    }
+
+    @Test
+    void showsInputBadgeOnlyWhenCodeFolderIsAvailable() throws Exception {
+        StudentWorkflowContext workflow = new StudentWorkflowContext(directory.resolve("empty-workflow.json"));
+        Path codeFolder = Files.createDirectory(directory.resolve("source"));
+        onFx(() -> {
+            StudentContextSection section = new StudentContextSection(workflow);
+            assertNull(section.lookup("#student-context-stage-code-folder-origin"));
+            assertNull(section.lookup("#student-context-stage-validation-report-origin"));
+            workflow.selectCodeFolder(codeFolder);
+            section.refresh();
+            assertEquals("ENTRADA", label(section, "student-context-stage-code-folder-origin").getText());
+            workflow.selectCodeFolder(null);
+            section.refresh();
+            assertNull(section.lookup("#student-context-stage-code-folder-origin"));
+            return null;
+        });
     }
 
     @Test
@@ -74,13 +93,16 @@ class StudentContextSectionTest {
             assertEquals(15, label(section, "student-context-code-lane-description").getFont().getSize(), 0.01);
             assertEquals(15, label(section, "student-context-reference-lane-description").getFont().getSize(), 0.01);
             assertEquals("src", label(section, "student-context-stage-code-folder-file").getText());
+            assertEquals("ENTRADA", label(section, "student-context-stage-code-folder-origin").getText());
             assertEquals(14, label(section, "student-context-stage-code-folder-path").getFont().getSize(), 0.01);
                 assertEquals(codeFolder.toAbsolutePath().normalize().toString(),
                     label(section, "student-context-stage-code-folder-path").getText());
             assertEquals("modelo-codigo.json", label(section, "student-context-stage-code-model-file").getText());
+            assertEquals("GENERADO", label(section, "student-context-stage-code-model-origin").getText());
                 assertEquals(codeModel.toAbsolutePath().normalize().getParent().toString(),
                     label(section, "student-context-stage-code-model-path").getText());
             assertEquals("validacion.json", label(section, "student-context-stage-validation-report-file").getText());
+            assertEquals("GENERADO", label(section, "student-context-stage-validation-report-origin").getText());
                 assertEquals(validationReport.toAbsolutePath().normalize().getParent().toString(),
                     label(section, "student-context-stage-validation-report-path").getText());
             assertEquals("Listo para CRUD", label(section, "student-context-validation-status").getText());
@@ -90,6 +112,7 @@ class StudentContextSectionTest {
             assertEquals(Color.TRANSPARENT, statusBadge.getBackground().getFills().get(0).getFill());
             assertEquals(Insets.EMPTY, statusBadge.getPadding());
             assertEquals("modelo-valido.json", label(section, "student-context-stage-valid-model-file").getText());
+            assertEquals("SELECCIONADO", label(section, "student-context-stage-valid-model-origin").getText());
             Button revealModel = (Button) section.lookup("#student-context-stage-code-model-reveal");
             assertNotNull(revealModel);
             assertTrue(revealModel.isVisible());
@@ -104,6 +127,7 @@ class StudentContextSectionTest {
             assertEquals("CODIGO", label(section, "student-context-validation-input-code-badge").getText());
                 assertEquals(11, label(section, "student-context-validation-input-code-badge").getFont().getSize(), 0.01);
             assertEquals("modelo-codigo.json", label(section, "student-context-validation-input-code-file").getText());
+            assertNull(section.lookup("#student-context-validation-input-code-origin"));
                 assertEquals(13, label(section, "student-context-validation-input-code-file").getFont().getSize(), 0.01);
             assertEquals("ENUNCIADO", label(section, "student-context-validation-input-statement-badge").getText());
                 assertEquals(11, label(section, "student-context-validation-input-statement-badge").getFont().getSize(), 0.01);
@@ -120,6 +144,35 @@ class StudentContextSectionTest {
                     ((VBox) section.lookup("#student-context-stage-valid-model")).getWidth(), 1);
                     assertTrue(validation.getWidth() > codeFolderStage.getWidth() * 1.8);
                     assertEquals(validation.getWidth(), crud.getWidth(), 1);
+            return null;
+        });
+    }
+
+    @Test
+    void showsRestoredManualModelsAlongsideGeneratedModelAndMissingFiles() throws Exception {
+        Path state = directory.resolve("student-manual.json");
+        Path generated = Files.writeString(directory.resolve("generado.json"), "{}");
+        Path selected = Files.writeString(directory.resolve("seleccionado.json"), "{}");
+        Path reference = Files.writeString(directory.resolve("referencia.json"), "{}");
+        StudentWorkflowContext workflow = new StudentWorkflowContext(state);
+        workflow.recordCodeModel(generated);
+        workflow.selectJavaModel(selected);
+        workflow.selectInferredModel(reference);
+        StudentWorkflowContext restored = new StudentWorkflowContext(state);
+
+        onFx(() -> {
+            StudentContextSection section = new StudentContextSection(restored);
+            assertEquals("seleccionado.json", label(section, "student-context-stage-code-model-file").getText());
+            assertEquals("SELECCIONADO", label(section, "student-context-stage-code-model-origin").getText());
+            assertEquals("generado.json", label(section, "student-context-code-model-generated-file").getText());
+            assertEquals("SELECCIONADO", label(section, "student-context-validation-input-code-origin").getText());
+            assertEquals("SELECCIONADO", label(section, "student-context-validation-input-statement-origin").getText());
+            Files.delete(selected);
+            section.refresh();
+            VBox codeModel = (VBox) section.lookup("#student-context-stage-code-model");
+            assertEquals("Archivo no disponible",
+                    ((Label) codeModel.lookup(".workflow-context-unavailable")).getText());
+            assertTrue(((Button) codeModel.lookup("#student-context-stage-code-model-reveal")).isDisabled());
             return null;
         });
     }

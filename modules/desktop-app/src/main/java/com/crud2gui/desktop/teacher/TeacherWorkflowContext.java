@@ -49,7 +49,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
     private Path filteredText;
     /** Último modelo generado desde el enunciado, todavía no confirmado. */
     private Path generatedStatementModel;
-    private boolean statementModelLocal;
+    private Boolean statementModelLocal;
     /** Último modelo del enunciado validado y confirmado por el usuario. */
     private Path confirmedStatementModel;
     /** Último modelo de clases extraído del código Java. */
@@ -132,7 +132,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         extractedText = null;
         filteredText = null;
         generatedStatementModel = null;
-        statementModelLocal = false;
+        statementModelLocal = null;
         confirmedStatementModel = null;
         codeModel = null;
         clearValidationReport();
@@ -270,7 +270,12 @@ public final class TeacherWorkflowContext implements WorkflowContext {
 
     /** Indica si el modelo del enunciado se cargo desde un archivo local, sin depender del LLM. */
     public boolean isStatementModelLocal() {
-        return statementModelLocal;
+        return Boolean.TRUE.equals(statementModelLocal);
+    }
+
+    /** Indica si el contexto conserva el origen del modelo del enunciado. */
+    public boolean isStatementModelOriginKnown() {
+        return statementModelLocal != null;
     }
 
     /**
@@ -474,7 +479,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
 
     private void recordStatementModel(Path path, boolean local) {
         generatedStatementModel = normalize(path);
-        statementModelLocal = local && generatedStatementModel != null;
+        statementModelLocal = generatedStatementModel == null ? null : local;
         clearValidationReport();
         confirmedStatementModel = null;
         if (!inferredModelManual) {
@@ -578,7 +583,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
     /** Limpia las rutas de modelos inferidos y conserva una selección manual vigente. */
     private void clearStatementModels() {
         generatedStatementModel = null;
-        statementModelLocal = false;
+        statementModelLocal = null;
         confirmedStatementModel = null;
         if (!inferredModelManual) {
             selectedInferredModel = null;
@@ -594,7 +599,7 @@ public final class TeacherWorkflowContext implements WorkflowContext {
     }
 
     private void invalidateStatementModelsForLlmChange() {
-        if (!statementModelLocal) {
+        if (!isStatementModelLocal()) {
             invalidateStatementModelsForInputChange();
         }
     }
@@ -678,7 +683,8 @@ public final class TeacherWorkflowContext implements WorkflowContext {
             extractedText = readPath(root, "extractedText");
             filteredText = readPath(root, "filteredText");
             generatedStatementModel = readPath(root, "generatedStatementModel");
-            statementModelLocal = root.path("statementModelLocal").asBoolean(false);
+            JsonNode modelOrigin = root.path("statementModelLocal");
+            statementModelLocal = modelOrigin.isBoolean() ? modelOrigin.booleanValue() : null;
             confirmedStatementModel = readPath(root, "confirmedStatementModel");
             codeModel = readPath(root, "codeModel");
             validationReport = readPath(root, "validationReport");
@@ -747,7 +753,11 @@ public final class TeacherWorkflowContext implements WorkflowContext {
         writePath(root, "extractedText", extractedText);
         writePath(root, "filteredText", filteredText);
         writePath(root, "generatedStatementModel", generatedStatementModel);
-        root.put("statementModelLocal", statementModelLocal);
+        if (statementModelLocal == null) {
+            root.putNull("statementModelLocal");
+        } else {
+            root.put("statementModelLocal", statementModelLocal.booleanValue());
+        }
         writePath(root, "confirmedStatementModel", confirmedStatementModel);
         writePath(root, "codeModel", codeModel);
         writePath(root, "validationReport", validationReport);

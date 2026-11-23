@@ -24,6 +24,7 @@ import javafx.scene.shape.PathElement;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -67,25 +68,58 @@ public final class TeacherContextSection extends Section {
         VBox statement = lane("MODELO DE REFERENCIA", "Modelo de datos válido para la validación");
         addStage(statement, "statement-pdf", "Enunciado original", "PDF", workflow.getStatementPdf(),
             "Todavía no se ha seleccionado un PDF.");
-        addStage(statement, "statement-extracted", "Texto del enunciado", "TXT", workflow.getExtractedText(),
-            "Todavía no se ha extraído el texto.");
-        addStage(statement, "statement-filtered", "Texto filtrado", "TXT", workflow.getFilteredText(),
-            "Todavía no se ha generado el texto filtrado.");
+        Path extractedText = workflow.getExtractedText();
+        Path filteredText = workflow.getFilteredText();
+        Path selectedText = workflow.getSelectedStatementText();
+        boolean manualText = workflow.isStatementTextManual() && selectedText != null;
+        VBox extracted = stage("statement-extracted", "Texto del enunciado", "TXT", extractedText,
+            "Todavía no se ha extraído el texto.", null);
+        if (extractedText != null) {
+            addStageBadge(extracted, "statement-extracted",
+                manualText && selectedText.equals(extractedText) ? "SELECCIONADO" : "GENERADO");
+        }
+        statement.getChildren().add(extracted);
+
+        boolean manualFiltered = manualText && !selectedText.equals(extractedText);
+        Path displayedText = manualFiltered ? selectedText : filteredText;
+        VBox filtered = stage("statement-filtered", "Texto filtrado", "TXT", displayedText,
+            "Todavía no se ha generado ni seleccionado el texto filtrado.", null);
+        if (displayedText != null) {
+            addStageBadge(filtered, "statement-filtered", manualFiltered ? "SELECCIONADO" : "GENERADO");
+            addUnavailableNotice(filtered, displayedText);
+        }
+        if (manualFiltered && filteredText != null && !filteredText.equals(selectedText)) {
+            filtered.getChildren().add(UiComponents.contextSecondaryFile(
+                "teacher-context-statement-filtered-generated", "GENERADO", filteredText));
+        }
+        statement.getChildren().add(filtered);
         VBox inferredModel = stage("statement-model", "Modelo inferido del enunciado", "JSON",
             workflow.getGeneratedStatementModel(), "Todavía no se ha generado el modelo.", null);
+        if (workflow.getGeneratedStatementModel() != null) {
+            addStageBadge(inferredModel, "statement-model",
+                !workflow.isStatementModelOriginKnown() ? "ORIGEN DESCONOCIDO"
+                    : workflow.isStatementModelLocal() ? "SELECCIONADO" : "GENERADO");
+        }
         inferredModel.getChildren().add(promptInput(workflow.getSelectedPromptFile()));
         statement.getChildren().add(inferredModel);
-        addStage(statement, "statement-refined-model", "Modelo revisado del enunciado", "JSON",
-            workflow.getSuggestedInferredModel(), "Todavía no se ha confirmado el modelo revisado.");
+        statement.getChildren().add(modelStage("statement-refined-model", "Modelo revisado del enunciado",
+            "Modelo del enunciado seleccionado", workflow.getSuggestedInferredModel(),
+            workflow.getSelectedInferredModel(), workflow.isInferredModelManual(),
+            "Todavía no se ha confirmado ni seleccionado un modelo."));
 
         VBox code = lane("CÓDIGO FUENTE", "Fuentes Java y modelo generado");
         addStage(code, "code-folder", "Clases de código Java", "CARPETA", workflow.getSelectedCodeFolder(),
             "Todavía no se ha seleccionado una carpeta.");
-        addStage(code, "code-model", "Modelo obtenido del código", "JSON", workflow.getSuggestedJavaModel(),
-            "Todavía no se ha generado el modelo.");
+        code.getChildren().add(modelStage("code-model", "Modelo obtenido del código", "Modelo de código seleccionado",
+            workflow.getSuggestedJavaModel(), workflow.getSelectedJavaModel(), workflow.isJavaModelManual(),
+            "Todavía no se ha generado ni seleccionado un modelo."));
 
+        Path validationReport = workflow.getValidationReport();
         VBox validation = stage("validation-report", "Validación de modelos", "INFORME JSON",
-            workflow.getValidationReport(), "Todavía no se ha generado el informe.", null);
+            validationReport, "Todavía no se ha generado el informe.", null);
+        if (validationReport != null) {
+            addStageBadge(validation, "validation-report", "GENERADO");
+        }
         HBox validationHeader = (HBox) validation.getChildren().get(0);
         validationHeader.setMaxWidth(Double.MAX_VALUE);
         Region headerSpacer = new Region();
@@ -141,8 +175,10 @@ public final class TeacherContextSection extends Section {
 
     private VBox validationInputs() {
         VBox inputs = new VBox(6,
-            validationInput("MODELO OBTENIDO DEL CODIGO", "code", workflow.getSelectedJavaModel()),
-            validationInput("MODELO INFERIDO DEL ENUNCIADO", "statement", workflow.getSelectedInferredModel()));
+            validationInput("MODELO OBTENIDO DEL CODIGO", "code", workflow.getSelectedJavaModel(),
+                workflow.isJavaModelManual()),
+            validationInput("MODELO INFERIDO DEL ENUNCIADO", "statement", workflow.getSelectedInferredModel(),
+                workflow.isInferredModelManual()));
         inputs.getStyleClass().add("workflow-context-validation-inputs");
         return inputs;
     }
@@ -162,7 +198,7 @@ public final class TeacherContextSection extends Section {
         return row;
     }
 
-    private HBox validationInput(String text, String id, Path model) {
+    private HBox validationInput(String text, String id, Path model, boolean manual) {
         Label badge = new Label(text);
         badge.setId("teacher-context-validation-input-" + id + "-badge");
         badge.getStyleClass().addAll("workflow-context-input-badge", "workflow-context-input-" + id);
@@ -173,12 +209,52 @@ public final class TeacherContextSection extends Section {
         fileName.setMinWidth(0);
         HBox row = new HBox(8, badge, fileName, UiComponents.revealFileButton(
             "teacher-context-validation-input-" + id + "-reveal", model));
+        if (model != null) {
+            if (manual) {
+                row.getChildren().add(UiComponents.contextOriginBadge(
+                    "teacher-context-validation-input-" + id + "-origin", "SELECCIONADO"));
+            }
+            if (!Files.isRegularFile(model) || !Files.isReadable(model)) {
+                row.getChildren().add(UiComponents.contextUnavailableLabel());
+            }
+        }
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
 
+    private void addStageBadge(VBox stage, String id, String text) {
+        HBox header = (HBox) stage.getChildren().get(0);
+        header.getChildren().add(UiComponents.contextOriginBadge("teacher-context-stage-" + id + "-origin", text));
+    }
+
+    private VBox modelStage(String id, String generatedTitle, String selectedTitle, Path generated, Path selected,
+                            boolean manual, String emptyMessage) {
+        boolean selectedManually = manual && selected != null;
+        Path displayed = selectedManually ? selected : generated;
+        VBox result = stage(id, selectedManually ? selectedTitle : generatedTitle, "JSON", displayed, emptyMessage, null);
+        if (displayed != null) {
+            addStageBadge(result, id, selectedManually ? "SELECCIONADO" : "GENERADO");
+            addUnavailableNotice(result, displayed);
+        }
+        if (selectedManually && generated != null && !generated.equals(selected)) {
+            result.getChildren().add(UiComponents.contextSecondaryFile(
+                "teacher-context-" + id + "-generated", "GENERADO", generated));
+        }
+        return result;
+    }
+
+    private void addUnavailableNotice(VBox stage, Path file) {
+        if (!Files.isRegularFile(file) || !Files.isReadable(file)) {
+            stage.getChildren().add(UiComponents.contextUnavailableLabel());
+        }
+    }
+
     private void addStage(VBox lane, String id, String title, String type, Path file, String emptyMessage) {
-        lane.getChildren().add(stage(id, title, type, file, emptyMessage, null));
+        VBox input = stage(id, title, type, file, emptyMessage, null);
+        if (file != null) {
+            addStageBadge(input, id, "ENTRADA");
+        }
+        lane.getChildren().add(input);
     }
 
     private VBox stage(String id, String title, String type, Path file, String emptyMessage, String details) {

@@ -1,5 +1,7 @@
 package com.crud2gui.desktop.teacher.sections;
 
+import com.crud2gui.common.env.DotEnv;
+import com.crud2gui.common.path.OutputDirectoryResolver;
 import com.crud2gui.modelvalidator.ModelComparisonMain;
 import com.crud2gui.modelvalidator.ValidationOptions;
 import com.crud2gui.desktop.workflow.WorkflowContext;
@@ -337,19 +339,17 @@ public class ModelValidationSection extends Section {
     }
 
     private static Path defaultReportOutputDirectory() {
-        Path current = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
-        while (current != null) {
-            Path module = current.resolve("modules/model-validator");
-            if (Files.isDirectory(module)) {
-                return module.resolve("output");
-            }
-            current = current.getParent();
-        }
-        return Path.of("output").toAbsolutePath().normalize();
+        return resolveReportOutputDirectory(DotEnv.getStringVar("VALIDATION_REPORT_OUTPUT_DIR", null));
+    }
+
+    private static Path resolveReportOutputDirectory(String configuredPath) {
+        return OutputDirectoryResolver.resolve(Path.of(System.getProperty("user.dir")),
+                root -> Files.isDirectory(root.resolve("modules/model-validator")),
+                Path.of("modules/model-validator/output"), configuredPath);
     }
 
     private ValidationOptions loadInitialOptions() {
-        Path config = defaultReportOutputDirectory().resolveSibling("conf").resolve("validation-options.json");
+        Path config = resolveReportOutputDirectory(null).resolveSibling("conf").resolve("validation-options.json");
         try {
             return Files.isRegularFile(config)
                     ? ValidationOptions.fromJson(new ObjectMapper().readTree(config.toFile()))
