@@ -352,7 +352,7 @@ public final class ModelFromStatementSection extends Section {
         VBox diagramContent = new VBox(14,
                 UiComponents.panelHeading("Diagrama de clases UML",
                         "La clase gestora se sitúa en el centro; las relaciones enlazan las clases del modelo."),
-                diagramScroll, ClassDiagramView.relationshipLegend(), diagramStatus);
+                diagramScroll, classDiagram.relationshipLegend(), diagramStatus);
         VBox.setVgrow(diagramScroll, Priority.ALWAYS);
         VBox.setVgrow(diagramContent, Priority.ALWAYS);
         VBox diagramPanel = UiComponents.surface(diagramContent);
@@ -869,6 +869,7 @@ public final class ModelFromStatementSection extends Section {
             try {
                 ProjectModelSchema.validate(prettyJson);
                 projectModel = ModelIO.fromJson(prettyJson);
+                prettyJson = ModelIO.toJson(projectModel);
             } catch (IOException exception) {
                 throw new InvalidModelOutputException(exception.getMessage(), result.response(), exception);
             }
@@ -1038,6 +1039,7 @@ public final class ModelFromStatementSection extends Section {
         try {
             String json = modelEditor.currentJson();
             ProjectModel projectModel = ModelIO.fromJson(json);
+            json = ModelIO.toJson(projectModel);
             Files.writeString(confirmedPath, json + System.lineSeparator(), StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
             classDiagram.setModel(projectModel);

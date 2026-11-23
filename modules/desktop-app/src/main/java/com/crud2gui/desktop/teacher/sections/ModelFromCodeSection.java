@@ -255,7 +255,7 @@ public class ModelFromCodeSection extends Section {
                 UiComponents.panelHeading("Diagrama de clases UML",
                         "Representación visual del modelo extraído del código."),
                 managerSelectionPrompt, managerSelector,
-                diagramScroll, ClassDiagramView.relationshipLegend(), diagramStatus);
+                diagramScroll, classDiagram.relationshipLegend(), diagramStatus);
         VBox.setVgrow(diagramScroll, Priority.ALWAYS);
         VBox.setVgrow(diagramContent, Priority.ALWAYS);
         VBox diagramPanel = UiComponents.surface(diagramContent);

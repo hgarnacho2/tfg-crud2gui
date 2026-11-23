@@ -37,7 +37,7 @@ La raíz es `ProjectModel`. `ModelIO` permite leer y escribir esa estructura en 
 | Clase | Responsabilidad |
 | --- | --- |
 | `Relation` | Relación entre dos tipos, con multiplicidad, confianza y evidencia. |
-| `RelationKind` | Clasifica relaciones UML: herencia, realización, composición, agregación, asociación o dependencia. |
+| `RelationKind` | Clasifica relaciones UML: herencia, realización, composición, agregación o asociación. |
 | `Evidence` | Hechos del código que respaldan la clasificación de una relación. |
 | `Confidence` | Nivel de confianza de un resultado heurístico. |
 | `Analysis` | Resultados calculados, como la clase gestora principal, candidatas alternativas y puntos de entrada. |

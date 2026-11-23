@@ -199,7 +199,10 @@ class ModelFromCodeSectionTest {
             }
             ClassDiagramView diagram = (ClassDiagramView)
                     ((ScrollPane) diagramContent.getChildren().get(3)).getContent();
-                assertEquals(6, diagramContent.lookupAll(".uml-relation-legend-item").size());
+            assertEquals(5, diagramContent.lookupAll(".uml-relation-legend-item").size());
+            assertTrue(diagramContent.lookupAll(".uml-relation-legend-item-label").stream()
+                    .map(node -> ((Label) node).getText())
+                    .anyMatch("Implementa"::equals));
             assertEquals(2, diagram.getChildren().stream()
                     .filter(node -> node.getStyleClass().contains("uml-class-card")).count());
             assertEquals(1, diagram.getChildren().stream()
@@ -581,7 +584,7 @@ class ModelFromCodeSectionTest {
     }
 
     @Test
-    void laysOutManagerUserProductAndChildrenInColumnsAndFiltersEnumDependencies() throws Exception {
+    void laysOutManagerUserProductAndChildrenInColumns() throws Exception {
         TypeInfo manager = type("demo.PlataformaCompraVenta", "PlataformaCompraVenta", TypeKind.CLASS);
         TypeInfo user = type("demo.Usuario", "Usuario", TypeKind.CLASS);
         TypeInfo product = type("demo.Producto", "Producto", TypeKind.CLASS);
@@ -594,16 +597,14 @@ class ModelFromCodeSectionTest {
                 managerUsers,
                 userProducts,
                 relation(RelationKind.INHERITANCE, electronic, product),
-                productState,
-                relation(RelationKind.DEPENDENCY, electronic, state),
-                relation(RelationKind.DEPENDENCY, manager, state));
+                productState);
         ProjectModel model = new ProjectModel("1.0", null, null,
                 List.of(manager, user, product, electronic, state), relations, null, null);
 
-        assertEquals(List.of(managerUsers, userProducts,
-                        relation(RelationKind.INHERITANCE, electronic, product), productState),
-                ClassDiagramView.filterDiagramRelations(model,
-                        Set.of(manager.id(), user.id(), product.id(), electronic.id(), state.id())));
+        assertEquals(relations, ClassDiagramView.filterDiagramRelations(model,
+                Set.of(manager.id(), user.id(), product.id(), electronic.id(), state.id())));
+        assertEquals(List.of(managerUsers), ClassDiagramView.filterDiagramRelations(model,
+                Set.of(manager.id(), user.id())));
 
         onFx(() -> {
             ClassDiagramView diagram = new ClassDiagramView();
@@ -634,7 +635,7 @@ class ModelFromCodeSectionTest {
 
     private static Relation relation(RelationKind kind, TypeInfo from, TypeInfo to) {
         return new Relation(kind, from.id(), to.id(), null, null, Confidence.HIGH,
-                new Evidence(false, false, false, false, null));
+                new Evidence(false, false, false, false));
     }
 
     private static Pane cardNamed(ClassDiagramView diagram, String name) {

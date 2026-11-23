@@ -37,7 +37,7 @@ RELACIONES
 * Usa COMPOSITION cuando el texto declare esa semantica. Una seccion que anuncie composicion la aplica a las relaciones concretas que enumere como parte de su implementacion, aunque cada requisito no repita el termino; no la extiendas a otros atributos. Si el destino es un enumerado, usa siempre ASSOCIATION y no avises AMBIGUO. Usa AGGREGATION solo si se declara explicitamente. Para otras referencias de proyecto, usa ASSOCIATION; si la semantica es dudosa, confidence LOW y aviso AMBIGUO.
 * confidence: HIGH si el texto declara la semantica, MEDIUM si se deduce de un ejemplo, LOW si es dudosa.
 * Multiplicidad en el extremo destino: "1" si el atributo único es obligatorio o se inicializa mediante un parámetro requerido del constructor, aunque exista un setter o cambie después. Un setter indica mutabilidad, no opcionalidad. Usa "0..1" solo si el texto permite explícitamente que la referencia esté ausente al crear el objeto o que se asigne después sin ser obligatoria. Usa "0..*" para colecciones y null si no hay evidencia suficiente.
-* No generes DEPENDENCY ni REALIZATION salvo que el texto las describa expresamente. evidence siempre es null.
+* Genera REALIZATION solo si el enunciado indica que una clase implementa una interfaz. evidence siempre es null.
 
 AVISOS (source.warnings)
 Usa una lista de textos breves, de máximo 25 palabras cada uno, con uno de estos prefijos:

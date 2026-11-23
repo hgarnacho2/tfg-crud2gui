@@ -51,7 +51,7 @@ public final class ModelValidator {
      * <p>El modelo esperado se interpreta como contrato minimo: se exigen sus tipos, atributos,
      * constructores, metodos y relaciones, pero se permiten miembros adicionales. Las visibilidades
      * nulas significan que el enunciado no las especifica. Se ignoran metadatos de origen, analisis,
-     * layout, lanzadores y dependencias por uso local. La diferencia entre composicion y agregacion
+     * layout y lanzadores. La diferencia entre composicion y agregacion
      * se informa como advertencia porque no siempre puede determinarse a partir del codigo Java.</p>
      *
      * @param expected modelo derivado del enunciado
@@ -542,15 +542,12 @@ public final class ModelValidator {
                                         Set<String> entryPoints, Set<String> actualTypeKeys,
                                         Set<String> optionalTypes, List<Finding> findings,
                                         List<RelationshipDecision> relationshipDecisions) {
-        List<Relation> expected = expectedRelations.stream()
-                .filter(relation -> relation.kind() != RelationKind.DEPENDENCY).toList();
         List<Relation> actual = actualRelations.stream()
-                .filter(relation -> relation.kind() != RelationKind.DEPENDENCY)
                 .filter(relation -> !entryPoints.contains(typeKey(relation.from())))
                 .filter(relation -> !entryPoints.contains(typeKey(relation.to())))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
-        for (Relation expectedRelation : expected) {
+        for (Relation expectedRelation : expectedRelations) {
             if (hasMissingOptionalEndpoint(expectedRelation, actualTypeKeys, optionalTypes)) continue;
             int matchIndex = -1;
             for (int i = 0; i < actual.size(); i++) {

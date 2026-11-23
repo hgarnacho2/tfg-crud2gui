@@ -31,7 +31,7 @@ Devuelve un objeto compatible con ProjectModel del módulo metamodel-model. Incl
 - Cada ConstructorInfo tiene visibility, parameters, thrown, annotations, javadoc y location.
 - Cada MethodInfo tiene name, returnType, visibility, modifiers, parameters, thrown, annotations, hasBody, javadoc y location. Usa returnType null si el enunciado no permite determinarlo; no inventes parámetros.
 - Cada ParameterInfo tiene name, type, varargs. Cada TypeRef tiene name, qualifiedName, projectType, arguments y arrayDimensions.
-- relations es un array de Relation con kind (INHERITANCE, REALIZATION, COMPOSITION, AGGREGATION, ASSOCIATION o DEPENDENCY), from, to, via, multiplicity, confidence (HIGH, MEDIUM o LOW) y evidence. Usa ids de TypeInfo en from y to; via puede ser el nombre del atributo o null. evidence será null porque el enunciado no aporta evidencias del código fuente.
+- relations es un array de Relation con kind (INHERITANCE, REALIZATION, COMPOSITION, AGGREGATION o ASSOCIATION), from, to, via, multiplicity, confidence (HIGH, MEDIUM o LOW) y evidence. Usa ids de TypeInfo en from y to; via puede ser el nombre del atributo o null. evidence será null porque el enunciado no aporta evidencias del código fuente.
 - analysis y layout deben ser null.
 
 No reduzcas las propiedades estructurales de TypeInfo, FieldInfo, ConstructorInfo, MethodInfo ni TypeRef. Para propiedades opcionales no especificadas usa null; para colecciones usa [].

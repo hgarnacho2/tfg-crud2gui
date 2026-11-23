@@ -58,9 +58,7 @@ class ModelValidatorTest {
                 type("demo.Launcher", "demo", TypeKind.CLASS, List.of(), List.of(), List.of(), true)),
                 List.of(
                         new Relation(RelationKind.AGGREGATION, "demo.Owner", "demo.Project", "projects",
-                                "0..*", Confidence.HIGH, null),
-                        new Relation(RelationKind.DEPENDENCY, "demo.Launcher", "demo.Owner", "main(owner)",
-                                null, Confidence.HIGH, null)),
+                                "0..*", Confidence.HIGH, null)),
                 List.of(), new Analysis(new ManagerCandidate("demo.Owner", 5.0, Confidence.HIGH,
                         List.of("coordina el sistema")), List.of(), List.of(), List.of("demo.Launcher"), false));
 

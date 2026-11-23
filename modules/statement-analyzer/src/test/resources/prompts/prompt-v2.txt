@@ -35,7 +35,7 @@ RELACIONES
 - kind: COMPOSITION si el texto lo llama composición o dice que la clase contiene o tiene como atributo ese objeto (el enunciado usa "composición" para cualquier atributo de tipo objeto); AGGREGATION solo si el texto lo dice. Si el texto no permite distinguir (por ejemplo un atributo de tipo enumerado sin comentario), usa ASSOCIATION con confidence LOW y un aviso AMBIGUO.
 - confidence: HIGH si el texto declara la semántica, MEDIUM si se deduce de un ejemplo, LOW si es ambigua.
 - multiplicity (extremo destino): "1" si el atributo es único y el texto lo exige en el constructor; "0..1" si es único y se asigna después con un set; "0..*" si es una colección; null si no se puede justificar.
-- No generes DEPENDENCY ni REALIZATION salvo que el texto las describa expresamente. evidence es siempre null.
+- No generes REALIZATION salvo que el texto la describa expresamente. evidence es siempre null.
 
 AVISOS (source.warnings)
 Lista de textos breves (máximo 25 palabras cada uno), cada uno con uno de estos prefijos:
@@ -60,7 +60,7 @@ Objeto compatible con ProjectModel con las propiedades raíz schemaVersion ("1.0
 - ConstructorInfo: visibility, parameters, thrown, annotations, javadoc, location.
 - MethodInfo: name, returnType, visibility, modifiers, parameters, thrown, annotations, hasBody, javadoc, location.
 - ParameterInfo: name, type, varargs. TypeRef: name, qualifiedName, projectType, arguments, arrayDimensions.
-- Relation: kind (INHERITANCE, REALIZATION, COMPOSITION, AGGREGATION, ASSOCIATION o DEPENDENCY), from, to, via, multiplicity, confidence (HIGH, MEDIUM o LOW), evidence.
+- Relation: kind (INHERITANCE, REALIZATION, COMPOSITION, AGGREGATION o ASSOCIATION), from, to, via, multiplicity, confidence (HIGH, MEDIUM o LOW), evidence.
 - modifiers admite ABSTRACT, STATIC, FINAL, SYNCHRONIZED, NATIVE, TRANSIENT, VOLATILE, DEFAULT y SEALED.
 
 FORMA EXACTA (solo ilustra la estructura; no copies sus nombres ni valores):

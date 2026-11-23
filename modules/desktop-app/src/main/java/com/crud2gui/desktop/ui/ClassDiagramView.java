@@ -58,13 +58,12 @@ public final class ClassDiagramView extends Pane {
         setPrefSize(1500, 1000);
     }
 
-    public static VBox relationshipLegend() {
+    public VBox relationshipLegend() {
         FlowPane items = new FlowPane(18, 8);
         items.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         items.setId("uml-relation-legend-items");
         for (RelationKind kind : List.of(RelationKind.ASSOCIATION, RelationKind.COMPOSITION,
-                RelationKind.AGGREGATION, RelationKind.INHERITANCE, RelationKind.REALIZATION,
-                RelationKind.DEPENDENCY)) {
+                RelationKind.AGGREGATION, RelationKind.INHERITANCE, RelationKind.REALIZATION)) {
             Label label = UiComponents.label(relationName(kind), List.of("uml-relation-legend-item-label"));
             HBox item = UiComponents.hBox(List.of("uml-relation-legend-item"), relationSample(kind), label);
             item.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -83,7 +82,7 @@ public final class ClassDiagramView extends Pane {
         graphics.setStroke(color);
         graphics.setFill(color);
         graphics.setLineWidth(kind == RelationKind.COMPOSITION ? 2.2 : 1.8);
-        boolean dashed = kind == RelationKind.DEPENDENCY || kind == RelationKind.REALIZATION;
+        boolean dashed = kind == RelationKind.REALIZATION;
         if (dashed) {
             graphics.setLineDashes(8, 6);
         }
@@ -96,8 +95,6 @@ public final class ClassDiagramView extends Pane {
         graphics.setLineDashes();
         if (kind == RelationKind.INHERITANCE || kind == RelationKind.REALIZATION) {
             drawTriangle(graphics, endX, 12, 1, 0);
-        } else if (kind == RelationKind.DEPENDENCY) {
-            drawOpenArrow(graphics, endX, 12, 1, 0);
         }
         return sample;
     }
@@ -108,8 +105,7 @@ public final class ClassDiagramView extends Pane {
             case COMPOSITION -> "Composición";
             case AGGREGATION -> "Agregación";
             case INHERITANCE -> "Herencia";
-            case REALIZATION -> "Realización";
-            case DEPENDENCY -> "Dependencia";
+            case REALIZATION -> "Implementa";
         };
     }
 
@@ -168,17 +164,9 @@ public final class ClassDiagramView extends Pane {
         if (model == null) {
             return List.of();
         }
-        Map<String, TypeInfo> typesById = model.types().stream()
-                .collect(java.util.stream.Collectors.toMap(TypeInfo::id, type -> type));
         return model.relations().stream()
                 .filter(relation -> visibleTypeIds.contains(relation.from())
                         && visibleTypeIds.contains(relation.to()))
-                .filter(relation -> {
-                    TypeInfo from = typesById.get(relation.from());
-                    TypeInfo to = typesById.get(relation.to());
-                    return relation.kind() != RelationKind.DEPENDENCY
-                            || (from.kind() != TypeKind.ENUM && to.kind() != TypeKind.ENUM);
-                })
                 .toList();
     }
 
@@ -198,7 +186,6 @@ public final class ClassDiagramView extends Pane {
         }
         for (Relation relation : relations) {
             if (relation.from() == null || relation.to() == null
-                    || relation.kind() == RelationKind.DEPENDENCY
                     || !adjacent.containsKey(relation.from()) || !adjacent.containsKey(relation.to())) {
                 continue;
             }
@@ -509,7 +496,7 @@ public final class ClassDiagramView extends Pane {
         graphics.setStroke(color);
         graphics.setFill(color);
         graphics.setLineWidth(relation.kind() == RelationKind.COMPOSITION ? 2.2 : 1.8);
-        if (relation.kind() == RelationKind.DEPENDENCY || relation.kind() == RelationKind.REALIZATION) {
+        if (relation.kind() == RelationKind.REALIZATION) {
             graphics.setLineDashes(8, 6);
         } else {
             graphics.setLineDashes();
@@ -522,8 +509,6 @@ public final class ClassDiagramView extends Pane {
         graphics.setLineDashes();
         if (relation.kind() == RelationKind.INHERITANCE || relation.kind() == RelationKind.REALIZATION) {
             drawTriangle(graphics, endX, endY, unitX, unitY);
-        } else if (relation.kind() == RelationKind.DEPENDENCY) {
-            drawOpenArrow(graphics, endX, endY, unitX, unitY);
         }
         drawRelationLabel(graphics, relation, fromCenter, toCenter, color);
     }
@@ -568,18 +553,6 @@ public final class ClassDiagramView extends Pane {
         graphics.strokePolygon(pointsX, pointsY, 3);
     }
 
-    private static void drawOpenArrow(GraphicsContext graphics, double x, double y,
-                                      double unitX, double unitY) {
-        double perpendicularX = -unitY;
-        double perpendicularY = unitX;
-        double length = 13;
-        double halfWidth = 7;
-        graphics.strokeLine(x, y, x - unitX * length + perpendicularX * halfWidth,
-                y - unitY * length + perpendicularY * halfWidth);
-        graphics.strokeLine(x, y, x - unitX * length - perpendicularX * halfWidth,
-                y - unitY * length - perpendicularY * halfWidth);
-    }
-
     private static void drawRelationLabel(GraphicsContext graphics, Relation relation,
                                           Point2D from, Point2D to, Color color) {
         String label = relation.via() == null ? relation.kind().name().toLowerCase() : relation.via();
@@ -601,7 +574,6 @@ public final class ClassDiagramView extends Pane {
             case COMPOSITION -> Color.web("#087e65");
             case AGGREGATION -> Color.web("#568c7c");
             case ASSOCIATION -> Color.web("#60766f");
-            case DEPENDENCY -> Color.web("#718096");
         };
     }
 }

@@ -8,8 +8,6 @@ package com.crud2gui.model;
  * @param assignedFromParameter la parte llega a la clase por un constructor o un setter
  * @param initializedInline     el atributo se inicializa en su declaracion
  * @param exposedBySetter       existe un setter publico para el atributo
- * @param usedIn                lugar de uso en una dependencia: {@code parameter}, {@code return} o {@code local};
- *                              {@code null} en el resto de relaciones
  */
 public record Evidence(boolean createdWithNew, boolean assignedFromParameter,
-                       boolean initializedInline, boolean exposedBySetter, String usedIn) { }
+                       boolean initializedInline, boolean exposedBySetter) { }

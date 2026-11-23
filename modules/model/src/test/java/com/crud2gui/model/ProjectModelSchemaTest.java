@@ -43,4 +43,19 @@ class ProjectModelSchemaTest {
 
         assertThrows(IOException.class, () -> ProjectModelSchema.validate(invalid));
     }
+
+    @Test
+    void acceptsStructuralEvidenceAndRejectsRemovedDependencyFields() throws Exception {
+        String relation = """
+                {"kind":"ASSOCIATION","from":"A","to":"B","via":"b","multiplicity":"1",
+                 "confidence":"HIGH","evidence":{"createdWithNew":false,"assignedFromParameter":true,
+                 "initializedInline":false,"exposedBySetter":false}}
+                """;
+        String model = VALID_EMPTY_MODEL.replace("\"relations\": []", "\"relations\": [" + relation + "]");
+        assertDoesNotThrow(() -> ProjectModelSchema.validate(model));
+        assertThrows(IOException.class, () -> ProjectModelSchema.validate(
+                model.replace("\"ASSOCIATION\"", "\"DEPENDENCY\"")));
+        assertThrows(IOException.class, () -> ProjectModelSchema.validate(
+                model.replace("\"exposedBySetter\":false", "\"exposedBySetter\":false,\"usedIn\":null")));
+    }
 }

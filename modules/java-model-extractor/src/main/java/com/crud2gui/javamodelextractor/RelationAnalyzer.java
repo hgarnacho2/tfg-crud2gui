@@ -36,9 +36,7 @@ import java.util.Set;
  * de JavaParser, sin compilar ni ejecutar el codigo.
  *
  * <p>Combina la herencia y las interfaces declaradas con las referencias de los atributos para
- * obtener relaciones de herencia, realizacion, asociacion y composicion. Tambien busca dependencias
- * en parametros, retornos y variables locales, omitiendolas cuando ya existe una relacion por
- * atributo entre los mismos tipos y en la misma direccion.</p>
+ * obtener relaciones de herencia, realizacion, asociacion y composicion.</p>
  *
  * <p>Las relaciones por atributo incluyen una multiplicidad estimada, evidencias y un nivel de
  * confianza. La creacion con {@code new}, las asignaciones desde parametros y los setters aportan
@@ -71,8 +69,7 @@ final class RelationAnalyzer {
     /**
      * Calcula las relaciones, asociando cada tipo extraido con su declaracion y contexto en el AST.
      *
-     * <p>Para cada tipo incorpora primero la herencia, despues las relaciones por atributos y,
-     * finalmente, las dependencias de sus metodos y constructores. Elimina duplicados por origen,
+     * <p>Para cada tipo incorpora primero la herencia y despues las relaciones por atributos. Elimina duplicados por origen,
      * destino, clase de relacion y miembro de procedencia, conservando la primera relacion.</p>
      *
      * @param types tipos del proyecto con sus miembros y referencias ya extraidos
@@ -91,7 +88,6 @@ final class RelationAnalyzer {
         }
 
         Map<RelationKey, Relation> relations = new LinkedHashMap<>();
-        Set<TypePair> structuralPairs = new LinkedHashSet<>();
         for (TypeInfo owner : types) {
             addGeneralizations(owner, typesById, relations);
             DeclarationContext declaration = declarations.get(owner.id());
@@ -111,10 +107,8 @@ final class RelationAnalyzer {
                                 ? Confidence.MEDIUM : Confidence.HIGH;
                     add(relations, new Relation(kind, owner.id(), targetId, field.name(), multiplicity,
                             confidence, evidence));
-                    structuralPairs.add(new TypePair(owner.id(), targetId));
                 }
             }
-            addDependencies(owner, declaration, structuralPairs, relations);
         }
         return List.copyOf(relations.values());
     }
@@ -178,7 +172,7 @@ final class RelationAnalyzer {
      */
     private static Relation generalization(String from, String to, RelationKind kind) {
         return new Relation(kind, from, to, null, null, Confidence.HIGH,
-                new Evidence(false, false, false, false, null));
+                new Evidence(false, false, false, false));
     }
 
     /**
@@ -222,7 +216,7 @@ final class RelationAnalyzer {
                 exposedBySetter |= body.exposedBySetter();
             }
         }
-        return new Evidence(created, assignedFromParameter, field.initializedInline(), exposedBySetter, null);
+        return new Evidence(created, assignedFromParameter, field.initializedInline(), exposedBySetter);
     }
 
     /**
@@ -391,77 +385,6 @@ final class RelationAnalyzer {
     }
 
     /**
-     * Incorpora dependencias por parametros, retornos y variables locales de metodos y constructores.
-     *
-     * @param owner tipo de origen de las dependencias
-     * @param declaration declaracion AST y contexto del tipo de origen
-     * @param structuralPairs pares dirigidos que ya tienen una relacion por atributo
-     * @param relations acumulador de relaciones sin duplicados
-     */
-    private void addDependencies(TypeInfo owner, DeclarationContext declaration, Set<TypePair> structuralPairs,
-                                 Map<RelationKey, Relation> relations) {
-        for (BodyDeclaration<?> member : declaration.declaration().getMembers()) {
-            if (member instanceof MethodDeclaration method) {
-                for (Parameter parameter : method.getParameters()) {
-                    addDependency(owner.id(), method.getNameAsString() + "(" + parameter.getNameAsString() + ")",
-                            resolver.resolve(parameter.getType(), declaration.context()), "parameter",
-                            structuralPairs, relations);
-                }
-                addDependency(owner.id(), method.getNameAsString() + "(return)",
-                        resolver.resolve(method.getType(), declaration.context()), "return",
-                        structuralPairs, relations);
-                method.getBody().ifPresent(body -> addLocalDependencies(owner.id(), method.getNameAsString(),
-                        body, declaration.context(), structuralPairs, relations));
-            } else if (member instanceof ConstructorDeclaration constructor) {
-                for (Parameter parameter : constructor.getParameters()) {
-                    addDependency(owner.id(), "<init>(" + parameter.getNameAsString() + ")",
-                            resolver.resolve(parameter.getType(), declaration.context()), "parameter",
-                            structuralPairs, relations);
-                }
-                addLocalDependencies(owner.id(), "<init>", constructor.getBody(), declaration.context(),
-                        structuralPairs, relations);
-            }
-        }
-    }
-
-    /**
-     * Incorpora dependencias a partir de los tipos declarados por variables encontradas en un cuerpo.
-     *
-     * @param from identificador del tipo de origen
-     * @param callable nombre del metodo, o {@code <init>} para un constructor
-     * @param body subarbol AST donde se buscan declaraciones de variables
-     * @param context contexto para resolver sus tipos
-     * @param structuralPairs pares dirigidos con relacion por atributo, que no generan dependencia
-     * @param relations acumulador de relaciones sin duplicados
-     */
-    private void addLocalDependencies(String from, String callable, Node body, ResolutionContext context,
-                                      Set<TypePair> structuralPairs, Map<RelationKey, Relation> relations) {
-        for (VariableDeclarator variable : body.findAll(VariableDeclarator.class)) {
-            addDependency(from, callable + "(" + variable.getNameAsString() + ")",
-                    resolver.resolve(variable.getType(), context), "local", structuralPairs, relations);
-        }
-    }
-
-    /**
-     * Anade dependencias para los tipos del proyecto presentes en una referencia y sus genericos.
-     *
-     * @param from identificador del tipo de origen
-     * @param via descripcion del metodo o constructor y del parametro, retorno o variable de procedencia
-     * @param type referencia cuyo tipo y argumentos genericos se examinan
-     * @param usedIn categoria de evidencia: {@code parameter}, {@code return} o {@code local}
-     * @param structuralPairs pares dirigidos que se excluyen por tener ya una relacion por atributo
-     * @param relations acumulador donde se insertan las dependencias con confianza alta
-     */
-    private static void addDependency(String from, String via, TypeRef type, String usedIn,
-                                      Set<TypePair> structuralPairs, Map<RelationKey, Relation> relations) {
-        for (String target : projectTypes(type)) {
-            if (structuralPairs.contains(new TypePair(from, target))) continue;
-            add(relations, new Relation(RelationKind.DEPENDENCY, from, target, via, null, Confidence.HIGH,
-                    new Evidence(false, false, false, false, usedIn)));
-        }
-    }
-
-    /**
      * Propone composicion si hay indicios de creacion con {@code new}; en otro caso, asociacion.
      *
      * @param evidence evidencias acumuladas para un atributo y un destino
@@ -554,13 +477,6 @@ final class RelationAnalyzer {
      * @param via miembro o uso de procedencia, o {@code null} en herencia y realizacion
      */
     private record RelationKey(String from, String to, RelationKind kind, String via) { }
-    /**
-     * Par dirigido de tipos con una relacion por atributo, usado para omitir dependencias redundantes.
-     *
-     * @param from identificador del tipo de origen
-     * @param to identificador del tipo de destino
-     */
-    private record TypePair(String from, String to) { }
     /**
      * Resume los indicios encontrados en el cuerpo de un metodo o constructor para un atributo.
      *

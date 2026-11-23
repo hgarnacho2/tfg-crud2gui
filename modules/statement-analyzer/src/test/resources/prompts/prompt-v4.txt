@@ -49,7 +49,7 @@ RELACIONES
 * null si no se puede justificar.
 
 
-* No generes DEPENDENCY ni REALIZATION salvo que el texto las describa expresamente. evidence es siempre null.
+* No generes REALIZATION salvo que el texto la describa expresamente. evidence es siempre null.
 
 AVISOS (source.warnings)
 Lista de textos breves (máximo 25 palabras cada uno), cada uno con uno de estos prefijos:
@@ -79,7 +79,7 @@ Objeto compatible con ProjectModel con las propiedades raíz schemaVersion ("1.0
 * ConstructorInfo: visibility, parameters, thrown, annotations, javadoc, location.
 * MethodInfo: name, returnType, visibility, modifiers, parameters, thrown, annotations, hasBody, javadoc, location.
 * ParameterInfo: name, type, varargs. TypeRef: name, qualifiedName, projectType, arguments, arrayDimensions.
-* Relation: kind (INHERITANCE, REALIZATION, COMPOSITION, AGGREGATION, ASSOCIATION o DEPENDENCY), from, to, via, multiplicity, confidence (HIGH, MEDIUM o LOW), evidence.
+* Relation: kind (INHERITANCE, REALIZATION, COMPOSITION, AGGREGATION o ASSOCIATION), from, to, via, multiplicity, confidence (HIGH, MEDIUM o LOW), evidence.
 * modifiers admite ABSTRACT, STATIC, FINAL, SYNCHRONIZED, NATIVE, TRANSIENT, VOLATILE, DEFAULT y SEALED.
 * Tipos JSON exactos: hasBody, varargs, projectType, initializedInline y hasMainMethod son booleanos (true o false, nunca números); arrayDimensions y filesParsed son enteros; el resto son cadenas, null, arrays u objetos según se indica.
 

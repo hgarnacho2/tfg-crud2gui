@@ -164,7 +164,6 @@ final class ModelValidationResultView extends VBox {
                         case "AGGREGATION" -> "Agregación";
                         case "INHERITANCE" -> "Herencia";
                         case "REALIZATION" -> "Realización";
-                        case "DEPENDENCY" -> "Dependencia";
                         default -> kind;
                 };
         }

@@ -165,6 +165,34 @@ class ModelFromStatementSectionTest {
     }
 
     @Test
+    void enablesPromptStepAfterSelectingTextWithEmptyWorkflow() throws Exception {
+        Path statement = Files.writeString(directory.resolve("enunciado-filtrado.txt"),
+                "Texto filtrado del enunciado.\n".repeat(1500));
+        Path stateFile = directory.resolve("empty-workflow.json");
+        TeacherWorkflowContext workflow = new TeacherWorkflowContext(stateFile);
+
+        onFx(() -> {
+            ModelFromStatementSection section = new ModelFromStatementSection(
+                    owner -> statement.toFile(), owner -> null, (owner, current) -> null,
+                    List.of(), directory.resolve("output"), workflow);
+            StackPane root = new StackPane(section);
+            new Scene(root, 1200, 900);
+            root.applyCss();
+            root.layout();
+
+            assertTrue(section.lookup("#statement-step-2").isDisabled());
+            ((Button) section.lookup("#model-statement-select-text")).fire();
+            assertEquals(statement.toAbsolutePath().normalize(), workflow.getSelectedStatementText());
+            assertFalse(section.lookup("#statement-step-2").isDisabled());
+            ((Button) section.lookup("#statement-step-2")).fire();
+            assertTrue(section.lookup("#model-statement-prompt-card").isVisible());
+            return null;
+        });
+        assertEquals(statement.toAbsolutePath().normalize(),
+                new TeacherWorkflowContext(stateFile).getSelectedStatementText());
+    }
+
+    @Test
     void enablesNextStepAfterLoadingFilteredStatementText() throws Exception {
         Path textFile = directory.resolve("enunciado-filtrado.txt");
         Files.writeString(textFile, "Texto filtrado del enunciado.");
@@ -615,7 +643,7 @@ class ModelFromStatementSectionTest {
                 VBox diagramContent = (VBox) diagramPanel.getChildren().get(0);
                 ScrollPane diagramScroll = (ScrollPane) diagramContent.getChildren().get(1);
                 ClassDiagramView diagram = (ClassDiagramView) diagramScroll.getContent();
-                assertEquals(6, diagramContent.lookupAll(".uml-relation-legend-item").size());
+                assertEquals(5, diagramContent.lookupAll(".uml-relation-legend-item").size());
                 assertEquals(3, diagram.lookupAll(".uml-class-card").size());
                 assertEquals(1, diagram.lookupAll(".uml-manager-card").size());
                 assertTrue(diagram.lookupAll(".uml-package-name").isEmpty());

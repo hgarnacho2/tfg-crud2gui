@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.crud2gui.model.*;
 
@@ -203,12 +204,10 @@ class ProjectParserTest {
         assertEquals("0..*", collection.multiplicity());
         assertEquals(Confidence.LOW, collection.confidence());
 
-        Relation dependency = demo.relations().stream()
-                .filter(r -> r.from().equals("com.demo.ClaseRelacion4"))
-                .filter(r -> r.to().equals("com.demo.ClaseHijo1"))
-                .filter(r -> r.kind() == RelationKind.DEPENDENCY)
-                .findFirst().orElseThrow();
-        assertEquals("parameter", dependency.evidence().usedIn());
+        assertTrue(demo.relations().stream().noneMatch(r -> r.from().equals("com.demo.ClaseRelacion4")
+                && r.to().equals("com.demo.ClaseHijo1")));
+        assertEquals("com.demo.ClaseHijo1", method(type(demo, "com.demo.ClaseRelacion4"),
+                "obtenerSumaAtributos").parameters().get(0).type().qualifiedName());
 
         Relation post = relation(redSocial, "Perfil", "Post", "posts");
         assertEquals(RelationKind.COMPOSITION, post.kind());
@@ -217,6 +216,31 @@ class ProjectParserTest {
         Relation association = relation(tienda, "com.tienda.Usuario", "com.tienda.Producto", "destacados");
         assertEquals(RelationKind.ASSOCIATION, association.kind());
         assertEquals("0..*", association.multiplicity());
+    }
+
+    @Test
+    void conservaFirmasSinCrearRelacionesPorUsos(@TempDir Path directory) throws Exception {
+        Files.writeString(directory.resolve("Usuario.java"), """
+                package demo;
+                class Usuario {
+                    Usuario(Parametro parametro) {}
+                    Retorno operar(Parametro parametro) {
+                        Local local = new Local();
+                        return null;
+                    }
+                }
+                class Parametro {}
+                class Retorno {}
+                class Local {}
+                """);
+        ProjectModel model = new ProjectParser().parse(directory);
+        TypeInfo usuario = type(model, "demo.Usuario");
+        assertEquals("demo.Parametro", usuario.constructors().get(0).parameters().get(0).type().qualifiedName());
+        MethodInfo operar = method(usuario, "operar");
+        assertEquals("demo.Parametro", operar.parameters().get(0).type().qualifiedName());
+        assertEquals("demo.Retorno", operar.returnType().qualifiedName());
+        assertTrue(model.relations().isEmpty());
+        assertDoesNotThrow(() -> ModelIO.toJson(model));
     }
 
     @Test

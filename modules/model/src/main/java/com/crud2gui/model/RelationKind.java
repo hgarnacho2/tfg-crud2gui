@@ -13,7 +13,5 @@ public enum RelationKind {
     /** Agregacion: la parte se recibe de fuera (rombo vacio). */
     AGGREGATION,
     /** Asociacion: atributo sin evidencia de relacion todo-parte (linea simple). */
-    ASSOCIATION,
-    /** Dependencia: uso en parametros, retornos o variables locales (discontinua con flecha). */
-    DEPENDENCY
+    ASSOCIATION
 }

@@ -284,13 +284,12 @@
     "Evidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["createdWithNew", "assignedFromParameter", "initializedInline", "exposedBySetter", "usedIn"],
+      "required": ["createdWithNew", "assignedFromParameter", "initializedInline", "exposedBySetter"],
       "properties": {
         "createdWithNew": { "type": "boolean" },
         "assignedFromParameter": { "type": "boolean" },
         "initializedInline": { "type": "boolean" },
-        "exposedBySetter": { "type": "boolean" },
-        "usedIn": { "type": ["string", "null"] }
+        "exposedBySetter": { "type": "boolean" }
       }
     },
     "Analysis": {
@@ -347,7 +346,7 @@
     },
     "RelationKind": {
       "type": "string",
-      "enum": ["INHERITANCE", "REALIZATION", "COMPOSITION", "AGGREGATION", "ASSOCIATION", "DEPENDENCY"]
+      "enum": ["INHERITANCE", "REALIZATION", "COMPOSITION", "AGGREGATION", "ASSOCIATION"]
     },
     "Visibility": {
       "type": "string",

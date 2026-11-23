@@ -628,7 +628,7 @@ El modelo de dominio en CRUD2GUI opera en dos niveles:
 |------------|-----------------|
 | **schemaVersion** | Identifica la versión del formato. Este esquema solo acepta la cadena `"1.0"`. |
 | **types[]** | Declaraciones de clases, interfaces, enumeraciones, `record` y tipos de anotación. Incluye sus miembros, su visibilidad y, si están disponibles, el Javadoc y la ubicación en el código. |
-| **relations[]** | Relaciones de herencia, realización, composición, agregación, asociación o dependencia. Cada vínculo identifica el origen y el destino y registra la confianza, así como la multiplicidad y la evidencia cuando están disponibles. |
+| **relations[]** | Relaciones de herencia, realización, composición, agregación o asociación. Cada vínculo identifica el origen y el destino y registra la confianza, así como la multiplicidad y la evidencia cuando están disponibles. |
 | **expectedManagerId** | Identificador simple de la clase gestora designada en el enunciado; `null` si no se puede establecer una designación explícita e inequívoca. |
 | **analysis** | Resultados del análisis del código: gestora seleccionada, candidatas alternativas, posibles subgestoras y puntos de entrada. Puede ser `null`. |
 | **source** | Metadatos de procedencia: ruta de origen y fecha de generación cuando están disponibles, número de ficheros y avisos. |
@@ -1022,7 +1022,14 @@ Para interpretar el código se utiliza **JavaParser**, una biblioteca de anális
 
 JavaParser construye un **árbol de sintaxis abstracta**, denominado **AST** por sus siglas en inglés (*Abstract Syntax Tree*). Este árbol representa elementos como clases, atributos, métodos, sentencias y expresiones, y las relaciones de contención entre ellos. A diferencia de buscar palabras o patrones en el texto, permite distinguir una declaración de atributo de una variable local, o una llamada a un método de su declaración. Aunque los nodos pueden conservar ubicaciones y comentarios, el objetivo del árbol es representar la estructura del programa, no reproducir su presentación textual.
 
-Un AST es un representación de la estructura de un programas. Cada lenguaje necesita un analizador que conozca su sintaxis, y la estructura concreta de sus nodos depende del lenguaje y de la herramienta utilizada. **JavaParser es una biblioteca específica para analizar código Java**, mientras que el AST es la representación que esta biblioteca genera a partir de ese código.
+Un AST es un representación de la estructura de un programas. Permite trabajar con la estructura del código en lugar de tratarlo como texto. Por ejemplo:
+
+Identificar clases, atributos, métodos y sus tipos.
+Distinguir una declaración de una llamada a un método.
+Recorrer las relaciones de contención entre elementos.
+Analizar o transformar código sin ejecutarlo.
+
+En CRUD2GUI, se utiliza para extraer información del código Java y construir el ProjectModel. Cada lenguaje necesita un analizador que conozca su sintaxis, y la estructura concreta de sus nodos depende del lenguaje y de la herramienta utilizada. **JavaParser es una biblioteca específica para analizar código Java**, mientras que el AST es la representación que esta biblioteca genera a partir de ese código.
 
 En CRUD2GUI, la relación entre ambos es, por tanto: **fichero fuente Java → JavaParser → AST → extracción de información → `ProjectModel`**. Por ejemplo, al analizar una clase con un atributo y un método, JavaParser crea nodos para sus declaraciones; el extractor consulta esos nodos para incorporar los datos relevantes al modelo. El apartado 7.2.1 muestra un ejemplo concreto de código y su árbol simplificado.
 
@@ -1146,19 +1153,20 @@ Una vez extraídos los tipos, `RelationAnalyzer` construye las relaciones UML en
 |------------------------|-----------------------------|
 | Una clase extiende otra, una interfaz extiende otra o un tipo implementa una interfaz del proyecto. | Herencia o realización, según la declaración. |
 | Un atributo referencia un tipo del proyecto, directamente o como argumento genérico. | Asociación por defecto. El extractor propone composición cuando detecta que el objeto referenciado se crea con `new` y se vincula al atributo. También conserva la evidencia y el nivel de confianza: la clasificación es heurística y no demuestra el ciclo de vida de los objetos. |
-| Un tipo del proyecto aparece en un parámetro, en el retorno de un método o en una variable local, sin que se haya registrado ya una relación por atributo entre esos tipos en esa dirección. | Dependencia. |
 
 Para las relaciones por atributo, el extractor también estima la multiplicidad. Una colección reconocida o un array da lugar a `0..*`. Para una referencia individual, como `Libro libro`, la multiplicidad es `0..1` por defecto y se propone `1` si se detecta que un constructor asigna al atributo una referencia recibida como parámetro. Estas multiplicidades describen lo que el extractor deduce de la declaración y de las asignaciones; no son restricciones que compruebe en tiempo de ejecución.
 
-**Ejemplo.** Supóngase que `Biblioteca` declara `private final List<Libro> libros = new ArrayList<>();` y que su método `registrar(Libro libro)` añade a la lista el objeto recibido mediante `libros.add(libro)`. Si `Libro` está declarado en los fuentes analizados, el extractor registra `Biblioteca` y `Libro` en `types`. El atributo conserva `List` como tipo y `Libro` como argumento genérico. En `relations` se obtiene una asociación de `Biblioteca` a `Libro` con multiplicidad `0..*`: `new ArrayList<>()` crea el contenedor, no los libros. Tampoco se añade otra relación de dependencia por el parámetro de `registrar`, porque ya existe una relación por atributo entre esos tipos en la misma dirección.
+**Ejemplo.** Supóngase que `Biblioteca` declara `private final List<Libro> libros = new ArrayList<>();` y que su método `registrar(Libro libro)` añade a la lista el objeto recibido mediante `libros.add(libro)`. Si `Libro` está declarado en los fuentes analizados, el extractor registra `Biblioteca` y `Libro` en `types`. El atributo conserva `List` como tipo y `Libro` como argumento genérico. En `relations` se obtiene una asociación de `Biblioteca` a `Libro` con multiplicidad `0..*`: `new ArrayList<>()` crea el contenedor, no los libros. La firma de `registrar` conserva el tipo de su parámetro, sin generar una relación adicional por su uso.
 
 Finalmente, el extractor detecta la clase gestora y reúne los resultados en el `ProjectModel`: los tipos y sus miembros en `types`, las relaciones en `relations`, el análisis de la gestora en `analysis` y los datos de procedencia y avisos en `source`. El modelo se puede guardar en JSON para visualizar el diagrama de clases y compararlo después con el modelo de referencia. El resultado describe la estructura observable en los fuentes, no garantiza que la solución compile ni que su comportamiento sea correcto.
+
+Los diagramas del modelo del enunciado y del código muestran las relaciones estructurales. Los tipos de parámetros y retornos se conservan en las firmas, pero sus usos no generan relaciones adicionales.
 
 #### 7.2.3. Identificación de la clase gestora
 
 `ManagerDetector` utiliza los tipos y relaciones ya extraídos y consulta el AST para obtener indicios adicionales. En el ejemplo anterior, `Biblioteca` es candidata porque conserva una colección de `Libro`; la llamada a `add` aporta un indicio adicional de que la utiliza para gestionar esos objetos. Esta detección no usa el modelo del enunciado ni su gestora esperada: ambas se contrastan más adelante, durante la validación (apartado 7.4).
 
-Para estimar qué tipos coordina cada candidata, el detector construye un grafo dirigido a partir de las relaciones de composición, agregación y asociación derivadas de atributos. Para medir el alcance, el grafo permite seguir una referencia a un tipo abstracto hasta sus subclases o implementaciones. Las dependencias por parámetros, retornos o variables locales no contribuyen al alcance estructural.
+Para estimar qué tipos coordina cada candidata, el detector construye un grafo dirigido a partir de las relaciones de composición, agregación y asociación derivadas de atributos. Para medir el alcance, el grafo permite seguir una referencia a un tipo abstracto hasta sus subclases o implementaciones. Los usos en parámetros, retornos o variables locales no contribuyen al alcance estructural.
 
 **Selección de candidatas.** El detector solo puntúa clases concretas y `record` que tengan al menos un atributo no estático que haga referencia a un tipo del proyecto y una relación saliente de composición, agregación o asociación con un tipo del modelo. Quedan fuera las clases abstractas, las interfaces, las enumeraciones, las clases con `main`, las clases de prueba y las utilidades que solo mantienen referencias estáticas al dominio.
 
