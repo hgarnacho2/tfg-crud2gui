@@ -1108,7 +1108,9 @@ Con el índice completo de los tipos encontrados, se recorren las declaraciones 
 
 1. `ProjectParser` prepara el `ResolutionContext` de cada fichero con su paquete y sus imports. Este contexto aporta la información necesaria para interpretar los nombres de tipos; al recorrer tipos anidados, el extractor incorpora también los tipos contenedores.
 2. `FileTypeExtractor` crea una entrada `TypeInfo` por cada declaración admitida: clase, interfaz, enumeración, `record` o tipo de anotación. Registra la visibilidad, los modificadores, los atributos, los constructores y las firmas de los métodos, además de la superclase, las interfaces y, cuando existen, las anotaciones, el Javadoc y la ubicación en el fuente.
-3. Durante esa extracción, `TypeResolver` consulta el índice y el contexto para identificar las referencias a tipos del proyecto. Tiene en cuenta los tipos contenedores, los imports explícitos, el paquete y los imports con asterisco; como último recurso, admite un nombre simple si es único en el índice. También conserva los argumentos genéricos y las dimensiones de los arrays. Los tipos externos o no resueltos se conservan como referencias, pero no se convierten en tipos del proyecto.
+3. Durante esa extracción, `TypeResolver` convierte cada tipo del AST en un `TypeRef` del modelo y consulta `TypeIndex` junto con `ResolutionContext` para determinar si se refiere a un tipo del proyecto. Para los nombres simples, busca primero en los tipos contenedores, los imports explícitos, el paquete y los imports con asterisco; como último recurso acepta un nombre simple solo si aparece una vez en el índice. Para los nombres cualificados comprueba el identificador completo y también puede resolver el prefijo de un tipo contenedor, como una clase interna. El `TypeRef` conserva el nombre simple, los argumentos genéricos y las dimensiones de los arrays; cuando identifica un tipo del proyecto, añade su identificador cualificado y lo marca como propio. Los tipos externos, desconocidos o ambiguos conservan su nombre en la referencia, pero no se identifican como tipos del proyecto.
+
+`TypeResolver` no compila el código ni necesita resolver las dependencias externas del proyecto. Su función es reconocer de forma determinista las referencias a tipos declarados en los fuentes analizados, para que la extracción y el análisis posterior de relaciones puedan distinguirlas de los tipos de bibliotecas o de los nombres que no se han podido resolver. Por ejemplo, si `List` no está declarado en el proyecto, en `List<Persona>[]` se conserva `List` como contenedor no perteneciente al proyecto mientras `Persona` se resuelve como tipo del proyecto; el modelo mantiene además el argumento genérico y la dimensión del array. En los comodines se conserva el tipo de la cota (`T` en `? extends T` o `? super T`), aunque no se registra si era una cota `extends` o `super`; si no hay cota, se representa como `?`.
 
 En esta segunda pasada se distinguen dos preguntas:
 
@@ -1172,14 +1174,37 @@ Para estimar qué tipos coordina cada candidata, el detector construye un grafo 
 
 **Criterios de puntuación.** La puntuación es la suma de las siguientes contribuciones, con los pesos predeterminados de [manager-analysis.json](../modules/java-model-extractor/src/main/resources/manager-analysis.json):
 
-| Criterio | Puntos | Cómo se aplica |
-|----------|-------:|----------------|
-| Alcance estructural | Hasta 10 | Se multiplica 10 por la proporción de los demás tipos concretos del dominio que son alcanzables directa o indirectamente desde la candidata. |
-| Posición como raíz | 7 | Se suma si ningún tipo externo al componente de la candidata apunta hacia él en el grafo de atributos. Las referencias cíclicas se agrupan antes de comprobarlo, de modo que una relación bidireccional no elimina por sí sola la condición de raíz. |
-| Colecciones del dominio | 4 por atributo, hasta 8 | Se cuentan los atributos no estáticos que contienen colecciones de tipos del proyecto, con un máximo de dos. |
-| Uso de las colecciones | 3 por atributo, hasta 6 | Se cuentan hasta dos colecciones distintas sobre las que opera el código, por ejemplo, al añadir o consultar elementos o al recorrerlas con `for-each`. Así se distingue entre declarar una colección y utilizarla. |
-| Instanciación desde un punto de entrada o una prueba | 1 | Se suma si se encuentra una creación directa de la candidata mediante `new` dentro de un método `main` o de prueba. |
-| Indicio léxico | 0,2 | Se suma una sola vez si el nombre de la clase o de alguno de sus métodos contiene un término configurado, como `gestora` para clases o `administrar` para métodos. El nombre por sí solo no hace que una clase sea candidata. |
+La configuración predeterminada actual de ese fichero es:
+
+```json
+{
+  "weights": {
+    "reachability": 10.0,
+    "root": 7.0,
+    "collections": 4.0,
+    "collectionUsage": 3.0,
+    "entryPoint": 1.0
+  },
+  "confidence": {
+    "highGap": 4.0,
+    "mediumGap": 1.5,
+    "highMinimumScore": 8.0
+  }
+}
+```
+
+La correspondencia entre cada campo del JSON y el algoritmo es:
+
+| Campo JSON | Valor | Qué configura |
+|------------|------:|---------------|
+| `weights.reachability` | `10.0` | **Alcance estructural.** Multiplica la proporción de los demás tipos concretos del dominio alcanzables directa o indirectamente desde la candidata; su aportación máxima es 10 puntos. |
+| `weights.root` | `7.0` | **Posición como raíz.** Añade 7 puntos si ningún tipo externo al componente de la candidata apunta hacia él en el grafo de atributos. Las referencias cíclicas se agrupan antes de comprobarlo. |
+| `weights.collections` | `4.0` | **Colecciones del dominio.** Añade 4 puntos por atributo no estático que contiene colecciones de tipos del proyecto. Solo se cuentan dos como máximo, por lo que la aportación máxima es 8 puntos. |
+| `weights.collectionUsage` | `3.0` | **Uso de las colecciones.** Añade 3 puntos por colección distinta del dominio sobre la que opera el código, por ejemplo, al añadir o consultar elementos o recorrerla con `for-each`. Se cuentan como máximo dos, hasta 6 puntos. |
+| `weights.entryPoint` | `1.0` | **Instanciación desde un punto de entrada o una prueba.** Añade 1 punto si la candidata se crea directamente con `new` dentro de un método `main` o de prueba. |
+| `confidence.highMinimumScore` | `8.0` | Puntuación total mínima que debe alcanzar una candidata para recibir confianza `HIGH`. |
+| `confidence.highGap` | `4.0` | Diferencia mínima de puntuación respecto a la candidata vecina para recibir confianza `HIGH`. Para la candidata mejor puntuada se compara con la segunda. |
+| `confidence.mediumGap` | `1.5` | Diferencia mínima respecto a las candidatas vecinas para recibir confianza `MEDIUM` cuando no se cumplen los umbrales de `HIGH`. Si solo hay una candidata, se usa su propia puntuación como diferencia. |
 
 **Elección y confianza.** Se propone la candidata con mayor puntuación. Si varias empatan, el orden lexicográfico del identificador resuelve la selección automática, pero el empate da una confianza baja. Con los umbrales predeterminados, la primera candidata tiene confianza alta (`HIGH`) si su puntuación es de al menos 8 puntos y aventaja a la segunda en al menos 4; si no cumple ambas condiciones, pero la diferencia es de al menos 1,5, la confianza es media (`MEDIUM`). En los demás casos es baja (`LOW`). Cuando solo hay una candidata se utiliza su propia puntuación como diferencia. Estos niveles expresan la fuerza de los indicios, no una probabilidad de acierto. El extractor también permite fijar la gestora manualmente.
 
@@ -1308,9 +1333,11 @@ El esquema representa el contrato del formato, no una dependencia del parser: se
 
 La comprobación utiliza el [esquema canónico de ProjectModel](../modules/model/src/main/resources/com/crud2gui/model/project-model-v1.schema.json), definido con JSON Schema Draft 7. Verifica los campos obligatorios, los tipos de datos JSON, los valores enumerados y las demás restricciones declaradas en el contrato. La serialización incluye los valores `null` cuando corresponde: un campo obligatorio que admite `null` debe estar presente, aunque no contenga un valor.
 
-La operación [ModelIO.toJson()](../modules/model/src/main/java/com/crud2gui/model/ModelIO.java) solo devuelve la cadena después de que `ProjectModelSchema.validate()` termine correctamente. Si el JSON incumple el esquema, se lanza una `IOException` con los detalles de validación y el flujo no continúa al guardado. La comprobación está integrada en las dos entradas de la aplicación:
+**JSON Schema Draft 7** (también denominado Draft-07) es una versión de la especificación que define cómo describir y validar documentos JSON. El campo `$schema` del fichero identifica esa versión para que el validador interprete correctamente las palabras clave del contrato, como `type`, `properties`, `required`, `$ref` y `oneOf`. Esta versión de la especificación no debe confundirse con `schemaVersion: "1.0"`: Draft 7 corresponde al estándar utilizado para escribir el esquema, mientras que `"1.0"` identifica la versión del formato `ProjectModel` de CRUD2GUI.
 
-- **Línea de comandos:** `Main` obtiene el modelo con `ProjectParser` y llama a `ModelIO.write(model, archivo)`, que utiliza `toJson()` antes de escribir.
+La operación [ModelIO.toJson()](../modules/model/src/main/java/com/crud2gui/model/ModelIO.java) solo devuelve la cadena después de que `ProjectModelSchema.validate()` termine correctamente. Si el JSON incumple el esquema, se lanza una `IOException` con los detalles de validación y el flujo no continúa al guardado. En la línea de comandos, la salida muestra `Schema validado: CRUD2GUI ProjectModel 1.0` y `Validación: correcta` únicamente después de que `toJson()` haya devuelto el JSON; si la validación falla, no se muestran esas confirmaciones ni se guarda el modelo. La comprobación está integrada en las dos entradas de la aplicación:
+
+- **Línea de comandos:** `Main` obtiene el modelo con `ProjectParser`, llama a `ModelIO.toJson(model)` y, tras la validación correcta, escribe el resultado con `CREATE_NEW` para no sobrescribir un fichero existente.
 - **Interfaz de escritorio:** `ModelFromCodeSection` obtiene el modelo, llama a `ModelIO.toJson(model)` y escribe el archivo únicamente si la serialización y su validación han terminado correctamente.
 
 Se distinguen, por tanto, dos comprobaciones con objetivos diferentes:

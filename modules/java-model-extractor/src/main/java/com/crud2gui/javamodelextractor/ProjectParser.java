@@ -64,6 +64,13 @@ public final class ProjectParser {
     /** Fichero parseado junto con su ruta relativa a la raiz. */
     private record Parsed(String relativeFile, CompilationUnit cu) { }
 
+    /** Modelo analizado y rutas relativas de los ficheros seleccionados para el análisis. */
+    record ProjectParseResult(ProjectModel model, List<String> files) {
+        ProjectParseResult {
+            files = List.copyOf(files);
+        }
+    }
+
     /**
      * Analiza todos los ficheros {@code .java} bajo una carpeta.
      *
@@ -123,6 +130,10 @@ public final class ProjectParser {
      * @see ManagerDetector
      */
     ProjectModel parse(Path root, String managerOverride, ManagerDetectorConfig config) throws IOException {
+        return parseWithFiles(root, managerOverride, config).model();
+    }
+
+    ProjectParseResult parseWithFiles(Path root, String managerOverride, ManagerDetectorConfig config) throws IOException {
         // Normalizar la ruta: convertir a absoluta y resolver enlaces/referencias relativas
         root = root.toAbsolutePath().normalize();
         
@@ -195,8 +206,13 @@ public final class ProjectParser {
         // ===== Compilar metadatos de procedencia =====
         SourceInfo source = new SourceInfo(root.toString(), Instant.now().toString(), files.size(), warnings);
         
-        // Retornar el modelo completo con tipos, relaciones, análisis y procedencia
-        return new ProjectModel(ProjectModel.CURRENT_SCHEMA, source, types, relations, analysis, null);
+        // Retornar el modelo y las rutas encontradas para que la CLI pueda informar del análisis.
+        ProjectModel model = new ProjectModel(ProjectModel.CURRENT_SCHEMA, source, types, relations, analysis, null);
+        List<String> analyzedFiles = new ArrayList<>(files.size());
+        for (Path file : files) {
+            analyzedFiles.add(root.relativize(file).toString().replace('\\', '/'));
+        }
+        return new ProjectParseResult(model, analyzedFiles);
     }
 
     /**

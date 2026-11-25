@@ -10,7 +10,7 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>crud2gui-model</artifactId>
-  <name>CRUD2GUI Model</name>
+  <name>crud2gui Model</name>
 
   <dependencies>
     <!-- Comprueba la ultima version estable en Maven Central. Los records requieren Jackson 2.12+ -->

@@ -9,8 +9,8 @@ import com.crud2gui.common.filesystem.OutputDirectoryResolver;
 /**
  * Calcula la carpeta y el nombre predeterminados para guardar modelos extraidos de codigo Java.
  *
- * <p>La linea de comandos y la interfaz de escritorio comparten esta clase para proponer destinos
- * coherentes. Sus metodos solo calculan rutas o nombres: no crean carpetas, no escriben archivos
+ * <p>La linea de comandos y la interfaz de escritorio utilizan esta clase para calcular
+ * el destino y el nombre predeterminados. Sus metodos no crean carpetas, no escriben archivos
  * y no comprueban si el nombre ya existe. Cada consumidor se encarga de esas operaciones.</p>
  */
 public final class JavaModelOutput {
@@ -36,7 +36,6 @@ public final class JavaModelOutput {
      * @throws java.nio.file.InvalidPathException si la ruta configurada no es valida
      */
     public static Path defaultDirectory() {
-        // Resuelve la carpeta de salida predeterminada usando OutputDirectoryResolver
         return OutputDirectoryResolver.resolve(Path.of(""),
                 root -> Files.isRegularFile(root.resolve("modules/java-model-extractor/pom.xml")),
                 Path.of("modules/java-model-extractor/output"), DotEnv.getStringVar("JAVA_MODEL_OUTPUT_DIR", null));

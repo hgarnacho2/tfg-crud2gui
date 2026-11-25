@@ -1,7 +1,5 @@
 package com.crud2gui.desktop.teacher.sections;
 
-import com.crud2gui.common.env.DotEnv;
-import com.crud2gui.common.path.OutputDirectoryResolver;
 import com.crud2gui.desktop.ui.JavaCodeViewer;
 import com.crud2gui.desktop.ui.ClassDiagramView;
 import com.crud2gui.desktop.ui.JsonEditorViewer;
@@ -9,6 +7,7 @@ import com.crud2gui.desktop.ui.FileDialogs;
 import com.crud2gui.desktop.ui.Section;
 import com.crud2gui.desktop.ui.UiComponents;
 import com.crud2gui.desktop.workflow.WorkflowContext;
+import com.crud2gui.javamodelextractor.JavaModelOutput;
 import com.crud2gui.javamodelextractor.ProjectParser;
 import com.crud2gui.model.ManagerCandidate;
 import com.crud2gui.model.ModelIO;
@@ -423,9 +422,7 @@ public class ModelFromCodeSection extends Section {
             }
             String json = ModelIO.toJson(model);
             Files.createDirectories(destination);
-            Path folderName = folder.getFileName();
-            String name = "modelo-" + (folderName == null ? "codigo" : folderName);
-            Path resultPath = uniqueOutputPath(destination.resolve(name + ".json"));
+            Path resultPath = uniqueOutputPath(destination.resolve(JavaModelOutput.fileName(folder)));
             Files.writeString(resultPath, json, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
             return new ExtractedModel(model, json, resultPath);
         }, result -> {
@@ -610,9 +607,7 @@ public class ModelFromCodeSection extends Section {
     }
 
     private static Path defaultOutputDirectory() {
-        return OutputDirectoryResolver.resolve(Path.of(""),
-                root -> Files.isRegularFile(root.resolve("modules/java-model-extractor/pom.xml")),
-                Path.of("modules/java-model-extractor/output"), DotEnv.getStringVar("JAVA_MODEL_OUTPUT_DIR", null));
+        return JavaModelOutput.defaultDirectory();
     }
 
     private void changeOutputFolder() {

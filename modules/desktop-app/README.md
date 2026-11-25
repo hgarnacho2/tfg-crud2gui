@@ -210,8 +210,9 @@ Los ficheros con extension `.java` se resaltan en verde y negrita.
 Tras cargar el contenido, un mensaje verde confirma la seleccion e indica que se puede
 continuar al paso 2: Obtener modelo.
 El paso «Obtener modelo» muestra la tarjeta de destino JSON y permite cambiar o abrir
-la carpeta de salida. Guarda cada resultado con fecha y hora, sin sobrescribir los
-anteriores. La ruta predeterminada se configura con `JAVA_MODEL_OUTPUT_DIR` en `.env.public`
+la carpeta de salida. Guarda cada resultado como `modelo-<carpeta-de-codigo>.json`,
+añadiendo un sufijo numérico si ya existe, sin sobrescribir los anteriores. La ruta
+predeterminada se configura con `JAVA_MODEL_OUTPUT_DIR` en `.env.public`
 y usa `modules/java-model-extractor/output`. Las rutas relativas se resuelven desde la raíz
 del proyecto; también se admiten rutas absolutas. Si no se encuentra la raíz, las rutas
 relativas se resuelven desde el directorio de trabajo. Sin configuración, se conserva el

@@ -2,6 +2,18 @@
 
 Analiza fuentes Java y produce un `ProjectModel` JSON. La comparación con el modelo esperado del enunciado pertenece al módulo `model-validator`.
 
+## Dependencias
+
+Las dependencias directas declaradas en [pom.xml](./pom.xml) son:
+
+| Dependencia | Uso |
+| --- | --- |
+| `com.crud2gui:common` | Utilidades compartidas, como la configuración `DotEnv` y la resolución de carpetas y nombres de salida. |
+| `com.crud2gui:crud2gui-model` | Define el modelo `ProjectModel` y permite serializarlo y validar su JSON. |
+| `com.github.javaparser:javaparser-core` | Analiza el código Java y proporciona su árbol de sintaxis para extraer tipos y miembros. |
+| `org.slf4j:slf4j-simple` | Proveedor de logs SLF4J durante la ejecución. Es opcional y no se impone a los módulos que dependen del extractor. |
+| `org.junit.jupiter:junit-jupiter` | Framework utilizado para ejecutar las pruebas; solo se necesita en el ámbito de test. |
+
 ## JavaParser y el arbol de sintaxis abstracta (AST)
 
 **JavaParser** es una biblioteca que lee codigo fuente Java y lo transforma en objetos que
@@ -42,6 +54,9 @@ al compilador ni demuestra que el programa funcione correctamente.
 `ProjectModelSchema`. `ModelIO.write` utiliza esa misma serializacion antes de escribir el fichero.
 Por tanto, tanto la salida de linea de comandos como la extraccion de codigo desde el escritorio
 se validan antes de guardar o devolver el JSON.
+Tras una validacion correcta, la salida de consola indica `CRUD2GUI ProjectModel 1.0` y muestra
+`Validación: correcta`. Si la validacion falla, `ModelIO.toJson` lanza una excepcion y el modelo
+no se guarda.
 
 La respuesta JSON del LLM tambien se valida con `ProjectModelSchema` antes de deserializarla. Para
 cumplir las propiedades requeridas por el esquema, aunque sean nullable, la serializacion incluye
@@ -170,7 +185,68 @@ manualmente la clase gestora y prevalece sobre la seleccion heuristica.
 
 ## Scripts
 
-* `script/run.sh`: extrae el modelo de una carpeta Java. Por defecto no instala dependencias, que deben estar disponibles en el repositorio local de Maven; añade `--install` para instalarlas antes del análisis.
-* `script/test.sh`: ejecuta las pruebas de `model` y `java-model-extractor`.
-* `script/verify.sh`: ejecuta `clean verify` para ambos modulos.
-* `script/install.sh`: instala ambos modulos en el repositorio local de Maven.
+Los scripts calculan la raíz del proyecto a partir de su propia ubicación, por lo que se pueden invocar desde cualquier directorio. `-am` hace que Maven incluya también los módulos requeridos por `java-model-extractor` (`common` y `model`).
+
+| Script | Acción |
+| --- | --- |
+| `script/install.sh` | Ejecuta `mvn install` para compilar, probar e instalar `java-model-extractor` y sus módulos requeridos en el repositorio local de Maven. No limpia `target`. |
+| `script/test.sh` | Ejecuta `mvn test` para las pruebas de `common`, `model` y `java-model-extractor`. |
+| `script/verify.sh` | Ejecuta `mvn verify` para esos módulos: ejecuta las pruebas y completa las fases de verificación sin limpiar `target`. |
+| `script/run.sh` | Compila y ejecuta el extractor sobre una carpeta con código Java. No instala dependencias salvo que se indique `--install`; las rutas de entrada y salida se interpretan desde el directorio actual. |
+
+Ejemplos desde la raíz del proyecto:
+
+```bash
+./modules/java-model-extractor/script/install.sh
+./modules/java-model-extractor/script/test.sh
+./modules/java-model-extractor/script/verify.sh
+./modules/java-model-extractor/script/run.sh modules/java-model-extractor/src/test/resources/fixtures/manager-portfolio modelo.json
+```
+
+`--install` en `run.sh` instala el extractor y sus dependencias antes del análisis sin ejecutar las pruebas. `--verbose` muestra también los mensajes INFO de Maven; por defecto se muestran los avisos y errores, mientras que la salida del extractor sigue visible.
+
+El extractor dispone de `slf4j-simple` como proveedor opcional de ejecución; no se transmite
+automáticamente a las aplicaciones que dependen del módulo. El nivel configurado por el script
+también se aplica a los mensajes SLF4J del extractor y sus bibliotecas.
+En Git Bash sobre Windows, el script cambia temporalmente la consola a UTF-8 para mostrar
+correctamente los caracteres acentuados y restaura la página de códigos al terminar.
+
+Las rutas relativas de entrada, salida y configuración se interpretan desde el directorio
+actual. Sin salida explícita, el comando comparte con la interfaz gráfica la carpeta
+configurada mediante `JAVA_MODEL_OUTPUT_DIR` y genera `modelo-<carpeta-de-codigo>.json`.
+Una ruta configurada relativa se resuelve desde la raíz del proyecto; si no se encuentra,
+desde el directorio actual. Sin configuración, usa `modules/java-model-extractor/output`
+en la raíz o `output` en el directorio actual si no se encuentra la raíz.
+
+La carpeta de salida predeterminada se crea si no existe; para un fichero explícito,
+su carpeta debe existir y su nombre debe terminar en `.json`. Si el fichero ya existe, se
+añade `_1`, `_2`, etc. antes de la extensión, sin sobrescribirlo. `--install` instala el módulo
+y las dependencias del proyecto sin ejecutar las pruebas antes del análisis.
+
+`Main` muestra los parámetros recibidos y el resumen en dos tablas, con las etiquetas a la izquierda
+y los valores a la derecha. Para la salida muestra solo el nombre previsto e indica que se añadirá
+`_n` si ya existe un fichero. La tabla de resultados incluye la ruta completa del modelo guardado.
+El script se limita a preparar las dependencias opcionales y ejecutar Maven.
+
+El resumen distingue entre **ficheros analizados**, que cuenta los archivos `.java` seleccionados
+por `FolderScanner` para su análisis, y **tipos encontrados**, que cuenta las declaraciones
+extraídas (clases, interfaces, enums, records y anotaciones, incluidos los tipos anidados). Un
+fichero puede contener varios tipos o ninguno. El contador de ficheros incluye también los que
+producen errores de lectura o sintaxis; estos se muestran como avisos. Bajo el contador se muestra
+la lista de rutas relativas a la carpeta analizada, incluidos los ficheros que produjeron avisos.
+Bajo el contador de tipos se muestra el identificador de cada tipo encontrado.
+
+Por ejemplo, desde la raíz del proyecto:
+
+```bash
+./modules/java-model-extractor/script/run.sh modules/java-model-extractor/src/test/resources/fixtures/manager-portfolio modelo.json
+./modules/java-model-extractor/script/run.sh modules/java-model-extractor/src/test/resources/fixtures/manager-portfolio --install
+./modules/java-model-extractor/script/run.sh modules/java-model-extractor/src/test/resources/fixtures/manager-portfolio --verbose
+```
+
+Desde `modules/java-model-extractor`:
+
+```bash
+./script/run.sh src/test/resources/fixtures/manager-portfolio modelo.json
+./script/run.sh src/test/resources/fixtures/manager-portfolio --install
+```
