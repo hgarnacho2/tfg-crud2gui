@@ -79,13 +79,62 @@ final class ModelValidationResultView extends VBox {
         String expectedId = manager.path("expectedManagerId").asText("No especificada");
         String status = manager.path("status").asText("Sin datos");
         String confidence = selected.path("confidence").asText("-");
+        double score = selected.path("score").asDouble(-1.0);
+        
         Label title = UiComponents.label("Clase gestora", List.of("model-validation-block-title"));
-        Label comparison = UiComponents.label("Esperada: " + expectedId + "    Detectada: " + selectedId,
-                List.of("model-validation-manager-comparison"));
-        comparison.setWrapText(true);
-        Label state = UiComponents.label("Estado: " + status + "    Confianza: " + confidence,
-                List.of("model-validation-manager-state"));
-        VBox content = UiComponents.vBox(List.of("model-validation-manager"), title, comparison, state);
+        
+        // Comparison badges row
+        HBox comparisonRow = new HBox(12);
+        comparisonRow.getStyleClass().add("model-validation-manager-comparison-row");
+        
+        // Expected/Inferred from statement
+        VBox expectedBox = new VBox(4);
+        expectedBox.getStyleClass().add("model-validation-manager-class-box");
+        Label expectedLabel = UiComponents.label("Inferida desde el enunciado", 
+                List.of("model-validation-manager-class-label"));
+        Label expectedValue = UiComponents.label(expectedId, 
+                List.of("model-validation-manager-class-value"));
+        expectedBox.getChildren().addAll(expectedLabel, expectedValue);
+        
+        // Selected/Inferred from code
+        VBox selectedBox = new VBox(4);
+        selectedBox.getStyleClass().add("model-validation-manager-class-box");
+        Label selectedLabel = UiComponents.label("Inferida desde el código", 
+                List.of("model-validation-manager-class-label"));
+        Label selectedValue = UiComponents.label(selectedId, 
+                List.of("model-validation-manager-class-value"));
+        selectedBox.getChildren().addAll(selectedLabel, selectedValue);
+        
+        comparisonRow.getChildren().addAll(expectedBox, selectedBox);
+        
+        // Badges row (status, confidence, score)
+        HBox badgesRow = new HBox(8);
+        badgesRow.getStyleClass().add("model-validation-manager-badges");
+        
+        // Status badge
+        Label statusBadge = UiComponents.label(statusDisplayName(status), 
+                List.of("model-validation-status-badge", "model-validation-status-" + status.toLowerCase()));
+        badgesRow.getChildren().add(statusBadge);
+        
+        // Confidence badge
+        if (!"-".equals(confidence)) {
+            String confidenceIcon = confidenceIcon(confidence);
+            String confidenceLevel = confidence.equals("HIGH") ? "ALTO" : confidence.equals("MEDIUM") ? "MEDIO" : "BAJO";
+            String confidenceDisplay = confidenceIcon + " Nivel de certeza: " + confidenceLevel;
+            Label confidenceBadge = UiComponents.label(confidenceDisplay, 
+                    List.of("model-validation-confidence-badge", "model-validation-confidence-" + confidence.toLowerCase()));
+            badgesRow.getChildren().add(confidenceBadge);
+        }
+        
+        // Score badge (if available)
+        if (score >= 0) {
+            String scoreDisplay = "Puntuación: " + String.format("%.2f", score);
+            Label scoreLabel = UiComponents.label(scoreDisplay, 
+                    List.of("model-validation-score-value"));
+            badgesRow.getChildren().add(scoreLabel);
+        }
+        
+        VBox content = UiComponents.vBox(List.of("model-validation-manager"), title, comparisonRow, badgesRow);
 
         JsonNode reasons = selected.path("reasons");
         if (reasons.isArray() && !reasons.isEmpty()) {
@@ -102,12 +151,35 @@ final class ModelValidationResultView extends VBox {
         if (alternatives.isArray() && !alternatives.isEmpty()) {
             content.getChildren().add(UiComponents.label("Otras candidatas",
                     List.of("model-validation-subheading")));
+            VBox alternativesContainer = new VBox(8);
+            alternativesContainer.getStyleClass().add("model-validation-alternatives-container");
+            
             for (JsonNode alternative : alternatives) {
-                content.getChildren().add(UiComponents.label(alternative.path("id").asText()
-                        + " · " + alternative.path("confidence").asText("-")
-                        + " · puntuación " + alternative.path("score").asText("-"),
-                        List.of("model-validation-detail")));
+                String altId = alternative.path("id").asText("No identificada");
+                String altConfidence = alternative.path("confidence").asText("-");
+                double altScore = alternative.path("score").asDouble(-1.0);
+                
+                HBox alternativeRow = new HBox(8);
+                alternativeRow.getStyleClass().add("model-validation-alternative-row");
+                
+                // Class name badge
+                Label classNameBadge = UiComponents.label(altId, 
+                        List.of("model-validation-alternative-class-badge"));
+                alternativeRow.getChildren().add(classNameBadge);
+                
+                // Confidence badge with score
+                if (!"-".equals(altConfidence)) {
+                    String confidenceIcon = confidenceIcon(altConfidence);
+                    String confidenceLevel = altConfidence.equals("HIGH") ? "ALTO" : altConfidence.equals("MEDIUM") ? "MEDIO" : "BAJO";
+                    String confidenceDisplay = confidenceIcon + " " + confidenceLevel + " (" + String.format("%.2f", altScore) + ")";
+                    Label confidenceBadge = UiComponents.label(confidenceDisplay, 
+                            List.of("model-validation-alternative-confidence-badge", "model-validation-confidence-" + altConfidence.toLowerCase()));
+                    alternativeRow.getChildren().add(confidenceBadge);
+                }
+                
+                alternativesContainer.getChildren().add(alternativeRow);
             }
+            content.getChildren().add(alternativesContainer);
         }
         content.setId("model-validation-manager");
         return content;
@@ -172,6 +244,37 @@ final class ModelValidationResultView extends VBox {
                 return switch (status) {
                         case "PENDING_CONFIRMATION" -> "Se confirmará al generar el CRUD";
                         default -> status;
+                };
+        }
+
+        private static String statusDisplayName(String status) {
+                return switch (status) {
+                        case "MATCH" -> "✓ Las clases gestoras coinciden";
+                        case "MISMATCH" -> "⚠ Mismatch: detectada diferente a la esperada";
+                        case "NOT_DETECTED" -> "✗ Clase gestora no detectada";
+                        case "NOT_SPECIFIED" -> "? Clase gestora no especificada en el enunciado";
+                        case "AMBIGUOUS_EXPECTATION" -> "⚡ Especificación ambigua del enunciado";
+                        case "EXPECTED_TYPE_MISSING" -> "✗ Clase esperada falta en el enunciado";
+                        case "DETECTED_TYPE_MISSING" -> "✗ Clase detectada falta en el código";
+                        default -> status;
+                };
+        }
+
+        private static String confidenceDisplayName(String confidence) {
+                return switch (confidence) {
+                        case "HIGH" -> "🎯 ALTO";
+                        case "MEDIUM" -> "⚠ MEDIO";
+                        case "LOW" -> "❌ BAJO";
+                        default -> confidence;
+                };
+        }
+
+        private static String confidenceIcon(String confidence) {
+                return switch (confidence) {
+                        case "HIGH" -> "🎯";
+                        case "MEDIUM" -> "⚠";
+                        case "LOW" -> "❌";
+                        default -> "";
                 };
         }
 

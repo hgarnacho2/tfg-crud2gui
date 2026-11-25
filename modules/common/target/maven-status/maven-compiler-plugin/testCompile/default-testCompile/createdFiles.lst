@@ -1,2 +1,5 @@
+com\crud2gui\common\filesystem\OutputDirectoryResolverTest.class
+com\crud2gui\common\filesystem\OutputFileResolverTest.class
+com\crud2gui\common\path\OutputDirectoryResolverTest.class
 com\crud2gui\common\env\DotEnvTest.class
 com\crud2gui\common\pdf\PdfTextExtractorTest.class

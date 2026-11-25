@@ -116,7 +116,7 @@ class TeacherModelSectionsTest {
                                     "analysis": {
                                         "managerClass": { "id": "demo.Owner", "score": 1.0,
                                             "confidence": "HIGH", "reasons": ["Clase principal del dominio"] },
-                                        "alternatives": [], "subManagers": [], "entryPoints": [], "manualOverride": false
+                                        "alternatives": [], "entryPoints": [], "manualOverride": false
                                     }
                                 }
                                 """;

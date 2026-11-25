@@ -144,7 +144,7 @@ final class ManagerDetector {
                     List.of("No se encontraron candidatas estructurales; seleccion de respaldo."), 0, 0, 0));
         }
         if (scores.isEmpty()) {
-            return new Analysis(null, List.of(), List.of(), entryPoints.stream().map(TypeInfo::id).toList(), false);
+            return new Analysis(null, List.of(), entryPoints.stream().map(TypeInfo::id).toList(), false);
         }
 
         List<Map.Entry<String, CandidateScore>> ranked = scores.entrySet().stream()
@@ -178,18 +178,7 @@ final class ManagerDetector {
         }
         alternatives.sort(Comparator.comparingDouble(ManagerCandidate::score).reversed().thenComparing(ManagerCandidate::id));
 
-        Set<String> subManagers = reachable(attributeGraph, selectedManagerId);
-        List<String> subManagerIds = scores.entrySet().stream()
-                .filter(entry -> !entry.getKey().equals(selectedManagerId) && subManagers.contains(entry.getKey()))
-                .filter(entry -> !java.util.Objects.equals(componentById.get(entry.getKey()),
-                        componentById.get(selectedManagerId)))
-                .filter(entry -> entry.getValue().collections() > 0 || entry.getValue().collectionUsage() > 0
-                        || entry.getValue().reachability() >= 2)
-                .sorted(Comparator.<Map.Entry<String, CandidateScore>>comparingDouble(entry -> entry.getValue().score())
-                        .reversed().thenComparing(Map.Entry::getKey))
-                .map(Map.Entry::getKey).toList();
-
-        return new Analysis(manager, alternatives, subManagerIds,
+        return new Analysis(manager, alternatives,
                 entryPoints.stream().map(TypeInfo::id).toList(), manual);
     }
 

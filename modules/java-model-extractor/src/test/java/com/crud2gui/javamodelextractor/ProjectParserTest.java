@@ -271,7 +271,6 @@ class ProjectParserTest {
 
         ProjectModel university = parse("manager-universidad");
         assertEquals("fixtures.universidad.University", university.analysis().managerClass().id());
-        assertTrue(university.analysis().subManagers().contains("fixtures.universidad.Faculty"));
 
         assertManager("manager-game", "fixtures.game.Game");
         ProjectModel game = parse("manager-game");
@@ -281,8 +280,6 @@ class ProjectParserTest {
 
         ProjectModel portfolio = parse("manager-portfolio");
         assertEquals("fixtures.portfolio.Portfolio", portfolio.analysis().managerClass().id());
-        assertTrue(portfolio.analysis().subManagers().contains("fixtures.portfolio.Project"));
-        assertFalse(portfolio.analysis().subManagers().contains("fixtures.portfolio.Team"));
     }
 
     /** Los ejemplos conocidos siguen detectandose y un override manual sustituye la heuristica. */

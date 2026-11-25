@@ -295,7 +295,7 @@
     "Analysis": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["managerClass", "alternatives", "subManagers", "entryPoints", "manualOverride"],
+      "required": ["managerClass", "alternatives", "entryPoints", "manualOverride"],
       "properties": {
         "managerClass": {
           "oneOf": [
@@ -304,7 +304,6 @@
           ]
         },
         "alternatives": { "type": "array", "items": { "$ref": "#/definitions/ManagerCandidate" } },
-        "subManagers": { "type": "array", "items": { "type": "string" } },
         "entryPoints": { "type": "array", "items": { "type": "string" } },
         "manualOverride": { "type": "boolean" }
       }

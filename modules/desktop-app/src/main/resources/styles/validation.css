@@ -279,3 +279,131 @@
     -fx-wrap-text: true;
 }
 
+.model-validation-manager-badges {
+    -fx-alignment: center-left;
+    -fx-spacing: 8px;
+    -fx-padding: 8px 0;
+}
+
+.model-validation-manager-comparison-row {
+    -fx-alignment: center-left;
+    -fx-spacing: 12px;
+    -fx-padding: 8px 0;
+}
+
+.model-validation-manager-class-box {
+    -fx-alignment: top-left;
+    -fx-spacing: 4px;
+    -fx-padding: 10px 12px;
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 4px;
+    -fx-border-color: #d8e3de;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+}
+
+.model-validation-manager-class-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.model-validation-manager-class-value {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #173e33;
+}
+
+.model-validation-status-badge,
+.model-validation-confidence-badge,
+.model-validation-score-value {
+    -fx-padding: 6px 10px;
+    -fx-background-radius: 4px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #344a42;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d8e3de;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+}
+
+.model-validation-status-match {
+    -fx-text-fill: -fx-brand-accent;
+}
+
+.model-validation-status-mismatch {
+    -fx-text-fill: #c25a00;
+}
+
+.model-validation-status-not_detected {
+    -fx-text-fill: #a12b32;
+}
+
+.model-validation-status-not_specified {
+    -fx-text-fill: #76500a;
+}
+
+.model-validation-status-ambiguous_expectation {
+    -fx-text-fill: #7a5cb8;
+}
+
+.model-validation-status-expected_type_missing {
+    -fx-text-fill: #a12b32;
+}
+
+.model-validation-status-detected_type_missing {
+    -fx-text-fill: #a12b32;
+}
+
+.model-validation-confidence-high {
+    -fx-text-fill: -fx-brand-accent;
+}
+
+.model-validation-confidence-medium {
+    -fx-text-fill: #c25a00;
+}
+
+.model-validation-confidence-low {
+    -fx-text-fill: #a12b32;
+}
+
+.model-validation-score-value {
+    -fx-text-fill: #344a42;
+}
+
+.model-validation-alternatives-container {
+    -fx-spacing: 8px;
+}
+
+.model-validation-alternative-row {
+    -fx-alignment: center-left;
+    -fx-spacing: 8px;
+    -fx-padding: 8px 0;
+}
+
+.model-validation-alternative-class-badge,
+.model-validation-alternative-confidence-badge {
+    -fx-padding: 6px 10px;
+    -fx-background-radius: 4px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #344a42;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d8e3de;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+}
+
+.model-validation-alternative-confidence-high {
+    -fx-text-fill: -fx-brand-accent;
+}
+
+.model-validation-alternative-confidence-medium {
+    -fx-text-fill: #c25a00;
+}
+
+.model-validation-alternative-confidence-low {
+    -fx-text-fill: #a12b32;
+}
+

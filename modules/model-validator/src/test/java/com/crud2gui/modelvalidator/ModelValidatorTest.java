@@ -60,7 +60,7 @@ class ModelValidatorTest {
                         new Relation(RelationKind.AGGREGATION, "demo.Owner", "demo.Project", "projects",
                                 "0..*", Confidence.HIGH, null)),
                 List.of(), new Analysis(new ManagerCandidate("demo.Owner", 5.0, Confidence.HIGH,
-                        List.of("coordina el sistema")), List.of(), List.of(), List.of("demo.Launcher"), false));
+                        List.of("coordina el sistema")), List.of(), List.of("demo.Launcher"), false));
 
         ModelValidator.Result result = ModelValidator.validate(expected, actual);
 
@@ -443,7 +443,7 @@ class ModelValidatorTest {
         ProjectModel expected = new ProjectModel("1.0", "Gestor", new SourceInfo(null, null, 0, List.of()),
                 List.of(expectedType), List.of(), null, null);
         Analysis analysis = new Analysis(new ManagerCandidate("demo.Gestor", 8.0, Confidence.HIGH,
-                List.of("alcance")), List.of(), List.of(), List.of(), true);
+                List.of("alcance")), List.of(), List.of(), true);
         ProjectModel actual = new ProjectModel("1.0", null, new SourceInfo(null, null, 0, List.of()),
                 List.of(actualType), List.of(), analysis, null);
 
@@ -463,7 +463,7 @@ class ModelValidatorTest {
         ProjectModel expected = new ProjectModel("1.0", "Gestor", new SourceInfo(null, null, 0, List.of()),
                 List.of(expectedManager, expectedAlternative), List.of(), null, null);
         Analysis analysis = new Analysis(new ManagerCandidate("demo.Alternativa", 4.0, Confidence.LOW,
-                List.of("colecciones")), List.of(), List.of(), List.of(), false);
+                List.of("colecciones")), List.of(), List.of(), false);
         ProjectModel actual = new ProjectModel("1.0", null, new SourceInfo(null, null, 0, List.of()),
                 List.of(type("demo.Gestor", "demo", TypeKind.CLASS, List.of(), List.of(), List.of(), false),
                         type("demo.Alternativa", "demo", TypeKind.CLASS, List.of(), List.of(), List.of(), false)),
@@ -488,7 +488,7 @@ class ModelValidatorTest {
         Analysis analysis = new Analysis(
                 new ManagerCandidate("demo.Platform", 5.0, Confidence.HIGH, List.of("gestiona catalogo")),
                 List.of(new ManagerCandidate("demo.Catalog", 4.0, Confidence.HIGH, List.of("gestiona elementos"))),
-                List.of(), List.of(), false);
+                List.of(), false);
         ProjectModel actual = model(List.of(
                 type("demo.Platform", "demo", TypeKind.CLASS, List.of(), List.of(), List.of(), false),
                 type("demo.Catalog", "demo", TypeKind.CLASS, List.of(), List.of(), List.of(), false)),

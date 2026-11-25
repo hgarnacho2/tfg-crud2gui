@@ -1,2 +1,5 @@
 com\crud2gui\common\env\DotEnv.class
 com\crud2gui\common\pdf\PdfTextExtractor.class
+com\crud2gui\common\filesystem\OutputDirectoryResolver.class
+com\crud2gui\common\filesystem\OutputFileResolver.class
+com\crud2gui\common\path\OutputDirectoryResolver.class

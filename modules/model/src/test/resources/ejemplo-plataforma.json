@@ -35,7 +35,7 @@
     "managerClass": { "id": "com.tienda.PlataformaCompraVenta", "score": 14.5, "confidence": "HIGH",
                       "reasons": ["Alcanza 4 de 4 tipos del dominio", "Ningun tipo la tiene como atributo",
                                   "Coleccion de Usuario modificada en sus metodos"] },
-    "alternatives": [], "subManagers": [], "entryPoints": ["com.tienda.LanzadorEtapa3_1"],
+    "alternatives": [], "entryPoints": ["com.tienda.LanzadorEtapa3_1"],
     "manualOverride": false
   },
   "layout": { "positions": { "com.tienda.PlataformaCompraVenta": { "x": 450, "y": 20 } } }
